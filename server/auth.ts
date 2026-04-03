@@ -1,38 +1,35 @@
-import { NextAuthOptions } from "next-auth";
-import CredentialsProvider from "next-auth/providers/credentials";
+// NEXT-AUTH V5 CONFIGURATION
+import NextAuth from "next-auth";
+import Credentials from "next-auth/providers/credentials";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import { compare, hash } from "bcryptjs";
 import { prisma } from "@/server/db";
 import { signInSchema, signUpSchema } from "@/lib/schemas";
 import { normalizeEmail, isValidEmail } from "@/lib/email-utils";
-import { authLogger } from "@/lib/logger";
-import { createRequestContext } from "@/lib/logger";
 
-export const authOptions: NextAuthOptions = {
-  debug: process.env.NODE_ENV === 'development',
+export const { handlers, auth, signIn, signOut } = NextAuth({
+  debug: true,
   adapter: PrismaAdapter(prisma),
   providers: [
-    CredentialsProvider({
+    Credentials({
       name: "credentials",
       credentials: {
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
       },
-      async authorize(credentials, req) {
-        const request = req as any;
-        const context = createRequestContext(request?.req || new Request('http://localhost'));
+      async authorize(credentials) {
+        console.log("Auth: Authorize called with:", credentials?.email);
         
         if (!credentials?.email || !credentials?.password) {
-          authLogger.login.failed(credentials?.email || 'unknown', 'Missing credentials', context);
-          throw new Error("Email and password required");
+          console.log("Auth: Missing credentials");
+          return null;
         }
 
-        // Normalize email
         const normalizedEmail = normalizeEmail(credentials.email);
         
         if (!isValidEmail(normalizedEmail)) {
-          authLogger.login.failed(normalizedEmail, 'Invalid email format', context);
-          throw new Error("Invalid email format");
+          console.log(`Auth: Invalid email: ${normalizedEmail}`);
+          return null;
         }
 
         const user = await prisma.user.findUnique({
@@ -40,23 +37,23 @@ export const authOptions: NextAuthOptions = {
         });
 
         if (!user) {
-          authLogger.login.failed(normalizedEmail, 'User not found', context);
-          throw new Error("Invalid credentials"); // Generic message for security
+          console.log(`Auth: User not found: ${normalizedEmail}`);
+          return null;
         }
 
         if (!user.passwordHash) {
-          authLogger.login.failed(normalizedEmail, 'No password set', context);
-          throw new Error("Account configuration error");
+          console.log(`Auth: No password hash: ${normalizedEmail}`);
+          return null;
         }
 
         const isValid = await compare(credentials.password, user.passwordHash);
 
         if (!isValid) {
-          authLogger.login.failed(normalizedEmail, 'Invalid password', context);
-          throw new Error("Invalid credentials"); // Generic message for security
+          console.log(`Auth: Invalid password: ${normalizedEmail}`);
+          return null;
         }
 
-        authLogger.login.success(normalizedEmail, user.id, context);
+        console.log(`Auth: Login successful: ${normalizedEmail}`);
         
         return {
           id: user.id,
@@ -68,44 +65,44 @@ export const authOptions: NextAuthOptions = {
   ],
   session: {
     strategy: "jwt",
+    maxAge: 30 * 24 * 60 * 60,
   },
   pages: {
     signIn: "/auth/signin",
     signUp: "/auth/signup",
+    error: "/auth/signin",
   },
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
+        token.email = user.email;
       }
       return token;
     },
     async session({ session, token }) {
       if (session.user) {
         session.user.id = token.id as string;
+        session.user.email = token.email as string;
       }
       return session;
     },
   },
-};
+});
 
-export async function signUpUser(data: { name: string; email: string; password: string }, request?: Request) {
-  const context = request ? createRequestContext(request) : {};
-  
+// Keep the signUpUser function for API routes
+export async function signUpUser(data: { name: string; email: string; password: string }) {
   try {
     const validated = signUpSchema.parse(data);
     
-    // Normalize email
     const normalizedEmail = normalizeEmail(validated.email);
     
-    // Check for existing user with normalized email
     const existing = await prisma.user.findUnique({
       where: { email: normalizedEmail },
     });
 
     if (existing) {
-      authLogger.signup.duplicate(normalizedEmail, context);
-      throw new Error("An account with this email already exists. Please sign in or use a different email.");
+      throw new Error("An account with this email already exists.");
     }
 
     const passwordHash = await hash(validated.password, 12);
@@ -118,17 +115,10 @@ export async function signUpUser(data: { name: string; email: string; password: 
       },
     });
 
-    authLogger.signup.success(normalizedEmail, user.id, context);
-    
+    console.log(`Auth: User created: ${normalizedEmail}`);
     return { id: user.id, email: user.email, name: user.name };
   } catch (error: any) {
-    if (error.name === 'ZodError') {
-      const firstError = error.errors[0];
-      authLogger.signup.failed(data.email, `Validation error: ${firstError.message}`, context);
-      throw new Error(firstError.message);
-    }
-    
-    authLogger.signup.failed(data.email, error.message, context);
+    console.error("Auth: Signup error:", error.message);
     throw error;
   }
 }

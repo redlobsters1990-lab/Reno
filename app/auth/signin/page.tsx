@@ -1,41 +1,34 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { signIn } from "next-auth/react";
+import { signIn, useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Home, LogIn } from "lucide-react";
 
 export default function SignInPage() {
-  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [successMessage, setSuccessMessage] = useState("");
+  const { data: session, status } = useSession();
+  const router = useRouter();
 
-  // Check for registration success from URL
   useEffect(() => {
-    // Only run on client side
-    if (typeof window !== 'undefined') {
-      const params = new URLSearchParams(window.location.search);
-      if (params.get("registered") === "true") {
-        const registeredEmail = params.get("email");
-        setSuccessMessage(
-          registeredEmail 
-            ? `Account created successfully! Please sign in with ${registeredEmail}`
-            : "Account created successfully! Please sign in."
-        );
-        // Clear the URL parameters
-        window.history.replaceState({}, document.title, window.location.pathname);
-      }
+    console.log("SignIn: Session status:", status);
+    console.log("SignIn: Session data:", session);
+    
+    if (status === "authenticated") {
+      console.log("SignIn: User already authenticated, redirecting to dashboard");
+      router.push("/dashboard");
     }
-  }, []);
+  }, [status, session, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setLoading(true);
+
+    console.log("SignIn: Attempting login with:", { email });
 
     try {
       const result = await signIn("credentials", {
@@ -44,96 +37,60 @@ export default function SignInPage() {
         redirect: false,
       });
 
+      console.log("SignIn: Login result:", result);
+
       if (result?.error) {
-        // Better error messages
-        if (result.error.includes("User not found")) {
-          setError("No account found with this email");
-        } else if (result.error.includes("Invalid password")) {
-          setError("Incorrect password");
-        } else if (result.error.includes("Email and password required")) {
-          setError("Please enter both email and password");
-        } else {
-          setError(result.error);
-        }
+        setError(result.error);
+        console.error("SignIn: Login error:", result.error);
       } else {
-        // Redirect to dashboard
+        console.log("SignIn: Login successful, refreshing session");
+        router.refresh();
         router.push("/dashboard");
-        // Don't call refresh immediately, let the redirect happen
       }
-    } catch (err) {
-      setError("An unexpected error occurred. Please try again.");
+    } catch (err: any) {
+      console.error("SignIn: Exception:", err);
+      setError("An unexpected error occurred");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-slate-900 to-slate-950 p-4">
       <div className="w-full max-w-md">
-        {/* Success Message */}
-        {successMessage && (
-          <div className="mb-6 p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30">
-            <div className="flex items-center gap-2">
-              <div className="h-5 w-5 rounded-full bg-emerald-500/20 flex items-center justify-center">
-                <div className="h-2 w-2 rounded-full bg-emerald-400"></div>
-              </div>
-              <span className="text-emerald-400">{successMessage}</span>
-            </div>
-          </div>
-        )}
-        
         <div className="text-center mb-8">
-          <Link
-            href="/"
-            className="inline-flex items-center gap-2 text-xl font-bold mb-2"
-          >
-            <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center">
-              <Home className="h-5 w-5 text-white" />
-            </div>
-            Renovation Advisor AI
-          </Link>
-          <p className="text-slate-400">Sign in to your account</p>
+          <h1 className="text-3xl font-bold">Sign In</h1>
+          <p className="text-slate-400 mt-2">Enter your credentials to continue</p>
         </div>
 
-        <div className="card p-8">
-          <div className="flex items-center justify-center gap-2 mb-6">
-            <div className="h-10 w-10 rounded-xl bg-violet-500/10 border border-violet-400/20 flex items-center justify-center">
-              <LogIn className="h-5 w-5 text-violet-300" />
-            </div>
-            <h1 className="text-2xl font-bold">Welcome Back</h1>
-          </div>
-
+        <div className="bg-slate-800/50 border border-white/10 rounded-2xl p-6">
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium mb-2">
-                Email Address
-              </label>
+              <label className="block text-sm font-medium mb-2">Email</label>
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="input"
-                placeholder="you@example.com"
+                className="w-full px-4 py-2 rounded-xl bg-slate-900 border border-white/10 focus:border-violet-500 focus:outline-none"
+                placeholder="test@example.com"
                 required
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-2">
-                Password
-              </label>
+              <label className="block text-sm font-medium mb-2">Password</label>
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="input"
-                placeholder="••••••••"
+                className="w-full px-4 py-2 rounded-xl bg-slate-900 border border-white/10 focus:border-violet-500 focus:outline-none"
+                placeholder="password123"
                 required
               />
             </div>
 
             {error && (
-              <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-300 text-sm">
+              <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-sm">
                 {error}
               </div>
             )}
@@ -141,30 +98,30 @@ export default function SignInPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 px-6 rounded-xl bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="w-full py-3 rounded-xl bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 transition font-medium disabled:opacity-50"
             >
-              {loading ? (
-                <>
-                  <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                  Signing in...
-                </>
-              ) : (
-                "Sign In"
-              )}
+              {loading ? "Signing in..." : "Sign In"}
             </button>
           </form>
 
           <div className="mt-6 pt-6 border-t border-white/10 text-center">
             <p className="text-slate-400">
               Don't have an account?{" "}
-              <Link
-                href="/auth/signup"
-                className="text-violet-400 hover:text-violet-300 font-medium"
-              >
+              <Link href="/auth/signup" className="text-violet-400 hover:text-violet-300">
                 Sign up
               </Link>
             </p>
           </div>
+
+          <div className="mt-6 p-4 rounded-xl bg-slate-900/50 border border-white/10 text-sm">
+            <p className="font-medium mb-2">Test Credentials:</p>
+            <p className="text-slate-400">Email: test@example.com</p>
+            <p className="text-slate-400">Password: password123</p>
+          </div>
+        </div>
+
+        <div className="mt-6 text-center text-sm text-slate-500">
+          <p>Check browser console for debug information</p>
         </div>
       </div>
     </div>
