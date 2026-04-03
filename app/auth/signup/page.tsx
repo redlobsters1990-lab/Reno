@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Home, UserPlus } from "lucide-react";
@@ -43,10 +44,33 @@ export default function SignUpPage() {
         throw new Error(data.error || "Sign up failed");
       }
 
-      // Redirect to sign in page
-      router.push("/auth/signin?registered=true");
+      // Auto-login after successful registration
+      const signInResult = await signIn("credentials", {
+        email,
+        password,
+        redirect: false,
+      });
+
+      if (signInResult?.error) {
+        // If auto-login fails, redirect to signin with success message
+        router.push("/auth/signin?registered=true&email=" + encodeURIComponent(email));
+      } else {
+        // Successful auto-login, redirect to dashboard
+        router.push("/dashboard");
+      }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Sign up failed");
+      // Handle duplicate email and other errors
+      const errorMessage = err instanceof Error ? err.message : "Sign up failed";
+      
+      if (errorMessage.includes("User already exists")) {
+        setError("An account with this email already exists. Please use a different email or sign in.");
+      } else if (errorMessage.includes("Invalid email")) {
+        setError("Please enter a valid email address");
+      } else if (errorMessage.includes("Password must be")) {
+        setError(errorMessage);
+      } else {
+        setError("Sign up failed. Please try again.");
+      }
     } finally {
       setLoading(false);
     }
@@ -145,9 +169,16 @@ export default function SignUpPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full btn-primary py-3"
+              className="w-full py-3 px-6 rounded-xl bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
-              {loading ? "Creating account..." : "Create Account"}
+              {loading ? (
+                <>
+                  <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                  Creating account...
+                </>
+              ) : (
+                "Create Account"
+              )}
             </button>
           </form>
 

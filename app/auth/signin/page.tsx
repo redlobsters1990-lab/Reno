@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -12,6 +12,25 @@ export default function SignInPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
+
+  // Check for registration success from URL
+  useEffect(() => {
+    // Only run on client side
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("registered") === "true") {
+        const registeredEmail = params.get("email");
+        setSuccessMessage(
+          registeredEmail 
+            ? `Account created successfully! Please sign in with ${registeredEmail}`
+            : "Account created successfully! Please sign in."
+        );
+        // Clear the URL parameters
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
+    }
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,13 +45,23 @@ export default function SignInPage() {
       });
 
       if (result?.error) {
-        setError(result.error);
+        // Better error messages
+        if (result.error.includes("User not found")) {
+          setError("No account found with this email");
+        } else if (result.error.includes("Invalid password")) {
+          setError("Incorrect password");
+        } else if (result.error.includes("Email and password required")) {
+          setError("Please enter both email and password");
+        } else {
+          setError(result.error);
+        }
       } else {
+        // Redirect to dashboard
         router.push("/dashboard");
-        router.refresh();
+        // Don't call refresh immediately, let the redirect happen
       }
     } catch (err) {
-      setError("An unexpected error occurred");
+      setError("An unexpected error occurred. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -41,6 +70,18 @@ export default function SignInPage() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4">
       <div className="w-full max-w-md">
+        {/* Success Message */}
+        {successMessage && (
+          <div className="mb-6 p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30">
+            <div className="flex items-center gap-2">
+              <div className="h-5 w-5 rounded-full bg-emerald-500/20 flex items-center justify-center">
+                <div className="h-2 w-2 rounded-full bg-emerald-400"></div>
+              </div>
+              <span className="text-emerald-400">{successMessage}</span>
+            </div>
+          </div>
+        )}
+        
         <div className="text-center mb-8">
           <Link
             href="/"
@@ -100,9 +141,16 @@ export default function SignInPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full btn-primary py-3"
+              className="w-full py-3 px-6 rounded-xl bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
-              {loading ? "Signing in..." : "Sign In"}
+              {loading ? (
+                <>
+                  <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                  Signing in...
+                </>
+              ) : (
+                "Sign In"
+              )}
             </button>
           </form>
 

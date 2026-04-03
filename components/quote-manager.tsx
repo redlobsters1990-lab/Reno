@@ -1,112 +1,69 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
-import { 
-  Upload, 
-  FileText, 
-  DollarSign, 
-  Calendar,
-  User,
-  CheckCircle,
-  AlertCircle,
-  X,
-  Eye,
-  Download,
-  BarChart3,
-  TrendingUp,
-  TrendingDown,
-  Filter,
-  SortAsc,
-  SortDesc,
-  Search,
-  Plus,
-  Shield,
-  Clock
-} from "lucide-react";
-import { formatCurrency, formatDate } from "@/lib/utils";
-import { cn } from "@/lib/utils";
-
-interface Quote {
-  id: string;
-  contractorName: string;
-  totalAmount: number | null;
-  status: "pending" | "accepted" | "rejected" | "negotiating";
-  notes: string | null;
-  fileUrl: string | null;
-  createdAt: string;
-  updatedAt: string;
-}
+import { useState, useCallback } from "react";
+import { Upload, FileText, Search, Filter, Download, Trash2, CheckCircle, XCircle, Clock, DollarSign } from "lucide-react";
+import { Quote } from "@/lib/schemas";
+import { formatCurrency } from "@/lib/utils";
 
 interface QuoteManagerProps {
-  quotes: Quote[];
   projectId: string;
-  onUpload?: (file: File, data: Partial<Quote>) => Promise<void>;
-  onDelete?: (quoteId: string) => Promise<void>;
-  onUpdate?: (quoteId: string, data: Partial<Quote>) => Promise<void>;
+  initialQuotes?: Quote[];
+  onQuotesChange?: (quotes: Quote[]) => void;
 }
 
-export function QuoteManager({ quotes, projectId, onUpload, onDelete, onUpdate }: QuoteManagerProps) {
-  const [uploading, setUploading] = useState(false);
-  const [uploadError, setUploadError] = useState("");
-  const [uploadSuccess, setUploadSuccess] = useState(false);
-  const [dragActive, setDragActive] = useState(false);
+export default function QuoteManager({ projectId, initialQuotes = [], onQuotesChange }: QuoteManagerProps) {
+  const [quotes, setQuotes] = useState<Quote[]>(initialQuotes);
   const [searchTerm, setSearchTerm] = useState("");
-  const [sortBy, setSortBy] = useState<"date" | "amount" | "name">("date");
-  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [newQuote, setNewQuote] = useState({
-    contractorName: "",
-    totalAmount: "",
-    notes: "",
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [sortBy, setSortBy] = useState("date-desc");
+  const [dragActive, setDragActive] = useState(false);
+  const [manualEntry, setManualEntry] = useState({
+    contractor: "",
+    amount: "",
+    description: "",
     status: "pending" as const,
   });
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Calculate quote statistics
-  const stats = {
-    total: quotes.length,
-    accepted: quotes.filter(q => q.status === "accepted").length,
-    pending: quotes.filter(q => q.status === "pending").length,
-    negotiating: quotes.filter(q => q.status === "negotiating").length,
-    totalValue: quotes.reduce((sum, q) => sum + (q.totalAmount || 0), 0),
-    averageValue: quotes.length > 0 
-      ? quotes.reduce((sum, q) => sum + (q.totalAmount || 0), 0) / quotes.length 
-      : 0,
-    minValue: quotes.length > 0 
-      ? Math.min(...quotes.map(q => q.totalAmount || Infinity))
-      : 0,
-    maxValue: quotes.length > 0 
-      ? Math.max(...quotes.map(q => q.totalAmount || 0))
-      : 0,
-  };
-
-  // Filter and sort quotes
-  const filteredQuotes = quotes
-    .filter(quote => {
-      if (statusFilter !== "all" && quote.status !== statusFilter) return false;
-      if (searchTerm && !quote.contractorName.toLowerCase().includes(searchTerm.toLowerCase())) return false;
-      return true;
-    })
-    .sort((a, b) => {
-      let aValue: string | number | Date = a.createdAt;
-      let bValue: string | number | Date = b.createdAt;
-      
-      if (sortBy === "amount") {
-        aValue = a.totalAmount || 0;
-        bValue = b.totalAmount || 0;
-      } else if (sortBy === "name") {
-        aValue = a.contractorName.toLowerCase();
-        bValue = b.contractorName.toLowerCase();
-      }
-      
-      if (sortOrder === "asc") {
-        return aValue > bValue ? 1 : -1;
-      } else {
-        return aValue < bValue ? 1 : -1;
-      }
+  // Handle file upload
+  const handleFileUpload = useCallback(async (files: FileList) => {
+    const formData = new FormData();
+    Array.from(files).forEach((file) => {
+      formData.append("files", file);
     });
 
-  const handleDrag = (e: React.DragEvent) => {
+    try {
+      const response = await fetch(`/api/uploads/${projectId}`, {
+        method: "POST",
+        body: formData,
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        // In a real app, you would parse the uploaded files for quote data
+        // For now, we'll create placeholder quotes
+        const newQuotes: Quote[] = Array.from(files).map((file, index) => ({
+          id: `temp-${Date.now()}-${index}`,
+          projectId,
+          contractor: `Contractor ${index + 1}`,
+          amount: Math.floor(Math.random() * 50000) + 10000,
+          description: `Quote from ${file.name}`,
+          status: "pending",
+          fileUrl: data.files?.[index]?.url || "",
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        }));
+
+        const updatedQuotes = [...quotes, ...newQuotes];
+        setQuotes(updatedQuotes);
+        onQuotesChange?.(updatedQuotes);
+      }
+    } catch (error) {
+      console.error("Upload failed:", error);
+    }
+  }, [projectId, quotes, onQuotesChange]);
+
+  // Handle drag and drop
+  const handleDrag = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
     if (e.type === "dragenter" || e.type === "dragover") {
@@ -114,289 +71,211 @@ export function QuoteManager({ quotes, projectId, onUpload, onDelete, onUpdate }
     } else if (e.type === "dragleave") {
       setDragActive(false);
     }
-  };
+  }, []);
 
-  const handleDrop = async (e: React.DragEvent) => {
+  const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
     setDragActive(false);
     
-    const files = Array.from(e.dataTransfer.files);
-    if (files.length > 0) {
-      await handleFileUpload(files[0]);
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      handleFileUpload(e.dataTransfer.files);
     }
-  };
+  }, [handleFileUpload]);
 
-  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (files && files.length > 0) {
-      await handleFileUpload(files[0]);
-    }
-  };
-
-  const handleFileUpload = async (file: File) => {
-    if (!onUpload) return;
-    
-    setUploading(true);
-    setUploadError("");
-    setUploadSuccess(false);
-    
-    try {
-      await onUpload(file, {
-        contractorName: newQuote.contractorName || "Unknown Contractor",
-        totalAmount: newQuote.totalAmount ? parseFloat(newQuote.totalAmount) : null,
-        notes: newQuote.notes || null,
-        status: newQuote.status,
-      });
-      
-      setUploadSuccess(true);
-      setNewQuote({
-        contractorName: "",
-        totalAmount: "",
-        notes: "",
-        status: "pending",
-      });
-      
-      // Reset file input
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
-      }
-      
-      // Clear success message after 3 seconds
-      setTimeout(() => setUploadSuccess(false), 3000);
-    } catch (err) {
-      setUploadError(err instanceof Error ? err.message : "Failed to upload quote");
-    } finally {
-      setUploading(false);
-    }
-  };
-
-  const handleManualSubmit = async (e: React.FormEvent) => {
+  // Handle manual entry
+  const handleManualSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!manualEntry.contractor || !manualEntry.amount) return;
+
+    const newQuote: Quote = {
+      id: `manual-${Date.now()}`,
+      projectId,
+      contractor: manualEntry.contractor,
+      amount: parseFloat(manualEntry.amount),
+      description: manualEntry.description,
+      status: manualEntry.status,
+      fileUrl: "",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    const updatedQuotes = [...quotes, newQuote];
+    setQuotes(updatedQuotes);
+    onQuotesChange?.(updatedQuotes);
     
-    if (!newQuote.contractorName.trim()) {
-      setUploadError("Contractor name is required");
-      return;
-    }
-    
-    if (onUpload) {
-      setUploading(true);
-      setUploadError("");
-      
-      try {
-        await onUpload(new File([], "manual-quote.txt"), {
-          contractorName: newQuote.contractorName,
-          totalAmount: newQuote.totalAmount ? parseFloat(newQuote.totalAmount) : null,
-          notes: newQuote.notes || null,
-          status: newQuote.status,
-        });
-        
-        setUploadSuccess(true);
-        setNewQuote({
-          contractorName: "",
-          totalAmount: "",
-          notes: "",
-          status: "pending",
-        });
-        
-        setTimeout(() => setUploadSuccess(false), 3000);
-      } catch (err) {
-        setUploadError(err instanceof Error ? err.message : "Failed to add quote");
-      } finally {
-        setUploading(false);
+    // Reset form
+    setManualEntry({
+      contractor: "",
+      amount: "",
+      description: "",
+      status: "pending",
+    });
+  };
+
+  // Update quote status
+  const updateQuoteStatus = (quoteId: string, status: Quote["status"]) => {
+    const updatedQuotes = quotes.map(quote =>
+      quote.id === quoteId ? { ...quote, status, updatedAt: new Date() } : quote
+    );
+    setQuotes(updatedQuotes);
+    onQuotesChange?.(updatedQuotes);
+  };
+
+  // Delete quote
+  const deleteQuote = (quoteId: string) => {
+    const updatedQuotes = quotes.filter(quote => quote.id !== quoteId);
+    setQuotes(updatedQuotes);
+    onQuotesChange?.(updatedQuotes);
+  };
+
+  // Filter and sort quotes
+  const filteredQuotes = quotes
+    .filter(quote => {
+      const matchesSearch = 
+        quote.contractor.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        quote.description.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesStatus = statusFilter === "all" || quote.status === statusFilter;
+      return matchesSearch && matchesStatus;
+    })
+    .sort((a, b) => {
+      switch (sortBy) {
+        case "date-desc":
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        case "date-asc":
+          return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+        case "amount-desc":
+          return b.amount - a.amount;
+        case "amount-asc":
+          return a.amount - b.amount;
+        default:
+          return 0;
       }
-    }
+    });
+
+  // Calculate stats
+  const stats = {
+    total: quotes.length,
+    pending: quotes.filter(q => q.status === "pending").length,
+    accepted: quotes.filter(q => q.status === "accepted").length,
+    negotiating: quotes.filter(q => q.status === "negotiating").length,
+    rejected: quotes.filter(q => q.status === "rejected").length,
+    totalValue: quotes.reduce((sum, q) => sum + q.amount, 0),
+    averageValue: quotes.length > 0 ? quotes.reduce((sum, q) => sum + q.amount, 0) / quotes.length : 0,
   };
 
-  const getStatusColor = (status: string) => {
+  // Get status icon and color
+  const getStatusInfo = (status: Quote["status"]) => {
     switch (status) {
-      case "accepted": return "bg-emerald-500/10 text-emerald-400 border-emerald-500/30";
-      case "pending": return "bg-amber-500/10 text-amber-400 border-amber-500/30";
-      case "negotiating": return "bg-blue-500/10 text-blue-400 border-blue-500/30";
-      case "rejected": return "bg-red-500/10 text-red-400 border-red-500/30";
-      default: return "bg-slate-500/10 text-slate-400 border-slate-500/30";
-    }
-  };
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case "accepted": return <CheckCircle className="h-4 w-4" />;
-      case "pending": return <Clock className="h-4 w-4" />;
-      case "negotiating": return <TrendingUp className="h-4 w-4" />;
-      case "rejected": return <X className="h-4 w-4" />;
-      default: return <FileText className="h-4 w-4" />;
+      case "accepted":
+        return { icon: CheckCircle, color: "text-emerald-400", bg: "bg-emerald-400/10" };
+      case "rejected":
+        return { icon: XCircle, color: "text-rose-400", bg: "bg-rose-400/10" };
+      case "negotiating":
+        return { icon: Clock, color: "text-amber-400", bg: "bg-amber-400/10" };
+      default:
+        return { icon: Clock, color: "text-slate-400", bg: "bg-slate-400/10" };
     }
   };
 
   if (quotes.length === 0) {
     return (
-      <div className="space-y-6">
-        {/* Upload Area */}
-        <div className="card p-8">
-          <div className="text-center mb-8">
-            <div className="h-20 w-20 rounded-full bg-gradient-to-br from-violet-500/10 to-purple-500/10 border border-violet-400/20 flex items-center justify-center mx-auto mb-4 animate-float">
-              <Upload className="h-10 w-10 text-violet-300" />
+      <div className="text-center py-12">
+        <div className="mx-auto w-16 h-16 rounded-full bg-gradient-to-br from-violet-500/10 to-purple-500/10 border border-violet-400/20 flex items-center justify-center mb-4">
+          <FileText className="h-8 w-8 text-violet-300" />
+        </div>
+        <h3 className="text-xl font-semibold mb-2">No quotes yet</h3>
+        <p className="text-slate-400 mb-6">Upload contractor quotes or add them manually to get started.</p>
+        
+        {/* Upload area */}
+        <div
+          className={`max-w-md mx-auto p-8 rounded-2xl border-2 border-dashed transition-colors ${
+            dragActive 
+              ? "border-violet-500 bg-violet-500/5" 
+              : "border-white/10 hover:border-violet-400/30"
+          }`}
+          onDragEnter={handleDrag}
+          onDragLeave={handleDrag}
+          onDragOver={handleDrag}
+          onDrop={handleDrop}
+        >
+          <div className="text-center">
+            <div className="mx-auto w-12 h-12 rounded-full bg-violet-500/10 flex items-center justify-center mb-4">
+              <Upload className="h-6 w-6 text-violet-300" />
             </div>
-            <h3 className="text-2xl font-semibold mb-3">No Quotes Yet</h3>
-            <p className="text-slate-300 mb-6 max-w-md mx-auto leading-relaxed">
-              Upload contractor quotes to compare prices, track negotiations, and make informed decisions.
+            <p className="text-sm text-slate-300 mb-2">
+              <span className="text-violet-300 font-medium">Drag & drop</span> quote files here
             </p>
-          </div>
-
-          {/* Upload Form */}
-          <div className="max-w-2xl mx-auto">
-            <div
-              className={cn(
-                "border-2 border-dashed rounded-2xl p-8 text-center transition-all",
-                dragActive 
-                  ? "border-violet-500 bg-violet-500/5" 
-                  : "border-white/10 hover:border-violet-400/30 hover:bg-white/5"
-              )}
-              onDragEnter={handleDrag}
-              onDragLeave={handleDrag}
-              onDragOver={handleDrag}
-              onDrop={handleDrop}
-            >
-              <Upload className="h-12 w-12 text-violet-300 mx-auto mb-4" />
-              <h4 className="text-lg font-semibold mb-2">Upload Quote</h4>
-              <p className="text-slate-400 mb-6">
-                Drag & drop a PDF, image, or document, or click to browse
-              </p>
-              
+            <p className="text-sm text-slate-400 mb-4">or</p>
+            <label className="btn-primary cursor-pointer inline-block">
+              Browse files
               <input
-                ref={fileInputRef}
                 type="file"
-                onChange={handleFileSelect}
                 className="hidden"
-                accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.txt"
+                multiple
+                accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png"
+                onChange={(e) => e.target.files && handleFileUpload(e.target.files)}
               />
-              
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                className="px-6 py-3 rounded-xl bg-violet-500 hover:bg-violet-400 text-white font-medium transition"
-                disabled={uploading}
-              >
-                {uploading ? "Uploading..." : "Browse Files"}
-              </button>
-              
-              <div className="mt-4 text-sm text-slate-500">
-                Supports PDF, JPG, PNG, DOC (Max 10MB)
-              </div>
-            </div>
-
-            {/* Manual Entry */}
-            <div className="mt-8">
-              <div className="flex items-center gap-2 mb-4">
-                <div className="h-6 w-px bg-white/20"></div>
-                <div className="text-sm text-slate-400">Or enter manually</div>
-                <div className="h-6 w-px bg-white/20"></div>
-              </div>
-              
-              <form onSubmit={handleManualSubmit} className="space-y-4">
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium mb-2">
-                      Contractor Name *
-                    </label>
-                    <input
-                      type="text"
-                      value={newQuote.contractorName}
-                      onChange={(e) => setNewQuote(prev => ({ ...prev, contractorName: e.target.value }))}
-                      className="input"
-                      placeholder="e.g., ABC Renovation Pte Ltd"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-2">
-                      Total Amount (Optional)
-                    </label>
-                    <div className="relative">
-                      <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400">
-                        SGD
-                      </span>
-                      <input
-                        type="number"
-                        value={newQuote.totalAmount}
-                        onChange={(e) => setNewQuote(prev => ({ ...prev, totalAmount: e.target.value }))}
-                        className="input pl-12"
-                        placeholder="e.g., 50000"
-                        min="0"
-                        step="1000"
-                      />
-                    </div>
-                  </div>
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium mb-2">
-                    Notes (Optional)
-                  </label>
-                  <textarea
-                    value={newQuote.notes}
-                    onChange={(e) => setNewQuote(prev => ({ ...prev, notes: e.target.value }))}
-                    className="textarea"
-                    placeholder="Any notes about this quote..."
-                    rows={3}
-                  />
-                </div>
-                
-                <div className="flex items-center justify-between">
-                  <div>
-                    <label className="block text-sm font-medium mb-2">
-                      Status
-                    </label>
-                    <select
-                      value={newQuote.status}
-                      onChange={(e) => setNewQuote(prev => ({ ...prev, status: e.target.value as any }))}
-                      className="input"
-                    >
-                      <option value="pending">Pending Review</option>
-                      <option value="negotiating">Negotiating</option>
-                      <option value="accepted">Accepted</option>
-                      <option value="rejected">Rejected</option>
-                    </select>
-                  </div>
-                  
-                  <button
-                    type="submit"
-                    disabled={uploading || !newQuote.contractorName.trim()}
-                    className="px-6 py-3 rounded-xl bg-violet-500 hover:bg-violet-400 text-white font-medium transition disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {uploading ? "Adding..." : "Add Quote"}
-                  </button>
-                </div>
-              </form>
-            </div>
+            </label>
+            <p className="text-xs text-slate-500 mt-4">PDF, Word, Excel, Images up to 10MB each</p>
           </div>
         </div>
 
-        {/* Error/Success Messages */}
-        {uploadError && (
-          <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/30">
-            <div className="flex items-start gap-3">
-              <AlertCircle className="h-5 w-5 text-red-400 mt-0.5" />
-              <div className="flex-1">
-                <h3 className="font-medium text-red-300 mb-1">Upload Failed</h3>
-                <p className="text-sm text-red-400/80">{uploadError}</p>
-              </div>
+        {/* Manual entry form */}
+        <div className="max-w-md mx-auto mt-8 p-6 rounded-xl border border-white/10">
+          <h4 className="font-medium mb-4">Or add quote manually</h4>
+          <form onSubmit={handleManualSubmit} className="space-y-4">
+            <div>
+              <label className="block text-sm text-slate-400 mb-1">Contractor Name</label>
+              <input
+                type="text"
+                value={manualEntry.contractor}
+                onChange={(e) => setManualEntry({ ...manualEntry, contractor: e.target.value })}
+                className="input"
+                placeholder="e.g., ABC Construction"
+                required
+              />
             </div>
-          </div>
-        )}
-
-        {uploadSuccess && (
-          <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30">
-            <div className="flex items-start gap-3">
-              <CheckCircle className="h-5 w-5 text-emerald-400 mt-0.5" />
-              <div className="flex-1">
-                <h3 className="font-medium text-emerald-300 mb-1">Quote Added Successfully!</h3>
-                <p className="text-sm text-emerald-400/80">
-                  Your quote has been added and is ready for comparison.
-                </p>
-              </div>
+            <div>
+              <label className="block text-sm text-slate-400 mb-1">Amount ($)</label>
+              <input
+                type="number"
+                value={manualEntry.amount}
+                onChange={(e) => setManualEntry({ ...manualEntry, amount: e.target.value })}
+                className="input"
+                placeholder="e.g., 25000"
+                required
+                min="0"
+                step="0.01"
+              />
             </div>
-          </div>
-        )}
+            <div>
+              <label className="block text-sm text-slate-400 mb-1">Description</label>
+              <textarea
+                value={manualEntry.description}
+                onChange={(e) => setManualEntry({ ...manualEntry, description: e.target.value })}
+                className="input min-h-[80px]"
+                placeholder="Brief description of the quote..."
+              />
+            </div>
+            <div>
+              <label className="block text-sm text-slate-400 mb-1">Status</label>
+              <select
+                value={manualEntry.status}
+                onChange={(e) => setManualEntry({ ...manualEntry, status: e.target.value as Quote["status"] })}
+                className="input"
+              >
+                <option value="pending">Pending</option>
+                <option value="negotiating">Negotiating</option>
+                <option value="accepted">Accepted</option>
+                <option value="rejected">Rejected</option>
+              </select>
+            </div>
+            <button type="submit" className="w-full btn-primary">
+              Add Quote
+            </button>
+          </form>
+        </div>
       </div>
     );
   }
@@ -456,4 +335,182 @@ export function QuoteManager({ quotes, projectId, onUpload, onDelete, onUpdate }
           
           <select
             value={sortBy}
-            onChange={(e) => setSort
+            onChange={(e) => setSortBy(e.target.value)}
+            className="input text-sm py-2"
+          >
+            <option value="date-desc">Newest First</option>
+            <option value="date-asc">Oldest First</option>
+            <option value="amount-desc">Highest Amount</option>
+            <option value="amount-asc">Lowest Amount</option>
+          </select>
+          
+          <button
+            onClick={() => {
+              const input = document.createElement('input');
+              input.type = 'file';
+              input.multiple = true;
+              input.accept = '.pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png';
+              input.onchange = (e) => {
+                const files = (e.target as HTMLInputElement).files;
+                if (files) handleFileUpload(files);
+              };
+              input.click();
+            }}
+            className="btn-secondary flex items-center gap-2"
+          >
+            <Upload className="h-4 w-4" />
+            Upload
+          </button>
+        </div>
+      </div>
+
+      {/* Quotes Table */}
+      <div className="overflow-x-auto rounded-xl border border-white/10">
+        <table className="w-full">
+          <thead>
+            <tr className="border-b border-white/10">
+              <th className="text-left p-4 text-sm font-medium text-slate-400">Contractor</th>
+              <th className="text-left p-4 text-sm font-medium text-slate-400">Amount</th>
+              <th className="text-left p-4 text-sm font-medium text-slate-400">Description</th>
+              <th className="text-left p-4 text-sm font-medium text-slate-400">Status</th>
+              <th className="text-left p-4 text-sm font-medium text-slate-400">Date</th>
+              <th className="text-left p-4 text-sm font-medium text-slate-400">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filteredQuotes.map((quote) => {
+              const StatusIcon = getStatusInfo(quote.status).icon;
+              const statusColor = getStatusInfo(quote.status).color;
+              const statusBg = getStatusInfo(quote.status).bg;
+              
+              return (
+                <tr key={quote.id} className="border-b border-white/5 hover:bg-white/5">
+                  <td className="p-4">
+                    <div className="font-medium">{quote.contractor}</div>
+                    {quote.fileUrl && (
+                      <a
+                        href={quote.fileUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs text-violet-400 hover:text-violet-300 flex items-center gap-1 mt-1"
+                      >
+                        <FileText className="h-3 w-3" />
+                        View document
+                      </a>
+                    )}
+                  </td>
+                  <td className="p-4">
+                    <div className="font-bold">{formatCurrency(quote.amount)}</div>
+                  </td>
+                  <td className="p-4">
+                    <div className="text-sm text-slate-300">{quote.description}</div>
+                  </td>
+                  <td className="p-4">
+                    <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium ${statusBg}`}>
+                      <StatusIcon className={`h-3 w-3 ${statusColor}`} />
+                      <span className={statusColor}>
+                        {quote.status.charAt(0).toUpperCase() + quote.status.slice(1)}
+                      </span>
+                    </div>
+                  </td>
+                  <td className="p-4">
+                    <div className="text-sm text-slate-400">
+                      {new Date(quote.createdAt).toLocaleDateString()}
+                    </div>
+                  </td>
+                  <td className="p-4">
+                    <div className="flex items-center gap-2">
+                      <select
+                        value={quote.status}
+                        onChange={(e) => updateQuoteStatus(quote.id, e.target.value as Quote["status"])}
+                        className="text-xs bg-transparent border border-white/10 rounded px-2 py-1"
+                      >
+                        <option value="pending">Pending</option>
+                        <option value="negotiating">Negotiating</option>
+                        <option value="accepted">Accepted</option>
+                        <option value="rejected">Rejected</option>
+                      </select>
+                      <button
+                        onClick={() => deleteQuote(quote.id)}
+                        className="p-1.5 rounded hover:bg-rose-500/10 text-rose-400 hover:text-rose-300"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Empty state for filtered results */}
+      {filteredQuotes.length === 0 && (
+        <div className="text-center py-12">
+          <Filter className="h-12 w-12 text-slate-600 mx-auto mb-4" />
+          <h3 className="text-lg font-medium mb-2">No matching quotes</h3>
+          <p className="text-slate-400">Try adjusting your search or filters</p>
+        </div>
+      )}
+
+      {/* Manual entry form */}
+      <div className="p-6 rounded-xl border border-white/10">
+        <h4 className="font-medium mb-4">Add New Quote</h4>
+        <form onSubmit={handleManualSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm text-slate-400 mb-1">Contractor Name</label>
+            <input
+              type="text"
+              value={manualEntry.contractor}
+              onChange={(e) => setManualEntry({ ...manualEntry, contractor: e.target.value })}
+              className="input"
+              placeholder="e.g., ABC Construction"
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-sm text-slate-400 mb-1">Amount ($)</label>
+            <input
+              type="number"
+              value={manualEntry.amount}
+              onChange={(e) => setManualEntry({ ...manualEntry, amount: e.target.value })}
+              className="input"
+              placeholder="e.g., 25000"
+              required
+              min="0"
+              step="0.01"
+            />
+          </div>
+          <div className="md:col-span-2">
+            <label className="block text-sm text-slate-400 mb-1">Description</label>
+            <textarea
+              value={manualEntry.description}
+              onChange={(e) => setManualEntry({ ...manualEntry, description: e.target.value })}
+              className="input min-h-[80px]"
+              placeholder="Brief description of the quote..."
+            />
+          </div>
+          <div>
+            <label className="block text-sm text-slate-400 mb-1">Status</label>
+            <select
+              value={manualEntry.status}
+              onChange={(e) => setManualEntry({ ...manualEntry, status: e.target.value as Quote["status"] })}
+              className="input"
+            >
+              <option value="pending">Pending</option>
+              <option value="negotiating">Negotiating</option>
+              <option value="accepted">Accepted</option>
+              <option value="rejected">Rejected</option>
+            </select>
+          </div>
+          <div className="flex items-end">
+            <button type="submit" className="w-full btn-primary">
+              Add Quote
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}

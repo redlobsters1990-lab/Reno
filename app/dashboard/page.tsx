@@ -177,7 +177,7 @@ export default function DashboardPage() {
     );
   }
 
-  const { signOut } = useSession();
+  const { data: session, signOut } = useSession();
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-900 to-slate-950 p-6">
@@ -423,6 +423,15 @@ export default function DashboardPage() {
             </div>
           </div>
         </div>
+        
+        {/* Debug session info (development only) */}
+        {process.env.NODE_ENV === 'development' && session && (
+          <div className="fixed bottom-4 right-4 p-3 rounded-lg bg-slate-900/80 border border-slate-700 text-xs text-slate-400 z-50 backdrop-blur-sm">
+            <div className="font-medium mb-1">Session Debug</div>
+            <div>User: {session.user?.email}</div>
+            <div>ID: {session.user?.id?.substring(0, 8)}...</div>
+          </div>
+        )}
       </div>
     </div>
   );

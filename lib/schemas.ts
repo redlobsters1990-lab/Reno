@@ -2,14 +2,38 @@ import { z } from "zod";
 import { propertyTypes, stylePreferences } from "@/lib/constants";
 
 export const signUpSchema = z.object({
-  name: z.string().min(2).max(80),
-  email: z.string().email(),
-  password: z.string().min(8).max(100),
+  name: z.string()
+    .min(2, "Name must be at least 2 characters")
+    .max(80, "Name must be less than 80 characters")
+    .regex(/^[a-zA-Z\s\-'.]+$/, "Name contains invalid characters"),
+  email: z.string()
+    .email("Please enter a valid email address")
+    .transform((val) => val.toLowerCase().trim())
+    .refine((val) => {
+      // Reject disposable email domains
+      const disposableDomains = [
+        'tempmail.com', 'mailinator.com', 'guerrillamail.com',
+        '10minutemail.com', 'throwawaymail.com', 'yopmail.com'
+      ];
+      const domain = val.split('@')[1];
+      return !disposableDomains.includes(domain);
+    }, "Disposable email addresses are not allowed"),
+  password: z.string()
+    .min(8, "Password must be at least 8 characters")
+    .max(100, "Password must be less than 100 characters")
+    .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
+    .regex(/[a-z]/, "Password must contain at least one lowercase letter")
+    .regex(/[0-9]/, "Password must contain at least one number")
+    .regex(/[^A-Za-z0-9]/, "Password must contain at least one special character"),
 });
 
 export const signInSchema = z.object({
-  email: z.string().email(),
-  password: z.string().min(8).max(100),
+  email: z.string()
+    .email("Please enter a valid email address")
+    .transform((val) => val.toLowerCase().trim()),
+  password: z.string()
+    .min(1, "Password is required")
+    .max(100, "Password must be less than 100 characters"),
 });
 
 export const createProjectSchema = z.object({

@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Auth Debug</title>
+    <style>
+        body { font-family: monospace; padding: 20px; background: #0f172a; color: #e2e8f0; }
+        .test { margin: 20px 0; padding: 15px; border: 1px solid #334155; border-radius: 8px; }
+        .success { color: #4ade80; }
+        .error { color: #f87171; }
+        .loading { color: #fbbf24; }
+        button { background: #7c3aed; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; }
+        button:hover { background: #6d28d9; }
+        pre { background: #1e293b; padding: 10px; border-radius: 6px; overflow: auto; }
+    </style>
+</head>
+<body>
+    <h1>🔧 Authentication Debug</h1>
+    
+    <div class="test">
+        <h2>Test 1: Direct API Signup</h2>
+        <button onclick="testSignup()">Test Signup API</button>
+        <div id="signup-result"></div>
+    </div>
+    
+    <div class="test">
+        <h2>Test 2: Check Existing Users</h2>
+        <button onclick="checkUsers()">Check Database</button>
+        <div id="users-result"></div>
+    </div>
+    
+    <div class="test">
+        <h2>Test 3: Test Login API</h2>
+        <button onclick="testLogin()">Test Login</button>
+        <div id="login-result"></div>
+    </div>
+    
+    <div class="test">
+        <h2>Test 4: Check Session</h2>
+        <button onclick="checkSession()">Check Session</button>
+        <div id="session-result"></div>
+    </div>
+    
+    <script>
+        async function testSignup() {
+            const result = document.getElementById('signup-result');
+            result.innerHTML = '<span class="loading">Testing...</span>';
+            
+            try {
+                const response = await fetch('/api/auth/signup', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        name: 'Debug User',
+                        email: 'debug' + Date.now() + '@example.com',
+                        password: 'password123'
+                    })
+                });
+                
+                const data = await response.json();
+                result.innerHTML = `
+                    <div class="${response.ok ? 'success' : 'error'}">
+                        <strong>Status:</strong> ${response.status}<br>
+                        <strong>Response:</strong>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    </div>
+                `;
+            } catch (error) {
+                result.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+            }
+        }
+        
+        async function checkUsers() {
+            const result = document.getElementById('users-result');
+            result.innerHTML = '<span class="loading">Checking...</span>';
+            
+            try {
+                // This would need a proper API endpoint
+                const response = await fetch('/api/debug/users');
+                if (response.ok) {
+                    const data = await response.json();
+                    result.innerHTML = `
+                        <div class="success">
+                            <strong>Users in database:</strong> ${data.count || 'N/A'}<br>
+                            <pre>${JSON.stringify(data.users || [], null, 2)}</pre>
+                        </div>
+                    `;
+                } else {
+                    result.innerHTML = `<div class="error">No debug endpoint available</div>`;
+                }
+            } catch (error) {
+                result.innerHTML = `<div class="error">Cannot check users: ${error.message}</div>`;
+            }
+        }
+        
+        async function testLogin() {
+            const result = document.getElementById('login-result');
+            result.innerHTML = '<span class="loading">Testing login...</span>';
+            
+            try {
+                // Try to login with test credentials
+                const response = await fetch('/api/auth/[...nextauth]', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: 'test@example.com',
+                        password: 'password123'
+                    })
+                });
+                
+                result.innerHTML = `
+                    <div class="${response.ok ? 'success' : 'error'}">
+                        <strong>Status:</strong> ${response.status}<br>
+                        <strong>Headers:</strong>
+                        <pre>${JSON.stringify([...response.headers.entries()], null, 2)}</pre>
+                    </div>
+                `;
+            } catch (error) {
+                result.innerHTML = `<div class="error">Login test failed: ${error.message}</div>`;
+            }
+        }
+        
+        async function checkSession() {
+            const result = document.getElementById('session-result');
+            result.innerHTML = '<span class="loading">Checking session...</span>';
+            
+            try {
+                const response = await fetch('/api/auth/session');
+                const data = await response.json();
+                
+                result.innerHTML = `
+                    <div class="${data.user ? 'success' : 'error'}">
+                        <strong>Session Status:</strong> ${response.status}<br>
+                        <strong>Session Data:</strong>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    </div>
+                `;
+            } catch (error) {
+                result.innerHTML = `<div class="error">Session check failed: ${error.message}</div>`;
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Quick Auth Test</title>
+    <style>
+        body { font-family: monospace; padding: 20px; }
+        .test { margin: 20px 0; padding: 15px; border: 1px solid #ccc; }
+        button { margin: 5px; padding: 10px; }
+        .success { color: green; }
+        .error { color: red; }
+    </style>
+</head>
+<body>
+    <h1>Quick Authentication Test</h1>
+    
+    <div class="test">
+        <h3>Test 1: Check Server</h3>
+        <button onclick="checkServer()">Check if server is responding</button>
+        <div id="server-result"></div>
+    </div>
+    
+    <div class="test">
+        <h3>Test 2: Test Signup API</h3>
+        <button onclick="testSignup()">Test Signup API</button>
+        <div id="signup-result"></div>
+    </div>
+    
+    <div class="test">
+        <h3>Test 3: Test Login with test@example.com</h3>
+        <button onclick="testLogin()">Test Login</button>
+        <div id="login-result"></div>
+    </div>
+    
+    <script>
+        async function checkServer() {
+            const result = document.getElementById('server-result');
+            result.innerHTML = 'Testing...';
+            
+            try {
+                const response = await fetch('/');
+                result.innerHTML = `<span class="success">✅ Server responding: HTTP ${response.status}</span>`;
+            } catch (error) {
+                result.innerHTML = `<span class="error">❌ Server error: ${error.message}</span>`;
+            }
+        }
+        
+        async function testSignup() {
+            const result = document.getElementById('signup-result');
+            result.innerHTML = 'Testing...';
+            
+            const randomEmail = 'test' + Date.now() + '@example.com';
+            
+            try {
+                const response = await fetch('/api/auth/signup', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        name: 'Test User',
+                        email: randomEmail,
+                        password: 'password123'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    result.innerHTML = `<span class="success">✅ Signup successful! Created: ${data.user?.email}</span>`;
+                } else {
+                    result.innerHTML = `<span class="error">❌ Signup failed: ${data.error || 'Unknown error'}</span>`;
+                }
+            } catch (error) {
+                result.innerHTML = `<span class="error">❌ Request failed: ${error.message}</span>`;
+            }
+        }
+        
+        async function testLogin() {
+            const result = document.getElementById('login-result');
+            result.innerHTML = 'Testing...';
+            
+            try {
+                // This simulates what the signIn function does
+                const response = await fetch('/api/auth/csrf');
+                const csrfData = await response.json();
+                
+                const loginResponse = await fetch('/api/auth/callback/credentials', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: new URLSearchParams({
+                        csrfToken: csrfData.csrfToken,
+                        email: 'test@example.com',
+                        password: 'password123',
+                        callbackUrl: '/dashboard',
+                        json: 'true'
+                    })
+                });
+                
+                const loginData = await loginResponse.json();
+                
+                if (loginResponse.ok) {
+                    result.innerHTML = `<span class="success">✅ Login successful! Redirect URL: ${loginData.url || 'Dashboard'}</span>`;
+                } else {
+                    result.innerHTML = `<span class="error">❌ Login failed: ${JSON.stringify(loginData)}</span>`;
+                }
+            } catch (error) {
+                result.innerHTML = `<span class="error">❌ Login test failed: ${error.message}</span>`;
+            }
+        }
+    </script>
+</body>
+</html>

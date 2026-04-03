@@ -1,28 +1,32 @@
 import { withAuth } from "next-auth/middleware";
-import { NextResponse } from "next/server";
+import { NextResponse, NextRequest } from "next/server";
+import { securityMiddleware } from "./middleware.security";
 
-export default withAuth(
-  function middleware(req) {
-    return NextResponse.next();
-  },
-  {
-    callbacks: {
-      authorized: ({ token }) => !!token,
-    },
-    pages: {
-      signIn: "/auth/signin",
-    },
+export default function middleware(request: NextRequest) {
+  // Apply security middleware to all requests
+  const securityResponse = securityMiddleware(request);
+  if (securityResponse.status !== 200) {
+    return securityResponse;
   }
-);
+  
+  // Apply authentication middleware to protected routes
+  return withAuth(
+    function authMiddleware(req) {
+      return NextResponse.next();
+    },
+    {
+      callbacks: {
+        authorized: ({ token }) => !!token,
+      },
+      pages: {
+        signIn: "/auth/signin",
+      },
+    }
+  )(request);
+}
 
 export const config = {
   matcher: [
-    "/dashboard/:path*",
-    "/api/projects/:path*",
-    "/api/chat/:path*",
-    "/api/estimates/:path*",
-    "/api/quotes/:path*",
-    "/api/uploads/:path*",
-    "/api/files/:path*",
+    "/:path*", // Apply to all routes
   ],
 };
