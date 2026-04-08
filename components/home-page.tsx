@@ -221,81 +221,79 @@ export function HomePage() {
             </div>
             
             {/* Heading - More compelling */}
-            <h1 className="text-display font-bold mb-8 leading-tight tracking-tight">
-              <span className="block">Transform Your Home with</span>
-              <span className="block text-transparent bg-clip-text bg-gradient-to-r from-primary-300 via-primary-400 to-secondary-400 animate-gradient mt-4 md:mt-6 text-6xl md:text-7xl lg:text-8xl">
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-8 leading-tight text-center">
+              <span className="block text-white">Transform Your Home with</span>
+              <span className="block text-transparent bg-clip-text bg-gradient-to-r from-primary-300 via-primary-400 to-secondary-400 mt-2">
                 AI-Powered Precision
               </span>
             </h1>
             
             {/* Description - More benefit-focused */}
-            <p className="text-h2 text-text-primary mb-10 max-w-3xl mx-auto font-normal leading-relaxed md:leading-loose">
+            <p className="text-lg md:text-xl text-text-primary mb-10 max-w-3xl mx-auto font-normal leading-relaxed text-center">
               Stop guessing, start building. Get <span className="font-semibold text-primary-300">accurate cost estimates</span>, 
-              <span className="font-semibold text-secondary-300"> personalized guidance</span>, and 
-              <span className="font-semibold text-success-300"> stress-free planning</span> for your renovation.
+              <span className="font-semibold text-secondary-300">personalized guidance</span>, and 
+              <span className="font-semibold text-success-300">stress-free planning</span> for your renovation.
             </p>
             
             {/* Trust indicators */}
-            <div className="flex flex-wrap items-center justify-center gap-6 mb-12 opacity-90">
+            <div className="flex flex-wrap items-center justify-center gap-4 md:gap-6 mb-12">
               <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/5 border border-white/10">
-                <Shield className="h-4 w-4 text-success-400" />
-                <span className="text-small font-medium">Secure & Private</span>
+                <Shield className="h-5 w-5 text-success-400" />
+                <span className="text-sm font-medium text-white">Secure & Private</span>
               </div>
               <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/5 border border-white/10">
-                <CheckCircle className="h-4 w-4 text-success-400" />
-                <span className="text-small font-medium">No Credit Card Required</span>
+                <CheckCircle className="h-5 w-5 text-success-400" />
+                <span className="text-sm font-medium text-white">No Credit Card Required</span>
               </div>
               <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/5 border border-white/10">
-                <Clock className="h-4 w-4 text-info-400" />
-                <span className="text-small font-medium">Setup in 2 Minutes</span>
+                <Clock className="h-5 w-5 text-info-400" />
+                <span className="text-sm font-medium text-white">Setup in 2 Minutes</span>
               </div>
             </div>
             
             {/* CTA Buttons - Enhanced */}
-            <div className="flex flex-col sm:flex-row gap-6 justify-center items-center">
+            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
               <Link
                 href={status === "authenticated" ? "/dashboard" : "/auth/signup"}
-                className="btn-xl btn-primary group relative overflow-hidden shadow-2xl hover:shadow-3xl"
+                className="btn-primary px-8 py-4 text-lg font-semibold rounded-xl bg-gradient-to-r from-primary-600 to-secondary-600 text-white hover:from-primary-500 hover:to-secondary-500 transition-all shadow-lg hover:shadow-xl"
               >
-                <span className="relative z-10 flex items-center">
+                <span className="flex items-center gap-2">
                   Start Your Free Project
-                  <ArrowRight className="h-6 w-6 ml-3 group-hover:translate-x-2 transition-transform duration-300" />
+                  <ArrowRight className="h-5 w-5" />
                 </span>
-                <div className="absolute inset-0 bg-gradient-to-r from-primary-600 to-secondary-600 transform -translate-x-full group-hover:translate-x-0 transition-transform duration-500" />
               </Link>
               
-              <div className="flex flex-col items-center gap-2">
-                <Link
-                  href="#features"
-                  className="btn-lg btn-secondary"
-                >
-                  <span className="flex items-center gap-2">
-                    <Sparkles className="h-5 w-5" />
-                    See How It Works
-                  </span>
-                </Link>
-                <span className="text-caption text-text-tertiary">
-                  No commitment • 100% free to start
+              <Link
+                href="#features"
+                className="btn-secondary px-8 py-4 text-lg font-semibold rounded-xl border-2 border-white/20 text-white hover:bg-white/10 transition-all"
+              >
+                <span className="flex items-center gap-2">
+                  <Sparkles className="h-5 w-5" />
+                  See How It Works
                 </span>
-              </div>
+              </Link>
             </div>
+            
+            <p className="text-sm text-text-tertiary mt-4 text-center">
+              No commitment • 100% free to start
+            </p>
             
             {/* Stats preview */}
             <div className="mt-16 pt-8 border-t border-white/10">
-              <div className="flex flex-wrap justify-center items-center gap-8 text-text-secondary">
+              <div className="flex flex-row justify-center items-center gap-8 md:gap-12">
                 <div className="text-center">
-                  <div className="text-h1 font-bold text-white">1,000+</div>
-                  <div className="text-small">Projects Planned</div>
+                  <div className="text-3xl md:text-4xl font-bold text-white">1,000+</div>
+                  <div className="text-sm text-text-secondary mt-1">Projects Planned</div>
                 </div>
-                <div className="hidden md:block h-12 w-px bg-white/20" />
+                <div className="h-12 w-px bg-white/20" />
                 <div className="text-center">
-                  <div className="text-h1 font-bold text-white">$2.5M+</div>
-                  <div className="text-small">Costs Estimated</div>
+                  <div className="text-3xl md:text-4xl font-bold text-white">$2.5M+</div>
+                  <div className="text-sm text-text-secondary mt-1">Costs Estimated</div>
                 </div>
-                <div className="hidden md:block h-12 w-px bg-white/20" />
+                <div className="h-12 w-px bg-white/20" />
                 <div className="text-center">
-                  <div className="text-h1 font-bold text-white">94%</div>
-                  <div className="text-small">User Satisfaction</div>
+                  <div className="text-3xl md:text-4xl font-bold text-white">94%</div>
+                  <div className="text-sm text-text-secondary mt-1">User Satisfaction</div>
                 </div>
               </div>
             </div>
@@ -307,40 +305,40 @@ export function HomePage() {
       <section className="section bg-gradient-to-b from-transparent to-white/5">
         <div className="container">
           <div className="max-w-4xl mx-auto text-center">
-            <h2 className="text-h1 font-bold mb-8">
-              Renovation Shouldn't Be
-              <span className="block text-transparent bg-clip-text bg-gradient-to-r from-warning-400 to-error-400 mt-4">
+            <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-8 text-center">
+              <span className="text-white">Renovation Shouldn't Be </span>
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-warning-400 to-error-400">
                 This Stressful
               </span>
             </h2>
             
-            <div className="grid md:grid-cols-3 gap-8 mb-12">
-              <div className="card-hover p-6 text-center h-full">
-                <div className="h-16 w-16 rounded-2xl bg-error-500/10 border border-error-500/20 flex items-center justify-center mx-auto mb-6">
-                  <div className="text-h2 font-bold text-error-400">?</div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+              <div className="p-6 rounded-2xl bg-white/5 border border-white/10 text-center">
+                <div className="h-14 w-14 rounded-xl bg-error-500/10 border border-error-500/20 flex items-center justify-center mx-auto mb-4">
+                  <span className="text-2xl">💸</span>
                 </div>
-                <h3 className="text-h3 font-semibold mb-4">Budget Surprises</h3>
-                <p className="text-body text-text-secondary leading-relaxed">
+                <h3 className="text-xl font-semibold mb-2 text-white">Budget Surprises</h3>
+                <p className="text-text-secondary">
                   Hidden costs and inaccurate estimates derail 68% of renovation projects.
                 </p>
               </div>
               
-              <div className="card-hover p-6 text-center h-full">
-                <div className="h-16 w-16 rounded-2xl bg-warning-500/10 border border-warning-500/20 flex items-center justify-center mx-auto mb-6">
-                  <div className="text-h2 font-bold text-warning-400">⏰</div>
+              <div className="p-6 rounded-2xl bg-white/5 border border-white/10 text-center">
+                <div className="h-14 w-14 rounded-xl bg-warning-500/10 border border-warning-500/20 flex items-center justify-center mx-auto mb-4">
+                  <span className="text-2xl">⏰</span>
                 </div>
-                <h3 className="text-h3 font-semibold mb-4">Time Overruns</h3>
-                <p className="text-body text-text-secondary leading-relaxed">
+                <h3 className="text-xl font-semibold mb-2 text-white">Time Overruns</h3>
+                <p className="text-text-secondary">
                   Projects take 40% longer than planned due to poor coordination.
                 </p>
               </div>
               
-              <div className="card-hover p-6 text-center h-full">
-                <div className="h-16 w-16 rounded-2xl bg-info-500/10 border border-info-500/20 flex items-center justify-center mx-auto mb-6">
-                  <div className="text-h2 font-bold text-info-400">💼</div>
+              <div className="p-6 rounded-2xl bg-white/5 border border-white/10 text-center">
+                <div className="h-14 w-14 rounded-xl bg-info-500/10 border border-info-500/20 flex items-center justify-center mx-auto mb-4">
+                  <span className="text-2xl">😵</span>
                 </div>
-                <h3 className="text-h3 font-semibold mb-4">Decision Fatigue</h3>
-                <p className="text-body text-text-secondary leading-relaxed">
+                <h3 className="text-xl font-semibold mb-2 text-white">Decision Fatigue</h3>
+                <p className="text-text-secondary">
                   Too many choices without expert guidance leads to costly mistakes.
                 </p>
               </div>
