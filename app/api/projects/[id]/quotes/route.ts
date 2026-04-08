@@ -33,7 +33,18 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   try {
-    const projectId = params.id;
+    // Validate projectId
+    const projectId = params?.id;
+    if (!projectId) {
+      console.error("Missing projectId in params:", params);
+      return NextResponse.json(
+        { success: false, error: "Invalid project ID" },
+        { status: 400 }
+      );
+    }
+    
+    console.log("Processing quote upload for project:", projectId);
+    
     const formData = await request.formData();
     
     const file = formData.get("file") as File;
@@ -76,6 +87,15 @@ export async function POST(
     if (file.size > maxSize) {
       return NextResponse.json(
         { success: false, error: "File too large. Maximum size is 10MB" },
+        { status: 400 }
+      );
+    }
+
+    // Validate projectId before using it
+    if (!projectId || typeof projectId !== 'string') {
+      console.error("Invalid projectId:", projectId);
+      return NextResponse.json(
+        { success: false, error: "Invalid project ID format" },
         { status: 400 }
       );
     }
