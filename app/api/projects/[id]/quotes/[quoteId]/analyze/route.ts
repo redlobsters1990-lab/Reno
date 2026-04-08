@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/server/db";
+import { extractQuoteDocument } from "@/server/services/quote-parser";
 
 export async function POST(
   request: NextRequest,
@@ -24,30 +25,43 @@ export async function POST(
       return NextResponse.json({ success: false, error: "Quote does not belong to this project" }, { status: 403 });
     }
 
-    const project = quote.project;
-    const sqft = parsePropertySize(project.notes);
-    const marketRates = getMarketRates(project.propertyType, sqft);
-    const analysis = analyzeQuotePrice(quote.totalAmount, marketRates, project.propertyType);
+    const meta = safeParse(quote.parsingSummary) || {};
+    if (!meta.storagePath || !meta.fileType) {
+      return NextResponse.json({ success: false, error: "Uploaded quote file metadata is missing. Please re-upload the quote." }, { status: 400 });
+    }
 
-    const existingMeta = safeParse(quote.parsingSummary) || {};
+    const parsedDoc = await extractQuoteDocument(meta.storagePath, meta.fileType);
+    const effectiveAmount = parsedDoc.totalAmount || quote.totalAmount;
+    const marketRates = getMarketRates(quote.project.propertyType, parsePropertySize(quote.project.notes));
+    const analysis = analyzeQuoteDocument({
+      quoteAmount: effectiveAmount,
+      marketRates,
+      parsedDoc,
+      propertyType: quote.project.propertyType,
+    });
+
     await prisma.contractorQuote.update({
       where: { id: quoteId },
       data: {
+        totalAmount: effectiveAmount,
+        contractorName: parsedDoc.contractorName || quote.contractorName,
         status: analysis.isFair ? "reviewed" : "parsed",
-        warnings: analysis.redFlags.length ? analysis.redFlags.join(" | ") : null,
-        notes: analysis.recommendations.length ? analysis.recommendations.join(" | ") : quote.notes,
+        warnings: [...parsedDoc.warnings, ...analysis.redFlags].join(" | ") || null,
+        notes: analysis.recommendations.join(" | ") || quote.notes,
         parsingSummary: JSON.stringify({
-          ...existingMeta,
+          ...meta,
+          parsedDocument: parsedDoc,
           analysis,
           assessedAt: new Date().toISOString(),
         }),
       },
     });
 
-    return NextResponse.json({ success: true, analysis });
+    return NextResponse.json({ success: true, analysis, parsedDocument: parsedDoc });
   } catch (error) {
     console.error("Error analyzing quote:", error);
-    return NextResponse.json({ success: false, error: "Failed to analyze quote" }, { status: 500 });
+    const message = error instanceof Error ? error.message : "Failed to analyze quote";
+    return NextResponse.json({ success: false, error: message }, { status: 500 });
   }
 }
 
@@ -70,38 +84,49 @@ function getMarketRates(propertyType: string, sqft: number | null) {
   const size = sqft || 1000;
   return { low: Math.round(rate.low * size), average: Math.round(rate.avg * size), high: Math.round(rate.high * size) };
 }
-function analyzeQuotePrice(quoteAmount: number, marketRates: any, propertyType: string) {
-  const redFlags: string[] = [];
+
+function analyzeQuoteDocument({ quoteAmount, marketRates, parsedDoc, propertyType }: any) {
+  const redFlags: string[] = [...parsedDoc.warnings];
   const recommendations: string[] = [];
+  if (parsedDoc.exclusions.length) redFlags.push(`Found ${parsedDoc.exclusions.length} exclusion(s) in the uploaded quote.`);
+  if (parsedDoc.lineItems.length < 3) redFlags.push("Quote has very few identifiable line items. Scope may be too vague.");
+  if (!parsedDoc.totalAmount) redFlags.push("Could not confidently detect a total amount from the uploaded file.");
+
   let isFair = false;
   let priceAssessment = "";
-  let confidence = 0.85;
+  let confidence = parsedDoc.totalAmount ? 0.88 : 0.72;
+
   if (quoteAmount < marketRates.low * 0.8) {
-    isFair = false;
     priceAssessment = "Significantly below market rate - potential quality concerns";
-    redFlags.push("Quote is 20%+ below market low - may indicate cutting corners or hidden costs");
-    recommendations.push("Request detailed breakdown of materials and labor costs");
+    redFlags.push("Detected total is well below expected market range.");
   } else if (quoteAmount < marketRates.low) {
     isFair = true;
-    priceAssessment = "Below market rate - good value if quality is verified";
-    confidence = 0.75;
-    recommendations.push("Verify what's included vs excluded in the quote");
+    priceAssessment = "Below market rate - verify scope and quality carefully";
+    recommendations.push("Confirm materials, workmanship level, and exclusions listed in the document.");
   } else if (quoteAmount <= marketRates.high) {
     isFair = true;
     priceAssessment = "Within market range - fair pricing";
-    confidence = 0.9;
-    recommendations.push("Fair market price - compare with other quotes for best value");
+    recommendations.push("Compare this quote's line items and exclusions against competing quotes.");
   } else if (quoteAmount <= marketRates.high * 1.2) {
     isFair = true;
     priceAssessment = "Above market rate - premium pricing";
-    confidence = 0.8;
-    recommendations.push("Request justification for premium pricing");
+    recommendations.push("Ask the contractor to justify the premium using itemized scope and material specifications.");
   } else {
-    isFair = false;
     priceAssessment = "Significantly above market rate - requires justification";
-    redFlags.push("Quote is 20%+ above market high - verify all inclusions");
-    recommendations.push("Request detailed cost breakdown");
+    redFlags.push("Detected total is well above expected market range.");
   }
+
+  if (parsedDoc.paymentTerms.length === 0) {
+    redFlags.push("No clear payment schedule detected in the uploaded quote.");
+    recommendations.push("Request a milestone-based payment schedule before signing.");
+  }
+  if (parsedDoc.exclusions.length > 0) {
+    recommendations.push("Review all exclusions carefully to avoid hidden costs later.");
+  }
+  if (!/warranty/i.test(parsedDoc.text)) {
+    recommendations.push("Ask the contractor to add workmanship and material warranty terms.");
+  }
+
   return {
     isFair,
     confidence,

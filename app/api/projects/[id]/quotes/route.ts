@@ -132,6 +132,7 @@ export async function POST(
             fileUrl,
             fileName: file.name,
             fileType: file.type,
+            storagePath: filepath,
             uploadedAt: new Date().toISOString(),
           }),
         },
