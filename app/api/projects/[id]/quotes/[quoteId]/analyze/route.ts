@@ -14,16 +14,9 @@ export async function POST(
       return NextResponse.json({ success: false, error: "Invalid quote or project ID" }, { status: 400 });
     }
 
-    const quote = await prisma.contractorQuote.findUnique({
-      where: { id: quoteId },
-      include: { project: true },
-    });
-    if (!quote) {
-      return NextResponse.json({ success: false, error: "Quote not found" }, { status: 404 });
-    }
-    if (quote.projectId !== projectId) {
-      return NextResponse.json({ success: false, error: "Quote does not belong to this project" }, { status: 403 });
-    }
+    const quote = await prisma.contractorQuote.findUnique({ where: { id: quoteId }, include: { project: true } });
+    if (!quote) return NextResponse.json({ success: false, error: "Quote not found" }, { status: 404 });
+    if (quote.projectId !== projectId) return NextResponse.json({ success: false, error: "Quote does not belong to this project" }, { status: 403 });
 
     const meta = safeParse(quote.parsingSummary) || {};
     if (!meta.storagePath || !meta.fileType) {
@@ -33,12 +26,7 @@ export async function POST(
     const parsedDoc = await extractQuoteDocument(meta.storagePath, meta.fileType);
     const effectiveAmount = parsedDoc.totalAmount || quote.totalAmount;
     const marketRates = getMarketRates(quote.project.propertyType, parsePropertySize(quote.project.notes));
-    const analysis = analyzeQuoteDocument({
-      quoteAmount: effectiveAmount,
-      marketRates,
-      parsedDoc,
-      propertyType: quote.project.propertyType,
-    });
+    const analysis = analyzeQuoteDocument({ quoteAmount: effectiveAmount, marketRates, parsedDoc, propertyType: quote.project.propertyType });
 
     await prisma.contractorQuote.update({
       where: { id: quoteId },
@@ -88,9 +76,17 @@ function getMarketRates(propertyType: string, sqft: number | null) {
 function analyzeQuoteDocument({ quoteAmount, marketRates, parsedDoc, propertyType }: any) {
   const redFlags: string[] = [...parsedDoc.warnings];
   const recommendations: string[] = [];
+  const strengths: string[] = [];
+
+  if (parsedDoc.documentQuality.hasItemization) strengths.push(`Quote includes ${parsedDoc.lineItems.length} identifiable line items.`);
+  if (parsedDoc.documentQuality.hasPaymentTerms) strengths.push("Payment terms were detected in the document.");
+  if (parsedDoc.documentQuality.hasWarranty) strengths.push("Warranty language was found in the quote.");
+
   if (parsedDoc.exclusions.length) redFlags.push(`Found ${parsedDoc.exclusions.length} exclusion(s) in the uploaded quote.`);
   if (parsedDoc.lineItems.length < 3) redFlags.push("Quote has very few identifiable line items. Scope may be too vague.");
   if (!parsedDoc.totalAmount) redFlags.push("Could not confidently detect a total amount from the uploaded file.");
+  if (parsedDoc.paymentTerms.length === 0) redFlags.push("No clear payment schedule detected in the uploaded quote.");
+  if (parsedDoc.warrantyTerms.length === 0) redFlags.push("No clear workmanship/material warranty detected in the quote.");
 
   let isFair = false;
   let priceAssessment = "";
@@ -116,23 +112,26 @@ function analyzeQuoteDocument({ quoteAmount, marketRates, parsedDoc, propertyTyp
     redFlags.push("Detected total is well above expected market range.");
   }
 
-  if (parsedDoc.paymentTerms.length === 0) {
-    redFlags.push("No clear payment schedule detected in the uploaded quote.");
-    recommendations.push("Request a milestone-based payment schedule before signing.");
-  }
-  if (parsedDoc.exclusions.length > 0) {
-    recommendations.push("Review all exclusions carefully to avoid hidden costs later.");
-  }
-  if (!/warranty/i.test(parsedDoc.text)) {
-    recommendations.push("Ask the contractor to add workmanship and material warranty terms.");
-  }
+  if (parsedDoc.exclusions.length > 0) recommendations.push("Review all exclusions carefully to avoid hidden costs later.");
+  if (parsedDoc.paymentTerms.length === 0) recommendations.push("Request a milestone-based payment schedule before signing.");
+  if (!parsedDoc.warrantyTerms.length) recommendations.push("Ask the contractor to add workmanship and material warranty terms.");
+  if (!parsedDoc.materialsMentions.length) recommendations.push("Request more material detail if finishes or brands are not clearly specified.");
 
   return {
     isFair,
     confidence,
     priceAssessment,
+    strengths,
     redFlags,
     recommendations,
+    documentInsights: {
+      lineItemCount: parsedDoc.lineItems.length,
+      exclusionsCount: parsedDoc.exclusions.length,
+      paymentTermsCount: parsedDoc.paymentTerms.length,
+      warrantyTermsCount: parsedDoc.warrantyTerms.length,
+      materialsMentionsCount: parsedDoc.materialsMentions.length,
+      timelineMentionsCount: parsedDoc.timelineMentions.length,
+    },
     marketComparison: {
       yourQuote: quoteAmount,
       marketLow: marketRates.low,

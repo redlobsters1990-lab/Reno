@@ -15,7 +15,17 @@ export interface ParsedQuoteDocument {
   lineItems: ParsedQuoteLineItem[];
   paymentTerms: string[];
   exclusions: string[];
+  warrantyTerms: string[];
+  materialsMentions: string[];
+  timelineMentions: string[];
   warnings: string[];
+  documentQuality: {
+    hasTotalAmount: boolean;
+    hasItemization: boolean;
+    hasPaymentTerms: boolean;
+    hasWarranty: boolean;
+    hasExclusions: boolean;
+  };
 }
 
 export async function extractQuoteDocument(filePath: string, fileType: string): Promise<ParsedQuoteDocument> {
@@ -26,9 +36,7 @@ export async function extractQuoteDocument(filePath: string, fileType: string): 
     const parsed = await pdfParse(buffer);
     text = parsed.text || "";
   } else if (["image/jpeg", "image/jpg", "image/png"].includes(fileType)) {
-    const result = await Tesseract.recognize(filePath, "eng", {
-      logger: () => {},
-    });
+    const result = await Tesseract.recognize(filePath, "eng", { logger: () => {} });
     text = result.data.text || "";
   } else {
     throw new Error("Unsupported quote file type for parsing.");
@@ -39,15 +47,35 @@ export async function extractQuoteDocument(filePath: string, fileType: string): 
   }
 
   const normalized = normalizeText(text);
+  const totalAmount = detectTotalAmount(normalized);
+  const lineItems = detectLineItems(normalized);
+  const paymentTerms = detectPaymentTerms(normalized);
+  const exclusions = detectExclusions(normalized);
+  const warrantyTerms = detectWarrantyTerms(normalized);
+  const materialsMentions = detectMaterials(normalized);
+  const timelineMentions = detectTimeline(normalized);
+
+  const documentQuality = {
+    hasTotalAmount: !!totalAmount,
+    hasItemization: lineItems.length >= 3,
+    hasPaymentTerms: paymentTerms.length > 0,
+    hasWarranty: warrantyTerms.length > 0,
+    hasExclusions: exclusions.length > 0,
+  };
+
   return {
     text,
     contractorName: detectContractorName(normalized),
     companyName: detectCompanyName(normalized),
-    totalAmount: detectTotalAmount(normalized),
-    lineItems: detectLineItems(normalized),
-    paymentTerms: detectPaymentTerms(normalized),
-    exclusions: detectExclusions(normalized),
-    warnings: detectWarnings(normalized),
+    totalAmount,
+    lineItems,
+    paymentTerms,
+    exclusions,
+    warrantyTerms,
+    materialsMentions,
+    timelineMentions,
+    warnings: detectWarnings(normalized, documentQuality),
+    documentQuality,
   };
 }
 
@@ -57,8 +85,7 @@ function normalizeText(text: string): string {
 
 function detectContractorName(text: string): string | undefined {
   const lines = text.split("\n").map(l => l.trim()).filter(Boolean);
-  const candidates = lines.slice(0, 12).filter(line => /[A-Za-z]/.test(line));
-  return candidates.find(line => !/quote|invoice|renovation works|page\s+\d+/i.test(line));
+  return lines.slice(0, 12).find(line => /[A-Za-z]/.test(line) && !/quote|invoice|page\s+\d+/i.test(line));
 }
 
 function detectCompanyName(text: string): string | undefined {
@@ -68,8 +95,8 @@ function detectCompanyName(text: string): string | undefined {
 
 function detectTotalAmount(text: string): number | undefined {
   const patterns = [
-    /total(?:\s+amount)?[^\d$S]*([$S]?\s?[\d,]+(?:\.\d{2})?)/i,
     /grand\s+total[^\d$S]*([$S]?\s?[\d,]+(?:\.\d{2})?)/i,
+    /total(?:\s+amount)?[^\d$S]*([$S]?\s?[\d,]+(?:\.\d{2})?)/i,
     /net\s+total[^\d$S]*([$S]?\s?[\d,]+(?:\.\d{2})?)/i,
   ];
   for (const p of patterns) {
@@ -89,34 +116,35 @@ function detectLineItems(text: string): ParsedQuoteLineItem[] {
     if (/^(item|description|qty|quantity|unit|subtotal|total|grand total)/i.test(line)) continue;
     const moneyMatch = line.match(/([$S]?\s?[\d,]+(?:\.\d{2})?)(?!.*[$S]?\s?[\d,]+(?:\.\d{2})?)/);
     if (moneyMatch && /[A-Za-z]{3,}/.test(line)) {
-      items.push({
-        description: line.replace(moneyMatch[0], "").trim().replace(/^[-•\d.\s]+/, ""),
-        amount: parseCurrency(moneyMatch[0]),
-      });
+      const description = line.replace(moneyMatch[0], "").trim().replace(/^[-•\d.\s]+/, "");
+      if (description.length >= 4) items.push({ description, amount: parseCurrency(moneyMatch[0]) });
     }
   }
-  return items.slice(0, 20);
+  return items.slice(0, 25);
 }
 
 function detectPaymentTerms(text: string): string[] {
-  return text
-    .split("\n")
-    .map(l => l.trim())
-    .filter(line => /deposit|payment|progress payment|final payment|upon completion/i.test(line))
-    .slice(0, 10);
+  return text.split("\n").map(l => l.trim()).filter(line => /deposit|payment|progress payment|final payment|upon completion|installment/i.test(line)).slice(0, 10);
 }
-
 function detectExclusions(text: string): string[] {
-  const lines = text.split("\n").map(l => l.trim()).filter(Boolean);
-  const results = lines.filter(line => /exclude|excluding|not included|excludes/i.test(line));
-  return results.slice(0, 10);
+  return text.split("\n").map(l => l.trim()).filter(line => /exclude|excluding|not included|excludes/i.test(line)).slice(0, 10);
+}
+function detectWarrantyTerms(text: string): string[] {
+  return text.split("\n").map(l => l.trim()).filter(line => /warranty|defect liability|guarantee/i.test(line)).slice(0, 10);
+}
+function detectMaterials(text: string): string[] {
+  return text.split("\n").map(l => l.trim()).filter(line => /laminate|vinyl|tile|quartz|granite|plywood|glass|aluminium|paint/i.test(line)).slice(0, 10);
+}
+function detectTimeline(text: string): string[] {
+  return text.split("\n").map(l => l.trim()).filter(line => /week|weeks|month|months|working days|timeline|completion/i.test(line)).slice(0, 10);
 }
 
-function detectWarnings(text: string): string[] {
+function detectWarnings(text: string, quality: ParsedQuoteDocument["documentQuality"]): string[] {
   const warnings: string[] = [];
-  if (!/warranty/i.test(text)) warnings.push("No clear warranty term found in the uploaded quote.");
-  if (!/payment/i.test(text)) warnings.push("No clear payment schedule found in the uploaded quote.");
-  if (!/scope|works|description/i.test(text)) warnings.push("Scope of work looks unclear or weakly specified.");
+  if (!quality.hasWarranty) warnings.push("No clear warranty term found in the uploaded quote.");
+  if (!quality.hasPaymentTerms) warnings.push("No clear payment schedule found in the uploaded quote.");
+  if (!quality.hasItemization) warnings.push("Scope of work looks weakly itemized.");
+  if (!quality.hasTotalAmount) warnings.push("No clear total amount detected from the uploaded file.");
   return warnings;
 }
 

@@ -21,8 +21,17 @@ interface QuoteData {
     isFair: boolean;
     confidence: number;
     priceAssessment: string;
+    strengths?: string[];
     redFlags: string[];
     recommendations: string[];
+    documentInsights?: {
+      lineItemCount: number;
+      exclusionsCount: number;
+      paymentTermsCount: number;
+      warrantyTermsCount: number;
+      materialsMentionsCount: number;
+      timelineMentionsCount: number;
+    };
     marketComparison: {
       yourQuote: number;
       marketLow: number;
@@ -47,6 +56,15 @@ function mapQuote(raw: any): QuoteData {
     status: analysis ? "analyzed" : raw.status === "draft" ? "pending" : raw.status === "parsed" ? "analyzed" : raw.status === "reviewed" ? "analyzed" : raw.status === "error" ? "error" : "pending",
     analysis,
   };
+}
+
+function Metric({ label, value }: { label: string; value: number }) {
+  return (
+    <div style={{ padding: "8px", borderRadius: "6px", background: "rgba(255,255,255,0.04)", textAlign: "center" }}>
+      <div style={{ fontSize: "16px", fontWeight: 700, color: "white" }}>{value}</div>
+      <div style={{ fontSize: "11px", color: "#64748b" }}>{label}</div>
+    </div>
+  );
 }
 
 export function QuoteUpload({ projectId, onUploadComplete }: QuoteUploadProps) {
@@ -269,6 +287,17 @@ export function QuoteUpload({ projectId, onUploadComplete }: QuoteUploadProps) {
                     <div style={{ textAlign: "center" }}><div style={{ fontSize: "12px", color: "#64748b" }}>Average</div><div style={{ fontSize: "14px", fontWeight: 600, color: "#a78bfa" }}>${quote.analysis.marketComparison.marketAverage.toLocaleString()}</div></div>
                     <div style={{ textAlign: "center" }}><div style={{ fontSize: "12px", color: "#64748b" }}>Market High</div><div style={{ fontSize: "14px", fontWeight: 600, color: "#fbbf24" }}>${quote.analysis.marketComparison.marketHigh.toLocaleString()}</div></div>
                   </div>
+                  {quote.analysis.documentInsights && (
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px", marginBottom: "12px" }}>
+                      <Metric label="Line items" value={quote.analysis.documentInsights.lineItemCount} />
+                      <Metric label="Exclusions" value={quote.analysis.documentInsights.exclusionsCount} />
+                      <Metric label="Payment terms" value={quote.analysis.documentInsights.paymentTermsCount} />
+                      <Metric label="Warranty terms" value={quote.analysis.documentInsights.warrantyTermsCount} />
+                      <Metric label="Materials" value={quote.analysis.documentInsights.materialsMentionsCount} />
+                      <Metric label="Timeline refs" value={quote.analysis.documentInsights.timelineMentionsCount} />
+                    </div>
+                  )}
+                  {quote.analysis.strengths?.length > 0 && <div style={{ marginBottom: "12px" }}><p style={{ fontSize: "12px", fontWeight: 600, color: "#4ade80", marginBottom: "8px" }}>Strengths:</p><ul style={{ margin: 0, paddingLeft: "16px", color: "#94a3b8", fontSize: "14px" }}>{quote.analysis.strengths.map((item, i) => <li key={i}>{item}</li>)}</ul></div>}
                   {quote.analysis.redFlags?.length > 0 && <div style={{ marginBottom: "12px" }}><p style={{ fontSize: "12px", fontWeight: 600, color: "#ef4444", marginBottom: "8px" }}>Red Flags:</p><ul style={{ margin: 0, paddingLeft: "16px", color: "#94a3b8", fontSize: "14px" }}>{quote.analysis.redFlags.map((flag, i) => <li key={i}>{flag}</li>)}</ul></div>}
                   {quote.analysis.recommendations?.length > 0 && <div><p style={{ fontSize: "12px", fontWeight: 600, color: "#4ade80", marginBottom: "8px" }}>Recommendations:</p><ul style={{ margin: 0, paddingLeft: "16px", color: "#94a3b8", fontSize: "14px" }}>{quote.analysis.recommendations.map((rec, i) => <li key={i}>{rec}</li>)}</ul></div>}
                 </div>
