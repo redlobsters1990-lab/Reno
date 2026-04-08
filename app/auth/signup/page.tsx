@@ -62,17 +62,17 @@ export default function SignUpPage() {
         router.push("/auth/signin?registered=true&email=" + encodeURIComponent(email));
       }
     } catch (err) {
-      // Handle duplicate email and other errors
       const errorMessage = err instanceof Error ? err.message : "Sign up failed";
-      
-      if (errorMessage.includes("User already exists")) {
-        setError("An account with this email already exists. Please use a different email or sign in.");
-      } else if (errorMessage.includes("Invalid email")) {
-        setError("Please enter a valid email address");
-      } else if (errorMessage.includes("Password") || errorMessage.includes("password")) {
+      if (errorMessage.includes("already exists") || errorMessage.includes("already registered")) {
+        setError("An account with this email already exists. Please sign in instead.");
+      } else if (errorMessage.includes("Invalid email") || errorMessage.includes("valid email")) {
+        setError("Please enter a valid email address (e.g. you@example.com).");
+      } else if (errorMessage.toLowerCase().includes("password")) {
+        setError(errorMessage);
+      } else if (errorMessage.includes("Name")) {
         setError(errorMessage);
       } else {
-        setError("Sign up failed. Please try again.");
+        setError("Sign up failed. Please check your details and try again.");
       }
     } finally {
       setLoading(false);
@@ -80,7 +80,7 @@ export default function SignUpPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-b from-slate-900 to-slate-950 flex flex-col items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <Link
@@ -185,16 +185,16 @@ export default function SignUpPage() {
             </button>
           </form>
 
-          <div className="mt-6 pt-6 border-t border-white/10 text-center">
+          <div className="mt-6 pt-6 border-t border-white/10 text-center space-y-3">
             <p className="text-slate-400">
               Already have an account?{" "}
-              <Link
-                href="/auth/signin"
-                className="text-violet-400 hover:text-violet-300 font-medium"
-              >
+              <Link href="/auth/signin" className="text-violet-400 hover:text-violet-300 font-medium">
                 Sign in
               </Link>
             </p>
+            <Link href="/" className="inline-flex items-center gap-1 text-sm text-slate-500 hover:text-slate-300 transition">
+              ← Back to Home
+            </Link>
           </div>
         </div>
       </div>
