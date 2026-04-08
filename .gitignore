@@ -129,4 +129,13 @@ build/
 coverage/
 .vercel/
 uploads/
-!uploads/.gitkeep
+!uploads/.gitkeep# OpenClaw workspace files (should not be in SaaS repo)
+AGENTS.md
+BOOTSTRAP.md
+HEARTBEAT.md
+IDENTITY.md
+SOUL.md
+TOOLS.md
+USER.md
+app/test/
+.openclaw/
