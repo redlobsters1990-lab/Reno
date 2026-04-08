@@ -40,10 +40,8 @@ textarea {
 
 /* ===== DESIGN SYSTEM UTILITIES ===== */
 
-/* Container */
-.container {
-  @apply mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8;
-}
+/* Container - Using Tailwind's built-in container with center: true */
+/* Container centering is now handled by tailwind.config.ts */
 
 /* Typography utilities */
 .text-display {
