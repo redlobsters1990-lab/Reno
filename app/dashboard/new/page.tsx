@@ -4,8 +4,8 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { 
-  Home, Building, Palette, DollarSign, FileText,
-  CheckCircle, ArrowLeft, Plus, AlertCircle, Loader2
+  Home, Building, Palette, DollarSign, FileText, Ruler,
+  CheckCircle, ArrowLeft, Plus, AlertCircle, Loader2, Calendar
 } from "lucide-react";
 
 // Simple auth check
@@ -78,87 +78,32 @@ export default function SimpleNewProjectPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateForm()) {
       return;
     }
-    
+
     setSubmitting(true);
-    
+
     try {
-      // Call project creation API
       const response = await fetch("/api/projects", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
-        credentials: "include", // Include cookies
       });
-      
+
       const data = await response.json();
-      
+
       if (!response.ok) {
         throw new Error(data.error || "Failed to create project");
       }
-      
-      // Redirect to the new project page
-      router.push(`/dashboard/projects/${data.project.id}`);
-      
-    } catch (error: any) {
-      console.error("Error creating project:", error);
-      console.error("Error details:", {
-        message: error.message,
-        name: error.name,
-        stack: error.stack
-      });
-      
-      let errorMessage = "Failed to create project. Please try again.";
-      
-      // Try to get the actual error from the API response
-      try {
-        if (error.message && error.message.includes("{")) {
-          const jsonMatch = error.message.match(/\{.*\}/);
-          if (jsonMatch) {
-            const apiError = JSON.parse(jsonMatch[0]);
-            if (apiError.error) {
-              errorMessage = apiError.error;
-            }
-          }
-        }
-      } catch (e) {
-        // If parsing fails, use original error
-        errorMessage = error.message || "Failed to create project. Please try again.";
-      }
-      
-      // Add more helpful messages for common errors
-      if (errorMessage.includes("401") || errorMessage.includes("Unauthorized") || errorMessage.includes("Authentication required")) {
-        errorMessage = "🔐 Authentication required. Please sign in first.";
-      } else if (errorMessage.includes("Invalid authentication")) {
-        errorMessage = "🔐 Invalid authentication session. You need to clear your cookies and sign in again.";
-      } else if (errorMessage.includes("Network") || errorMessage.includes("fetch")) {
-        errorMessage = "🌐 Network error. Please check your connection and try again.";
-      } else if (errorMessage.includes("Foreign key constraint")) {
-        errorMessage = "🔄 Account synchronization issue. Your user account doesn't exist in the database.";
-      } else if (errorMessage.includes("Failed to create project")) {
-        errorMessage = "❌ Failed to create project. Please try again or contact support if the issue persists.";
-      }
-      
+
+      // Redirect to the new project
+      router.push(data.redirect);
+      router.refresh();
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "Failed to create project";
       setErrors({ submit: errorMessage });
-      
-      // Log detailed error info for debugging
-      console.log("=== PROJECT CREATION ERROR DEBUG ===");
-      console.log("Error message:", errorMessage);
-      console.log("Full error:", error);
-      console.log("Current URL:", window.location.href);
-      console.log("Cookies:", document.cookie);
-      
-      // If it's an auth error, suggest cookie cleanup
-      if (errorMessage.includes("Authentication") || errorMessage.includes("session") || errorMessage.includes("sign in") || errorMessage.includes("invalid") || errorMessage.includes("🔐") || errorMessage.includes("401")) {
-        console.log("Auth error detected, suggesting cookie cleanup");
-        // Auto-redirect to cookie cleanup after 1 second
-        setTimeout(() => {
-          router.push("/auth/cleanup");
-        }, 1000);
-      }
     } finally {
       setSubmitting(false);
     }
@@ -166,60 +111,50 @@ export default function SimpleNewProjectPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-slate-900 to-slate-950 p-6">
-        <div className="max-w-4xl mx-auto">
-          <div className="flex items-center justify-center h-96">
-            <div className="text-center">
-              <div className="h-10 w-10 rounded-xl bg-slate-800 animate-pulse mx-auto mb-4"></div>
-              <div className="h-6 w-48 bg-slate-800 rounded animate-pulse mx-auto"></div>
-            </div>
-          </div>
+      <div className="min-h-screen bg-gradient-to-b from-background to-slate-950 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary-400 mx-auto mb-4" />
+          <p className="text-body text-text-secondary">Loading...</p>
         </div>
       </div>
     );
   }
 
-  if (!authChecked) {
-    return null; // Will redirect via useEffect
-  }
-
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-900 to-slate-950 p-6">
-      <div className="max-w-4xl mx-auto">
+    <div className="min-h-screen bg-gradient-to-b from-background to-slate-950">
+      {/* Skip to content */}
+      <a href="#main-content" className="skip-to-content">
+        Skip to main content
+      </a>
+
+      <div className="container py-8">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-3">
-            <Link
-              href="/dashboard"
-              className="h-10 w-10 rounded-xl border border-white/10 hover:border-white/20 transition flex items-center justify-center"
-            >
-              <ArrowLeft className="h-5 w-5" />
-            </Link>
-            <div>
-              <h1 className="text-2xl font-bold">Create New Project</h1>
-              <p className="text-slate-400">Plan your renovation with AI guidance</p>
-            </div>
-          </div>
-          
+        <div className="flex items-center justify-between mb-10">
           <div className="flex items-center gap-4">
             <Link
               href="/dashboard"
-              className="px-4 py-2 rounded-xl border border-white/10 hover:border-white/20 transition"
+              className="btn-secondary"
             >
-              Cancel
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back
             </Link>
+            <div>
+              <h1 className="text-h1 font-bold">Create New Project</h1>
+              <p className="text-body text-text-secondary mt-1">Plan your renovation with AI guidance</p>
+            </div>
           </div>
         </div>
 
+        {/* Error Display */}
         {errors.submit && (
-          <div className="mb-6 p-4 rounded-xl bg-red-500/10 border border-red-500/20">
-            <div className="flex items-center gap-2 text-red-400 mb-2">
-              <AlertCircle className="h-5 w-5" />
-              <span>{errors.submit}</span>
+          <div className="alert-error mb-8 animate-fade-in">
+            <div className="flex items-center gap-3">
+              <AlertCircle className="h-5 w-5 flex-shrink-0" />
+              <span className="font-medium">{errors.submit}</span>
             </div>
             {(errors.submit.includes("Authentication") || errors.submit.includes("session") || errors.submit.includes("sign in")) && (
-              <div className="text-sm text-red-300 mt-2">
-                <Link href="/auth/cleanup" className="underline hover:text-red-200">
+              <div className="text-small mt-2">
+                <Link href="/auth/cleanup" className="text-error-300 hover:text-error-200 underline">
                   Clear invalid cookies and try again
                 </Link>
               </div>
@@ -227,250 +162,279 @@ export default function SimpleNewProjectPage() {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-8">
-          {/* Project Basics */}
-          <div className="p-6 rounded-2xl border border-white/10 bg-gradient-to-b from-white/2.5 to-transparent">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="h-10 w-10 rounded-xl bg-blue-500/10 border border-blue-400/20 flex items-center justify-center">
-                <Home className="h-5 w-5 text-blue-300" />
+        {/* Main Form */}
+        <main id="main-content">
+          <form onSubmit={handleSubmit} className="space-y-8">
+            {/* Project Basics */}
+            <div className="card p-8">
+              <div className="flex items-center gap-4 mb-8">
+                <div className="h-12 w-12 rounded-xl bg-info-500/10 border border-info-400/20 flex items-center justify-center">
+                  <Home className="h-6 w-6 text-info-300" />
+                </div>
+                <h2 className="text-h2 font-bold">Project Basics</h2>
               </div>
-              <h2 className="text-xl font-semibold">Project Basics</h2>
+              
+              <div className="grid md:grid-cols-2 gap-6">
+                {/* Project Name */}
+                <div>
+                  <label htmlFor="name" className="input-label">
+                    Project Name *
+                  </label>
+                  <input
+                    id="name"
+                    type="text"
+                    name="name"
+                    className={`input ${errors.name ? 'input-error' : ''}`}
+                    placeholder="Kitchen Renovation 2024"
+                    value={formData.name}
+                    onChange={handleChange}
+                    required
+                    disabled={submitting}
+                    aria-describedby={errors.name ? "name-error" : "name-description"}
+                  />
+                  {errors.name ? (
+                    <p id="name-error" className="text-small text-error-500 mt-2">{errors.name}</p>
+                  ) : (
+                    <p id="name-description" className="text-small text-text-tertiary mt-2">
+                      Give your project a descriptive name
+                    </p>
+                  )}
+                </div>
+                
+                {/* Property Type */}
+                <div>
+                  <label htmlFor="propertyType" className="input-label">
+                    Property Type
+                  </label>
+                  <select
+                    id="propertyType"
+                    name="propertyType"
+                    className="select"
+                    value={formData.propertyType}
+                    onChange={handleChange}
+                    disabled={submitting}
+                  >
+                    <option value="HDB BTO">HDB BTO</option>
+                    <option value="HDB Resale">HDB Resale</option>
+                    <option value="Condo">Condo</option>
+                    <option value="Landed">Landed</option>
+                    <option value="Commercial">Commercial</option>
+                  </select>
+                  <p className="text-small text-text-tertiary mt-2">
+                    Select your property type for accurate estimates
+                  </p>
+                </div>
+                
+                {/* Property Size */}
+                <div>
+                  <label htmlFor="propertySize" className="input-label">
+                    Property Size (sq ft) *
+                  </label>
+                  <div className="relative">
+                    <Ruler className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-text-tertiary" />
+                    <input
+                      id="propertySize"
+                      type="number"
+                      name="propertySize"
+                      className={`input pl-12 ${errors.propertySize ? 'input-error' : ''}`}
+                      placeholder="850"
+                      value={formData.propertySize}
+                      onChange={handleChange}
+                      required
+                      disabled={submitting}
+                      aria-describedby={errors.propertySize ? "propertySize-error" : "propertySize-description"}
+                    />
+                  </div>
+                  {errors.propertySize ? (
+                    <p id="propertySize-error" className="text-small text-error-500 mt-2">{errors.propertySize}</p>
+                  ) : (
+                    <p id="propertySize-description" className="text-small text-text-tertiary mt-2">
+                      Total area in square feet
+                    </p>
+                  )}
+                </div>
+                
+                {/* Number of Rooms */}
+                <div>
+                  <label htmlFor="rooms" className="input-label">
+                    Number of Rooms
+                  </label>
+                  <select
+                    id="rooms"
+                    name="rooms"
+                    className="select"
+                    value={formData.rooms}
+                    onChange={handleChange}
+                    disabled={submitting}
+                  >
+                    <option value="1">1 Room</option>
+                    <option value="2">2 Rooms</option>
+                    <option value="3">3 Rooms</option>
+                    <option value="4">4 Rooms</option>
+                    <option value="5">5+ Rooms</option>
+                  </select>
+                  <p className="text-small text-text-tertiary mt-2">
+                    Number of rooms being renovated
+                  </p>
+                </div>
+              </div>
             </div>
-            
-            <div className="grid md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium mb-2">
-                  Project Name *
-                </label>
-                <input
-                  type="text"
-                  name="name"
-                  className={`w-full px-4 py-3 rounded-xl bg-slate-900 border ${
-                    errors.name ? "border-red-500" : "border-white/10"
-                  } focus:border-violet-500 focus:outline-none`}
-                  placeholder="Kitchen Renovation 2024"
-                  value={formData.name}
-                  onChange={handleChange}
-                  required
-                />
-                {errors.name && (
-                  <p className="mt-2 text-sm text-red-400">{errors.name}</p>
-                )}
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium mb-2">
-                  Property Type
-                </label>
-                <select
-                  name="propertyType"
-                  className="w-full px-4 py-3 rounded-xl bg-slate-900 border border-white/10 focus:border-violet-500 focus:outline-none"
-                  value={formData.propertyType}
-                  onChange={handleChange}
-                >
-                  <option value="HDB BTO">HDB BTO</option>
-                  <option value="HDB Resale">HDB Resale</option>
-                  <option value="Condo">Condo</option>
-                  <option value="Landed">Landed</option>
-                  <option value="Commercial">Commercial</option>
-                </select>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium mb-2">
-                  Property Size (sq ft) *
-                </label>
-                <input
-                  type="number"
-                  name="propertySize"
-                  className={`w-full px-4 py-3 rounded-xl bg-slate-900 border ${
-                    errors.propertySize ? "border-red-500" : "border-white/10"
-                  } focus:border-violet-500 focus:outline-none`}
-                  placeholder="850"
-                  value={formData.propertySize}
-                  onChange={handleChange}
-                  required
-                />
-                {errors.propertySize && (
-                  <p className="mt-2 text-sm text-red-400">{errors.propertySize}</p>
-                )}
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium mb-2">
-                  Number of Rooms
-                </label>
-                <select
-                  name="rooms"
-                  className="w-full px-4 py-3 rounded-xl bg-slate-900 border border-white/10 focus:border-violet-500 focus:outline-none"
-                  value={formData.rooms}
-                  onChange={handleChange}
-                >
-                  <option value="1">1 Room</option>
-                  <option value="2">2 Rooms</option>
-                  <option value="3">3 Rooms</option>
-                  <option value="4">4 Rooms</option>
-                  <option value="5">5+ Rooms</option>
-                </select>
-              </div>
-            </div>
-          </div>
 
-          {/* Budget & Style */}
-          <div className="p-6 rounded-2xl border border-white/10 bg-gradient-to-b from-white/2.5 to-transparent">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="h-10 w-10 rounded-xl bg-emerald-500/10 border border-emerald-400/20 flex items-center justify-center">
-                <DollarSign className="h-5 w-5 text-emerald-300" />
+            {/* Budget & Style */}
+            <div className="card p-8">
+              <div className="flex items-center gap-4 mb-8">
+                <div className="h-12 w-12 rounded-xl bg-success-500/10 border border-success-400/20 flex items-center justify-center">
+                  <DollarSign className="h-6 w-6 text-success-300" />
+                </div>
+                <h2 className="text-h2 font-bold">Budget & Style</h2>
               </div>
-              <h2 className="text-xl font-semibold">Budget & Style</h2>
+              
+              <div className="grid md:grid-cols-2 gap-6">
+                {/* Budget */}
+                <div>
+                  <label htmlFor="budget" className="input-label">
+                    Budget (SGD)
+                  </label>
+                  <div className="relative">
+                    <DollarSign className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-text-tertiary" />
+                    <input
+                      id="budget"
+                      type="number"
+                      name="budget"
+                      className={`input pl-12 ${errors.budget ? 'input-error' : ''}`}
+                      placeholder="50000"
+                      value={formData.budget}
+                      onChange={handleChange}
+                      disabled={submitting}
+                      aria-describedby={errors.budget ? "budget-error" : "budget-description"}
+                    />
+                  </div>
+                  {errors.budget ? (
+                    <p id="budget-error" className="text-small text-error-500 mt-2">{errors.budget}</p>
+                  ) : (
+                    <p id="budget-description" className="text-small text-text-tertiary mt-2">
+                      Leave empty for AI recommendation
+                    </p>
+                  )}
+                </div>
+                
+                {/* Style Preference */}
+                <div>
+                  <label htmlFor="stylePreference" className="input-label">
+                    Style Preference
+                  </label>
+                  <div className="relative">
+                    <Palette className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-text-tertiary" />
+                    <select
+                      id="stylePreference"
+                      name="stylePreference"
+                      className="select pl-12"
+                      value={formData.stylePreference}
+                      onChange={handleChange}
+                      disabled={submitting}
+                    >
+                      <option value="modern">Modern</option>
+                      <option value="minimalist">Minimalist</option>
+                      <option value="scandinavian">Scandinavian</option>
+                      <option value="industrial">Industrial</option>
+                      <option value="traditional">Traditional</option>
+                    </select>
+                  </div>
+                  <p className="text-small text-text-tertiary mt-2">
+                    Your preferred design style
+                  </p>
+                </div>
+                
+                {/* Timeline */}
+                <div>
+                  <label htmlFor="timeline" className="input-label">
+                    Timeline (months)
+                  </label>
+                  <div className="relative">
+                    <Calendar className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-text-tertiary" />
+                    <select
+                      id="timeline"
+                      name="timeline"
+                      className="select pl-12"
+                      value={formData.timeline}
+                      onChange={handleChange}
+                      disabled={submitting}
+                    >
+                      <option value="1">1 month</option>
+                      <option value="2">2 months</option>
+                      <option value="3">3 months</option>
+                      <option value="6">6 months</option>
+                      <option value="12">12+ months</option>
+                    </select>
+                  </div>
+                  <p className="text-small text-text-tertiary mt-2">
+                    Expected renovation timeline
+                  </p>
+                </div>
+              </div>
             </div>
-            
-            <div className="grid md:grid-cols-2 gap-6">
+
+            {/* Additional Notes */}
+            <div className="card p-8">
+              <div className="flex items-center gap-4 mb-8">
+                <div className="h-12 w-12 rounded-xl bg-primary-500/10 border border-primary-400/20 flex items-center justify-center">
+                  <FileText className="h-6 w-6 text-primary-300" />
+                </div>
+                <h2 className="text-h2 font-bold">Additional Notes</h2>
+              </div>
+              
               <div>
-                <label className="block text-sm font-medium mb-2">
-                  Budget (SGD)
+                <label htmlFor="notes" className="input-label">
+                  Project Notes
                 </label>
-                <input
-                  type="number"
-                  name="budget"
-                  className={`w-full px-4 py-3 rounded-xl bg-slate-900 border ${
-                    errors.budget ? "border-red-500" : "border-white/10"
-                  } focus:border-violet-500 focus:outline-none`}
-                  placeholder="50000"
-                  value={formData.budget}
+                <textarea
+                  id="notes"
+                  name="notes"
+                  className="textarea"
+                  placeholder="Describe your renovation goals, specific requirements, or any special considerations..."
+                  rows={4}
+                  value={formData.notes}
                   onChange={handleChange}
+                  disabled={submitting}
+                  aria-describedby="notes-description"
                 />
-                {errors.budget && (
-                  <p className="mt-2 text-sm text-red-400">{errors.budget}</p>
-                )}
-                <p className="mt-2 text-sm text-slate-400">
-                  Leave empty for AI recommendation
+                <p id="notes-description" className="text-small text-text-tertiary mt-2">
+                  Optional: Add any details that will help with AI recommendations
                 </p>
               </div>
+            </div>
+
+            {/* Form Actions */}
+            <div className="flex items-center justify-between pt-8 border-t border-white/10">
+              <Link
+                href="/dashboard"
+                className="btn-secondary"
+                disabled={submitting}
+              >
+                Cancel
+              </Link>
               
-              <div>
-                <label className="block text-sm font-medium mb-2">
-                  Style Preference
-                </label>
-                <select
-                  name="stylePreference"
-                  className="w-full px-4 py-3 rounded-xl bg-slate-900 border border-white/10 focus:border-violet-500 focus:outline-none"
-                  value={formData.stylePreference}
-                  onChange={handleChange}
-                >
-                  <option value="modern">Modern</option>
-                  <option value="minimalist">Minimalist</option>
-                  <option value="scandinavian">Scandinavian</option>
-                  <option value="industrial">Industrial</option>
-                  <option value="traditional">Traditional</option>
-                </select>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium mb-2">
-                  Timeline (months)
-                </label>
-                <select
-                  name="timeline"
-                  className="w-full px-4 py-3 rounded-xl bg-slate-900 border border-white/10 focus:border-violet-500 focus:outline-none"
-                  value={formData.timeline}
-                  onChange={handleChange}
-                >
-                  <option value="1">1 month</option>
-                  <option value="2">2 months</option>
-                  <option value="3">3 months</option>
-                  <option value="6">6 months</option>
-                  <option value="12">12+ months</option>
-                </select>
-              </div>
+              <button
+                type="submit"
+                className="btn-primary px-8 py-4 text-lg"
+                disabled={submitting}
+                aria-busy={submitting}
+              >
+                {submitting ? (
+                  <>
+                    <Loader2 className="h-5 w-5 animate-spin mr-2" />
+                    Creating Project...
+                  </>
+                ) : (
+                  <>
+                    <Plus className="h-5 w-5 mr-2" />
+                    Create Project
+                  </>
+                )}
+              </button>
             </div>
-          </div>
-
-          {/* Additional Notes */}
-          <div className="p-6 rounded-2xl border border-white/10 bg-gradient-to-b from-white/2.5 to-transparent">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="h-10 w-10 rounded-xl bg-violet-500/10 border border-violet-400/20 flex items-center justify-center">
-                <FileText className="h-5 w-5 text-violet-300" />
-              </div>
-              <h2 className="text-xl font-semibold">Additional Notes</h2>
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium mb-2">
-                Special Requirements or Notes
-              </label>
-              <textarea
-                name="notes"
-                className="w-full px-4 py-3 rounded-xl bg-slate-900 border border-white/10 focus:border-violet-500 focus:outline-none min-h-[120px]"
-                placeholder="Any specific requirements, materials preferences, or notes for the AI advisor..."
-                value={formData.notes}
-                onChange={handleChange}
-              />
-              <p className="mt-2 text-sm text-slate-400">
-                The AI advisor will consider these notes when providing recommendations
-              </p>
-            </div>
-          </div>
-
-          {/* Submit */}
-          <div className="flex items-center justify-between">
-            <Link
-              href="/dashboard"
-              className="px-6 py-3 rounded-xl border border-white/10 hover:border-white/20 transition flex items-center gap-2"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Back to Dashboard
-            </Link>
-            
-            <button
-              type="submit"
-              disabled={submitting}
-              className="px-8 py-3 rounded-xl bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-            >
-              {submitting ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Creating Project...
-                </>
-              ) : (
-                <>
-                  <CheckCircle className="h-4 w-4" />
-                  Create Project
-                </>
-              )}
-            </button>
-          </div>
-        </form>
-
-        <div className="mt-8 p-6 rounded-2xl border border-white/10">
-          <h3 className="font-medium mb-3">What happens next?</h3>
-          <ul className="text-sm text-slate-400 space-y-2">
-            <li className="flex items-start gap-2">
-              <div className="h-5 w-5 rounded-full bg-violet-500/10 border border-violet-400/20 flex items-center justify-center mt-0.5">
-                <div className="h-2 w-2 rounded-full bg-violet-400"></div>
-              </div>
-              <span>Project will be saved to your account</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <div className="h-5 w-5 rounded-full bg-violet-500/10 border border-violet-400/20 flex items-center justify-center mt-0.5">
-                <div className="h-2 w-2 rounded-full bg-violet-400"></div>
-              </div>
-              <span>AI will analyze your project details</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <div className="h-5 w-5 rounded-full bg-violet-500/10 border border-violet-400/20 flex items-center justify-center mt-0.5">
-                <div className="h-2 w-2 rounded-full bg-violet-400"></div>
-              </div>
-              <span>Get personalized cost estimates</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <div className="h-5 w-5 rounded-full bg-violet-500/10 border border-violet-400/20 flex items-center justify-center mt-0.5">
-                <div className="h-2 w-2 rounded-full bg-violet-400"></div>
-              </div>
-              <span>You can upload quotes or chat with AI advisor</span>
-            </li>
-          </ul>
-        </div>
+          </form>
+        </main>
       </div>
     </div>
   );

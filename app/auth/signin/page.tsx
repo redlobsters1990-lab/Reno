@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Mail, Lock, AlertCircle, Loader2, Home, Sparkles } from "lucide-react";
+import { Mail, Lock, AlertCircle, Loader2, Home, ArrowLeft } from "lucide-react";
 
 // Simple auth check - same as dashboard
 function isAuthenticated() {
@@ -64,7 +64,7 @@ export default function SimpleSignInPage() {
 
   if (!authChecked) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-slate-900 to-slate-950 flex items-center justify-center p-6">
+      <div className="min-h-screen bg-gradient-to-b from-background to-slate-950 flex items-center justify-center p-6">
         <div className="text-center">
           <div className="h-10 w-10 rounded-xl bg-slate-800 animate-pulse mx-auto mb-4"></div>
           <div className="h-6 w-48 bg-slate-800 rounded animate-pulse mx-auto"></div>
@@ -74,27 +74,32 @@ export default function SimpleSignInPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-900 to-slate-950 flex items-center justify-center p-6">
+    <div className="min-h-screen bg-gradient-to-b from-background to-slate-950 flex items-center justify-center p-6">
+      {/* Skip to content */}
+      <a href="#main-content" className="skip-to-content">
+        Skip to main content
+      </a>
+
       {/* Background effects */}
       <div className="absolute inset-0 -z-10 overflow-hidden">
-        <div className="absolute -top-40 -right-40 h-80 w-80 rounded-full bg-violet-500/10 blur-3xl" />
-        <div className="absolute -bottom-40 -left-40 h-80 w-80 rounded-full bg-purple-500/10 blur-3xl" />
+        <div className="absolute -top-40 -right-40 h-80 w-80 rounded-full bg-primary-500/10 blur-3xl" />
+        <div className="absolute -bottom-40 -left-40 h-80 w-80 rounded-full bg-secondary-500/10 blur-3xl" />
       </div>
       
-      <div className="w-full max-w-lg">
+      <div className="w-full max-w-md">
         {/* Header */}
-        <div className="text-center mb-12">
-          <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-violet-500/30 to-purple-500/30 border border-violet-400/40 flex items-center justify-center mx-auto mb-6 shadow-glow">
-            <Home className="h-8 w-8 text-violet-300" />
+        <div className="text-center mb-10">
+          <div className="h-16 w-16 rounded-xl bg-gradient-to-br from-primary-500/30 to-secondary-500/30 border border-primary-400/40 flex items-center justify-center mx-auto mb-6 shadow-glow-sm">
+            <Home className="h-8 w-8 text-primary-300" />
           </div>
-          <h1 className="text-4xl font-bold mb-4 tracking-tight">Welcome Back</h1>
-          <p className="text-lg text-slate-400">Sign in to your Renovation Advisor account</p>
+          <h1 className="text-h1 font-bold mb-4">Welcome Back</h1>
+          <p className="text-body text-text-secondary">Sign in to your Renovation Advisor account</p>
         </div>
 
         {/* Error Display */}
         {error && (
-          <div className="mb-8 p-6 rounded-2xl bg-red-500/10 border border-red-500/30 backdrop-blur-sm animate-fade-in">
-            <div className="flex items-center gap-3 text-red-400">
+          <div className="alert-error mb-8 animate-fade-in">
+            <div className="flex items-center gap-3">
               <AlertCircle className="h-5 w-5 flex-shrink-0" />
               <span className="font-medium">{error}</span>
             </div>
@@ -102,67 +107,82 @@ export default function SimpleSignInPage() {
         )}
 
         {/* Login Form */}
-        <div className="p-10 rounded-3xl border border-white/20 bg-gradient-to-b from-white/5 to-transparent backdrop-blur-sm">
-          <form onSubmit={handleSubmit} className="space-y-8">
+        <div className="card p-8">
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Email Field */}
             <div>
-              <label className="block text-sm font-medium mb-3 text-slate-300">
+              <label htmlFor="email" className="input-label">
                 Email Address
               </label>
               <div className="relative">
-                <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-slate-500" />
+                <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-text-tertiary" />
                 <input
+                  id="email"
                   type="email"
-                  className="w-full pl-12 pr-4 py-4 rounded-2xl bg-white/10 border border-white/20 focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500/30 text-lg backdrop-blur-sm"
+                  className="input pl-12"
                   placeholder="you@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
                   disabled={loading}
+                  aria-describedby="email-description"
                 />
               </div>
+              <p id="email-description" className="sr-only">
+                Enter your email address to sign in
+              </p>
             </div>
 
+            {/* Password Field */}
             <div>
-              <label className="block text-sm font-medium mb-3 text-slate-300">
+              <label htmlFor="password" className="input-label">
                 Password
               </label>
               <div className="relative">
-                <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-slate-500" />
+                <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-text-tertiary" />
                 <input
+                  id="password"
                   type="password"
-                  className="w-full pl-12 pr-4 py-4 rounded-2xl bg-white/10 border border-white/20 focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500/30 text-lg backdrop-blur-sm"
+                  className="input pl-12"
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   disabled={loading}
+                  aria-describedby="password-description"
                 />
               </div>
+              <p id="password-description" className="sr-only">
+                Enter your password to sign in
+              </p>
             </div>
 
-            <div className="flex items-center justify-between text-sm">
+            {/* Links */}
+            <div className="flex items-center justify-between text-small">
               <Link
                 href="/auth/signup"
-                className="text-violet-400 hover:text-violet-300 font-medium transition-colors"
+                className="text-primary-400 hover:text-primary-300 font-medium transition-colors focus-ring rounded"
               >
                 Don't have an account?
               </Link>
               <Link
                 href="#"
-                className="text-slate-400 hover:text-slate-300 transition-colors"
+                className="text-text-secondary hover:text-text-primary transition-colors focus-ring rounded"
               >
                 Forgot password?
               </Link>
             </div>
 
+            {/* Submit Button */}
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-4 rounded-2xl bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 text-white font-semibold text-lg transition-all duration-500 hover:shadow-glow hover:-translate-y-1 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3"
+              className="btn-primary w-full py-4 text-lg focus-ring"
+              aria-busy={loading}
             >
               {loading ? (
                 <>
-                  <Loader2 className="h-5 w-5 animate-spin" />
+                  <Loader2 className="h-5 w-5 animate-spin mr-2" />
                   Signing In...
                 </>
               ) : (
@@ -171,14 +191,15 @@ export default function SimpleSignInPage() {
             </button>
           </form>
 
+          {/* Terms */}
           <div className="mt-8 pt-8 border-t border-white/10">
-            <p className="text-center text-sm text-slate-400">
+            <p className="text-small text-text-tertiary text-center">
               By signing in, you agree to our{" "}
-              <Link href="#" className="text-violet-400 hover:text-violet-300 font-medium">
+              <Link href="#" className="text-primary-400 hover:text-primary-300 font-medium focus-ring rounded">
                 Terms of Service
               </Link>{" "}
               and{" "}
-              <Link href="#" className="text-violet-400 hover:text-violet-300 font-medium">
+              <Link href="#" className="text-primary-400 hover:text-primary-300 font-medium focus-ring rounded">
                 Privacy Policy
               </Link>
             </p>
@@ -186,14 +207,12 @@ export default function SimpleSignInPage() {
         </div>
 
         {/* Back to home */}
-        <div className="mt-10 text-center">
+        <div className="mt-8 text-center">
           <Link
             href="/"
-            className="inline-flex items-center gap-2 text-slate-400 hover:text-slate-300 transition-colors group"
+            className="btn-ghost inline-flex items-center gap-2"
           >
-            <span className="h-5 w-5 rounded-full border border-slate-500 group-hover:border-slate-300 flex items-center justify-center">
-              ←
-            </span>
+            <ArrowLeft className="h-4 w-4" />
             Back to Home
           </Link>
         </div>
