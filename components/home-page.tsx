@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSession, signIn, signOut } from "next-auth/react";
 import Link from "next/link";
 import { 
@@ -27,6 +27,14 @@ export function HomePage() {
   const [email, setEmail] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [hoveredFeature, setHoveredFeature] = useState<number | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    // Hide loading state after session check
+    if (status !== "loading") {
+      setIsLoading(false);
+    }
+  }, [status]);
 
   const handleWaitlistSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -112,6 +120,38 @@ export function HomePage() {
     },
   ];
 
+  // Show minimal loading state for auth check
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-background to-slate-950">
+        <nav className="container py-6 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-primary-500 to-secondary-600 flex items-center justify-center">
+              <Home className="h-5 w-5 text-white" />
+            </div>
+            <span className="text-h3 font-bold">Renovation Advisor AI</span>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="h-9 w-20 bg-white/10 rounded-lg animate-pulse" />
+            <div className="h-9 w-24 bg-primary-500/20 rounded-lg animate-pulse" />
+          </div>
+        </nav>
+        
+        <div className="container py-20">
+          <div className="max-w-4xl mx-auto text-center">
+            <div className="h-8 w-48 bg-white/10 rounded-full mx-auto mb-8 animate-pulse" />
+            <div className="h-16 w-full max-w-2xl bg-white/10 rounded-lg mx-auto mb-6 animate-pulse" />
+            <div className="h-12 w-3/4 max-w-xl bg-white/10 rounded-lg mx-auto mb-12 animate-pulse" />
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <div className="h-12 w-48 bg-primary-500/20 rounded-xl animate-pulse" />
+              <div className="h-12 w-40 bg-white/10 rounded-xl animate-pulse" />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen">
       {/* Skip to content for accessibility */}
@@ -120,26 +160,26 @@ export function HomePage() {
       </a>
 
       {/* Navigation */}
-      <nav className="container py-6 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-primary-500 to-secondary-600 flex items-center justify-center">
+      <nav className="container py-6 flex items-center justify-between gap-4">
+        <div className="flex items-center gap-3 flex-shrink-0">
+          <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-primary-500 to-secondary-600 flex items-center justify-center flex-shrink-0">
             <Home className="h-5 w-5 text-white" />
           </div>
-          <span className="text-h3 font-bold">Renovation Advisor AI</span>
+          <span className="text-h3 font-bold whitespace-nowrap">Renovation Advisor AI</span>
         </div>
         
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-shrink-0">
           {status === "authenticated" ? (
             <>
               <Link
                 href="/dashboard"
-                className="btn-secondary"
+                className="btn-secondary whitespace-nowrap"
               >
                 Dashboard
               </Link>
               <button
                 onClick={() => signOut({ callbackUrl: "/", redirect: true })}
-                className="btn-ghost"
+                className="btn-ghost whitespace-nowrap"
               >
                 Sign Out
               </button>
@@ -148,13 +188,13 @@ export function HomePage() {
             <>
               <Link
                 href="/auth/signin"
-                className="btn-secondary"
+                className="btn-secondary whitespace-nowrap"
               >
                 Sign In
               </Link>
               <Link
                 href="/auth/signup"
-                className="btn-primary"
+                className="btn-primary whitespace-nowrap"
               >
                 Get Started
               </Link>
@@ -164,7 +204,7 @@ export function HomePage() {
       </nav>
 
       {/* Hero Section */}
-      <section id="main-content" className="section-lg">
+      <section id="main-content" className="section">
         <div className="container">
           <div className="max-w-4xl mx-auto text-center">
             {/* Badge */}
@@ -211,13 +251,13 @@ export function HomePage() {
       {/* Stats */}
       <section className="section">
         <div className="container">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {stats.map((stat, index) => {
               const Icon = stat.icon;
               return (
                 <div 
                   key={index}
-                  className="card-hover p-6 text-center"
+                  className="card-hover p-6 text-center h-full"
                 >
                   <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-primary-500/10 to-secondary-500/10 border border-primary-500/20 flex items-center justify-center mx-auto mb-4">
                     <Icon className="h-6 w-6 text-primary-300" />
@@ -245,13 +285,13 @@ export function HomePage() {
             </p>
           </div>
           
-          <div className="grid-cols-auto-fit gap-6">
+          <div className="grid-cols-auto-fit gap-4">
             {features.map((feature, index) => {
               const Icon = feature.icon;
               return (
                 <div
                   key={index}
-                  className="card-hover p-8"
+                  className="card-hover p-6 h-full flex flex-col"
                   onMouseEnter={() => setHoveredFeature(index)}
                   onMouseLeave={() => setHoveredFeature(null)}
                 >
@@ -260,7 +300,7 @@ export function HomePage() {
                   </div>
                   
                   <h3 className="text-h3 font-semibold mb-4">{feature.title}</h3>
-                  <p className="text-body text-text-secondary mb-6">{feature.description}</p>
+                  <p className="text-body text-text-secondary mb-6 flex-grow">{feature.description}</p>
                   
                   <div className={`h-1.5 w-16 rounded-full bg-gradient-to-r ${feature.color} transition-all duration-300 ${hoveredFeature === index ? 'w-24' : 'w-16'}`} />
                 </div>
@@ -271,21 +311,21 @@ export function HomePage() {
       </section>
 
       {/* How It Works */}
-      <section className="section-lg">
+      <section className="section">
         <div className="container">
-          <div className="text-center mb-16">
-            <h2 className="text-h1 font-bold mb-6">How It Works</h2>
+          <div className="text-center mb-12">
+            <h2 className="text-h1 font-bold mb-4">How It Works</h2>
             <p className="text-h3 text-text-secondary max-w-3xl mx-auto font-light">
               A simple three-step process that transforms your renovation vision into reality
             </p>
           </div>
           
-          <div className="grid md:grid-cols-3 gap-8 relative">
+          <div className="grid md:grid-cols-3 gap-6 relative">
             {/* Connecting line */}
             <div className="hidden md:block absolute top-1/4 left-1/3 right-1/3 h-0.5 bg-gradient-to-r from-transparent via-white/10 to-transparent -z-10" />
             
             {steps.map((step) => (
-              <div key={step.number} className="card-hover p-10 text-center relative">
+              <div key={step.number} className="card-hover p-6 text-center relative h-full flex flex-col">
                 {/* Number badge */}
                 <div className={`absolute -top-4 -right-4 h-10 w-10 rounded-full bg-gradient-to-br ${step.color} flex items-center justify-center text-sm font-bold`}>
                   {step.number}
@@ -299,7 +339,7 @@ export function HomePage() {
                 </div>
                 
                 <h3 className="text-h2 font-semibold mb-4">{step.title}</h3>
-                <p className="text-body text-text-secondary leading-relaxed">
+                <p className="text-body text-text-secondary leading-relaxed flex-grow">
                   {step.description}
                 </p>
               </div>
@@ -309,9 +349,9 @@ export function HomePage() {
       </section>
 
       {/* Waitlist CTA */}
-      <section className="section-lg">
+      <section className="section">
         <div className="container">
-          <div className="max-w-4xl mx-auto text-center p-12 rounded-3xl border-2 border-dashed border-white/20 bg-gradient-to-br from-primary-500/5 via-transparent to-secondary-500/5 relative overflow-hidden">
+          <div className="max-w-4xl mx-auto text-center p-8 rounded-3xl border-2 border-dashed border-white/20 bg-gradient-to-br from-primary-500/5 via-transparent to-secondary-500/5 relative overflow-hidden">
             {/* Background effects */}
             <div className="absolute inset-0 -z-10">
               <div className="absolute top-1/4 left-1/4 h-64 w-64 rounded-full bg-primary-500/10 blur-3xl animate-pulse-slow" />

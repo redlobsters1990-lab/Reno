@@ -123,7 +123,7 @@ export default function DashboardPage() {
         <main id="main-content">
           {/* Projects Section */}
           <div>
-            <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center justify-between mb-6">
               <h2 className="text-h2 font-bold">Your Projects</h2>
               <span className="badge-primary">
                 {!loading && `${projects.length} project${projects.length !== 1 ? "s" : ""}`}
@@ -177,7 +177,7 @@ export default function DashboardPage() {
                   <Link
                     key={project.id}
                     href={`/dashboard/projects/${project.id}`}
-                    className="card-hover p-6 focus-ring"
+                    className="card-hover p-6 focus-ring h-full block"
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-5">
