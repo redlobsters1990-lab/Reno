@@ -249,7 +249,7 @@ export default function ProjectDetailPage() {
         {/* Quote Upload Section */}
         {projectId && (
           <div style={{ marginBottom: "24px" }}>
-            <QuoteUpload projectId={projectId} onUploadComplete={() => window.location.reload()} />
+            <QuoteUpload projectId={projectId} />
           </div>
         )}
 
