@@ -30,6 +30,13 @@ interface QuoteData {
       reasons: string[];
       mustClarify: string[];
       negotiationPoints: string[];
+      exclusionGuide?: Array<{
+        exclusion: string;
+        riskLevel: "low" | "medium" | "high";
+        whyItMatters: string;
+        askContractor: string;
+        recommendedAction: string;
+      }>;
     };
     documentInsights?: {
       lineItemCount: number;
@@ -304,7 +311,25 @@ export function QuoteUpload({ projectId, onUploadComplete }: QuoteUploadProps) {
                       </div>
                       {quote.analysis.decision.reasons?.length > 0 && <div style={{ marginBottom: "10px" }}><p style={{ fontSize: "12px", fontWeight: 600, color: "#cbd5e1", marginBottom: "6px" }}>Why</p><ul style={{ margin: 0, paddingLeft: "16px", color: "#94a3b8", fontSize: "14px" }}>{quote.analysis.decision.reasons.map((item, i) => <li key={i}>{item}</li>)}</ul></div>}
                       {quote.analysis.decision.mustClarify?.length > 0 && <div style={{ marginBottom: "10px" }}><p style={{ fontSize: "12px", fontWeight: 600, color: "#fbbf24", marginBottom: "6px" }}>Must clarify before signing</p><ul style={{ margin: 0, paddingLeft: "16px", color: "#94a3b8", fontSize: "14px" }}>{quote.analysis.decision.mustClarify.map((item, i) => <li key={i}>{item}</li>)}</ul></div>}
-                      {quote.analysis.decision.negotiationPoints?.length > 0 && <div><p style={{ fontSize: "12px", fontWeight: 600, color: "#a78bfa", marginBottom: "6px" }}>Negotiation points</p><ul style={{ margin: 0, paddingLeft: "16px", color: "#94a3b8", fontSize: "14px" }}>{quote.analysis.decision.negotiationPoints.map((item, i) => <li key={i}>{item}</li>)}</ul></div>}
+                      {quote.analysis.decision.negotiationPoints?.length > 0 && <div style={{ marginBottom: "10px" }}><p style={{ fontSize: "12px", fontWeight: 600, color: "#a78bfa", marginBottom: "6px" }}>Negotiation points</p><ul style={{ margin: 0, paddingLeft: "16px", color: "#94a3b8", fontSize: "14px" }}>{quote.analysis.decision.negotiationPoints.map((item, i) => <li key={i}>{item}</li>)}</ul></div>}
+                      {quote.analysis.decision.exclusionGuide && quote.analysis.decision.exclusionGuide.length > 0 && (
+                        <div>
+                          <p style={{ fontSize: "12px", fontWeight: 600, color: "#f97316", marginBottom: "8px" }}>Exclusions to discuss with contractor</p>
+                          <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                            {quote.analysis.decision.exclusionGuide.map((item, i) => (
+                              <div key={i} style={{ padding: "10px", borderRadius: "8px", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}>
+                                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px", marginBottom: "6px", flexWrap: "wrap" }}>
+                                  <div style={{ fontSize: "14px", fontWeight: 600, color: "white" }}>{item.exclusion}</div>
+                                  <div style={{ padding: "4px 8px", borderRadius: "999px", fontSize: "11px", fontWeight: 700, background: item.riskLevel === "high" ? "rgba(239,68,68,0.15)" : item.riskLevel === "medium" ? "rgba(245,158,11,0.15)" : "rgba(34,197,94,0.15)", color: item.riskLevel === "high" ? "#f87171" : item.riskLevel === "medium" ? "#fbbf24" : "#4ade80" }}>{item.riskLevel.toUpperCase()} RISK</div>
+                                </div>
+                                <div style={{ fontSize: "13px", color: "#cbd5e1", marginBottom: "6px" }}><strong>Why it matters:</strong> {item.whyItMatters}</div>
+                                <div style={{ fontSize: "13px", color: "#cbd5e1", marginBottom: "6px" }}><strong>Ask contractor:</strong> {item.askContractor}</div>
+                                <div style={{ fontSize: "13px", color: "#cbd5e1" }}><strong>Recommended action:</strong> {item.recommendedAction}</div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
                   {quote.analysis.documentInsights && (

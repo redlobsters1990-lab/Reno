@@ -187,5 +187,80 @@ function buildDecision({ isFair, quoteAmount, marketRates, parsedDoc, redFlags, 
   if (parsedDoc.exclusions.length > 0) negotiationPoints.push("Negotiate to include high-probability exclusions now instead of treating them as later variation orders.");
   if (parsedDoc.paymentTerms.length > 0) negotiationPoints.push("Tie payment releases to completed milestones, not just dates.");
 
-  return { recommendation, riskLevel, reasons, mustClarify, negotiationPoints };
+  return {
+    recommendation,
+    riskLevel,
+    reasons,
+    mustClarify,
+    negotiationPoints,
+    exclusionGuide: buildExclusionGuide(parsedDoc.exclusions),
+  };
+}
+
+function buildExclusionGuide(exclusions: string[]) {
+  return exclusions.map((exclusion) => {
+    const lower = exclusion.toLowerCase();
+
+    if (/electrical|rewiring|wiring|power point|lighting/.test(lower)) {
+      return {
+        exclusion,
+        riskLevel: "high",
+        whyItMatters: "Electrical exclusions often become expensive variation costs after work starts.",
+        askContractor: "Please confirm exactly which electrical works are excluded and provide fixed pricing for common add-ons like rewiring, extra power points, and light relocation.",
+        recommendedAction: "Get electrical scope and fixed prices documented before signing.",
+      };
+    }
+    if (/plumbing|pipe|sanitary|waterproof/.test(lower)) {
+      return {
+        exclusion,
+        riskLevel: "high",
+        whyItMatters: "Plumbing or waterproofing exclusions can create major hidden cost and defect risk.",
+        askContractor: "Please clarify whether plumbing rerouting, waterproofing, and sanitary installation are included. If excluded, what will they cost separately?",
+        recommendedAction: "Request written wet-work scope and fixed pricing before proceeding.",
+      };
+    }
+    if (/demolition|haulage|disposal|debris|cart away/.test(lower)) {
+      return {
+        exclusion,
+        riskLevel: "medium",
+        whyItMatters: "Disposal exclusions can increase your final bill unexpectedly.",
+        askContractor: "Is demolition debris disposal excluded? If so, provide a fixed disposal fee now instead of charging later.",
+        recommendedAction: "Ask for disposal and haulage to be included or priced upfront.",
+      };
+    }
+    if (/painting|paint|touch up|skim coat/.test(lower)) {
+      return {
+        exclusion,
+        riskLevel: "medium",
+        whyItMatters: "Painting exclusions may leave the project incomplete or add finishing costs later.",
+        askContractor: "Which painting works are excluded specifically, and can you add them into the contract with a fixed price?",
+        recommendedAction: "Clarify exact paint scope room by room.",
+      };
+    }
+    if (/permit|approval|submission|mcst|hdb/.test(lower)) {
+      return {
+        exclusion,
+        riskLevel: "high",
+        whyItMatters: "Permit exclusions can delay the project and shift compliance risk back to you.",
+        askContractor: "Who is responsible for HDB/MCST permits and submissions, and what costs are excluded?",
+        recommendedAction: "Make permit responsibility explicit before proceeding.",
+      };
+    }
+    if (/material|fixture|appliance|owner supply/.test(lower)) {
+      return {
+        exclusion,
+        riskLevel: "medium",
+        whyItMatters: "Material exclusions can make the quote look cheaper than the real project cost.",
+        askContractor: "Please identify exactly which materials or fixtures are owner-supplied and estimate their budget impact.",
+        recommendedAction: "Add owner-supplied items into your total budget before deciding.",
+      };
+    }
+    return {
+      exclusion,
+      riskLevel: "medium",
+      whyItMatters: "Unclear exclusions often become hidden costs or disputes later in the project.",
+      askContractor: "Please explain this exclusion in plain language and confirm what extra cost it could create.",
+      recommendedAction: "Get this exclusion clarified in writing before signing.",
+    };
+  });
 }
