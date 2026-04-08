@@ -55,6 +55,7 @@ export function QuoteUpload({ projectId, onUploadComplete }: QuoteUploadProps) {
   const [quotes, setQuotes] = useState<QuoteData[]>([]);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [lastEvent, setLastEvent] = useState("");
   const [loadingQuotes, setLoadingQuotes] = useState(true);
   const [formData, setFormData] = useState({ contractorName: "", companyName: "", amount: "" });
 
@@ -106,6 +107,8 @@ export function QuoteUpload({ projectId, onUploadComplete }: QuoteUploadProps) {
     }
     setUploading(true);
     setError("");
+    setSuccess("");
+    setLastEvent(`Starting upload for ${file.name}...`);
     try {
       const fd = new FormData();
       fd.append("file", file);
@@ -126,15 +129,18 @@ export function QuoteUpload({ projectId, onUploadComplete }: QuoteUploadProps) {
       setQuotes(prev => [{ ...optimisticQuote, status: "analyzing" }, ...prev]);
       setFormData({ contractorName: "", companyName: "", amount: "" });
       setSuccess("Quote uploaded. Running AI analysis...");
+      setLastEvent(`Upload complete for ${file.name}. Starting AI analysis...`);
 
       await analyzeQuote(data.quote.id);
       await loadQuotes();
       setSuccess("Quote uploaded and analyzed successfully.");
+      setLastEvent(`Analysis finished for ${file.name}. Results are shown below.`);
       onUploadComplete?.();
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Failed to upload quote";
       console.error("Upload error:", err);
       setError(errorMessage);
+      setLastEvent(`Upload failed: ${errorMessage}`);
     } finally {
       setUploading(false);
     }
@@ -146,10 +152,13 @@ export function QuoteUpload({ projectId, onUploadComplete }: QuoteUploadProps) {
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(data.error || "Failed to analyze quote");
       setQuotes(prev => prev.map(q => q.id === quoteId ? { ...q, status: "analyzed", analysis: data.analysis } : q));
+      setLastEvent("AI analysis completed successfully.");
     } catch (err) {
       console.error("Analyze error:", err);
+      const message = err instanceof Error ? err.message : "Quote uploaded but analysis failed";
       setQuotes(prev => prev.map(q => q.id === quoteId ? { ...q, status: "error" } : q));
-      setError(err instanceof Error ? err.message : "Quote uploaded but analysis failed");
+      setError(message);
+      setLastEvent(`Analysis failed: ${message}`);
       setSuccess("");
     }
   };
@@ -171,6 +180,12 @@ export function QuoteUpload({ projectId, onUploadComplete }: QuoteUploadProps) {
           <div style={{ padding: "14px 16px", borderRadius: "8px", background: "rgba(34,197,94,0.1)", border: "1px solid rgba(34,197,94,0.3)", marginBottom: "16px", display: "flex", alignItems: "center", gap: "8px" }}>
             <CheckCircle size={18} color="#4ade80" />
             <span style={{ color: "#86efac", fontSize: "14px", fontWeight: 500 }}>{success}</span>
+          </div>
+        )}
+        {lastEvent && (
+          <div style={{ padding: "12px 14px", borderRadius: "8px", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", marginBottom: "16px" }}>
+            <div style={{ fontSize: "12px", color: "#64748b", marginBottom: "4px" }}>Latest quote workflow event</div>
+            <div style={{ fontSize: "14px", color: "#cbd5e1", fontWeight: 500 }}>{lastEvent}</div>
           </div>
         )}
 

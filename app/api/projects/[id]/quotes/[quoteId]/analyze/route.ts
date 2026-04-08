@@ -29,14 +29,17 @@ export async function POST(
     const marketRates = getMarketRates(project.propertyType, sqft);
     const analysis = analyzeQuotePrice(quote.totalAmount, marketRates, project.propertyType);
 
+    const existingMeta = safeParse(quote.parsingSummary) || {};
     await prisma.contractorQuote.update({
       where: { id: quoteId },
       data: {
         status: analysis.isFair ? "reviewed" : "parsed",
-        assessment: analysis.priceAssessment,
+        warnings: analysis.redFlags.length ? analysis.redFlags.join(" | ") : null,
+        notes: analysis.recommendations.length ? analysis.recommendations.join(" | ") : quote.notes,
         parsingSummary: JSON.stringify({
-          ...(safeParse(quote.parsingSummary) || {}),
+          ...existingMeta,
           analysis,
+          assessedAt: new Date().toISOString(),
         }),
       },
     });
