@@ -59,18 +59,13 @@ export async function POST(
 
     const formData = await request.formData();
     const file = formData.get("file") as File | null;
-    const contractorName = (formData.get("contractorName") as string | null)?.trim() || "";
+    const contractorName = (formData.get("contractorName") as string | null)?.trim() || "Unknown contractor";
     const companyName = (formData.get("companyName") as string | null)?.trim() || null;
-    const amount = parseFloat((formData.get("amount") as string | null) || "0");
+    const amountRaw = (formData.get("amount") as string | null) || "";
+    const amount = amountRaw ? parseFloat(amountRaw) : 0;
 
     if (!file) {
       return NextResponse.json({ success: false, error: "Please select a file to upload" }, { status: 400 });
-    }
-    if (!contractorName) {
-      return NextResponse.json({ success: false, error: "Please enter the contractor name" }, { status: 400 });
-    }
-    if (!amount || isNaN(amount) || amount <= 0) {
-      return NextResponse.json({ success: false, error: "Please enter a valid quote amount" }, { status: 400 });
     }
 
     const allowedTypes = ["application/pdf", "image/jpeg", "image/png", "image/jpg"];

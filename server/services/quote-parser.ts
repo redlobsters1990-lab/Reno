@@ -80,16 +80,16 @@ export async function extractQuoteDocument(filePath: string, fileType: string): 
 }
 
 async function extractPdfTextViaPython(filePath: string): Promise<string> {
-  const pythonCode = `
-from pypdf import PdfReader
-import sys
-path = sys.argv[1]
-reader = PdfReader(path)
-texts = []
-for page in reader.pages:
-    texts.append(page.extract_text() or "")
-print("\n".join(texts))
-`;
+  const pythonCode = [
+    "from pypdf import PdfReader",
+    "import sys",
+    "path = sys.argv[1]",
+    "reader = PdfReader(path)",
+    "texts = []",
+    "for page in reader.pages:",
+    "    texts.append(page.extract_text() or '')",
+    "print(chr(10).join(texts))",
+  ].join("\n");
   try {
     const { stdout, stderr } = await execFileAsync("python3", ["-c", pythonCode, filePath], {
       maxBuffer: 20 * 1024 * 1024,

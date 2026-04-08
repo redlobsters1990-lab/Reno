@@ -119,10 +119,6 @@ export function QuoteUpload({ projectId, onUploadComplete }: QuoteUploadProps) {
   };
 
   const uploadFile = async (file: File) => {
-    if (!formData.contractorName || !formData.amount) {
-      setError("Please enter contractor name and quote amount first");
-      return;
-    }
     setUploading(true);
     setError("");
     setSuccess("");
@@ -184,7 +180,8 @@ export function QuoteUpload({ projectId, onUploadComplete }: QuoteUploadProps) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
       <div style={{ padding: "24px", borderRadius: "12px", border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.02)" }}>
-        <h3 style={{ fontSize: "18px", fontWeight: 600, marginBottom: "16px" }}>Upload Contractor Quote</h3>
+        <h3 style={{ fontSize: "18px", fontWeight: 600, marginBottom: "8px" }}>Upload Contractor Quote</h3>
+        <p style={{ color: "#94a3b8", fontSize: "14px", marginBottom: "16px" }}>Upload the contractor PDF or image quote. The system will extract the contractor, amount, and line items automatically.</p>
         {error && (
           <div style={{ padding: "16px", borderRadius: "8px", background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)", marginBottom: "16px" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px" }}>
@@ -209,7 +206,7 @@ export function QuoteUpload({ projectId, onUploadComplete }: QuoteUploadProps) {
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "16px", marginBottom: "16px" }}>
           <div>
-            <label style={{ display: "block", fontSize: "14px", fontWeight: 500, color: "white", marginBottom: "8px" }}>Contractor Name *</label>
+            <label style={{ display: "block", fontSize: "14px", fontWeight: 500, color: "white", marginBottom: "8px" }}>Contractor Name (optional)</label>
             <div style={{ position: "relative" }}>
               <User style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: "#64748b" }} size={16} />
               <input type="text" placeholder="John Doe" value={formData.contractorName} onChange={(e) => setFormData(prev => ({ ...prev, contractorName: e.target.value }))} style={{ width: "100%", padding: "10px 12px 10px 40px", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px", color: "white", fontSize: "14px", outline: "none" }} />
@@ -223,7 +220,7 @@ export function QuoteUpload({ projectId, onUploadComplete }: QuoteUploadProps) {
             </div>
           </div>
           <div>
-            <label style={{ display: "block", fontSize: "14px", fontWeight: 500, color: "white", marginBottom: "8px" }}>Quote Amount (SGD) *</label>
+            <label style={{ display: "block", fontSize: "14px", fontWeight: 500, color: "white", marginBottom: "8px" }}>Quote Amount (optional override)</label>
             <div style={{ position: "relative" }}>
               <DollarSign style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: "#64748b" }} size={16} />
               <input type="number" placeholder="50000" value={formData.amount} onChange={(e) => setFormData(prev => ({ ...prev, amount: e.target.value }))} style={{ width: "100%", padding: "10px 12px 10px 40px", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px", color: "white", fontSize: "14px", outline: "none" }} />
