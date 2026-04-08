@@ -41,9 +41,23 @@ export async function POST(
     const companyName = formData.get("companyName") as string;
     const amount = parseFloat(formData.get("amount") as string);
 
-    if (!file || !contractorName || !amount) {
+    if (!file) {
       return NextResponse.json(
-        { success: false, error: "Missing required fields" },
+        { success: false, error: "Please select a file to upload" },
+        { status: 400 }
+      );
+    }
+
+    if (!contractorName?.trim()) {
+      return NextResponse.json(
+        { success: false, error: "Please enter the contractor name" },
+        { status: 400 }
+      );
+    }
+
+    if (!amount || isNaN(amount) || amount <= 0) {
+      return NextResponse.json(
+        { success: false, error: "Please enter a valid quote amount" },
         { status: 400 }
       );
     }
@@ -67,8 +81,17 @@ export async function POST(
     }
 
     // Create uploads directory if it doesn't exist
-    const uploadDir = join(process.cwd(), "uploads", "quotes", projectId);
-    await mkdir(uploadDir, { recursive: true });
+    let uploadDir: string;
+    try {
+      uploadDir = join(process.cwd(), "uploads", "quotes", projectId);
+      await mkdir(uploadDir, { recursive: true });
+    } catch (dirError) {
+      console.error("Error creating upload directory:", dirError);
+      return NextResponse.json(
+        { success: false, error: "Server error: Unable to create upload directory" },
+        { status: 500 }
+      );
+    }
 
     // Generate unique filename
     const timestamp = Date.now();
@@ -77,26 +100,50 @@ export async function POST(
     const filepath = join(uploadDir, filename);
 
     // Save file
-    const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
-    await writeFile(filepath, buffer);
+    try {
+      const bytes = await file.arrayBuffer();
+      const buffer = Buffer.from(bytes);
+      await writeFile(filepath, buffer);
+    } catch (fileError) {
+      console.error("Error saving file:", fileError);
+      return NextResponse.json(
+        { success: false, error: "Failed to save uploaded file. Please try again." },
+        { status: 500 }
+      );
+    }
 
     // Create relative URL for file access
     const fileUrl = `/api/files/quotes/${projectId}/${filename}`;
 
     // Save quote to database
-    const quote = await prisma.quote.create({
-      data: {
-        projectId,
-        contractorName,
-        companyName: companyName || null,
-        amount,
-        fileUrl,
-        fileName: file.name,
-        fileType: file.type,
-        status: "pending",
-      },
-    });
+    let quote;
+    try {
+      quote = await prisma.quote.create({
+        data: {
+          projectId,
+          contractorName,
+          companyName: companyName || null,
+          amount,
+          fileUrl,
+          fileName: file.name,
+          fileType: file.type,
+          status: "pending",
+        },
+      });
+    } catch (dbError) {
+      console.error("Error saving to database:", dbError);
+      // Try to clean up the uploaded file
+      try {
+        const fs = await import("fs/promises");
+        await fs.unlink(filepath);
+      } catch (cleanupError) {
+        console.error("Error cleaning up file after DB error:", cleanupError);
+      }
+      return NextResponse.json(
+        { success: false, error: "Failed to save quote information. Please try again." },
+        { status: 500 }
+      );
+    }
 
     return NextResponse.json({ 
       success: true, 
@@ -113,8 +160,9 @@ export async function POST(
     });
   } catch (error) {
     console.error("Error uploading quote:", error);
+    const errorMessage = error instanceof Error ? error.message : "Failed to upload quote";
     return NextResponse.json(
-      { success: false, error: "Failed to upload quote" },
+      { success: false, error: errorMessage },
       { status: 500 }
     );
   }

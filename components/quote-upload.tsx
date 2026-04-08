@@ -93,7 +93,8 @@ export function QuoteUpload({ projectId, onUploadComplete }: QuoteUploadProps) {
       });
 
       if (!response.ok) {
-        throw new Error("Failed to upload quote");
+        const errorData = await response.json().catch(() => ({ error: "Unknown error occurred" }));
+        throw new Error(errorData.error || `Upload failed: ${response.status} ${response.statusText}`);
       }
 
       const data = await response.json();
@@ -117,7 +118,9 @@ export function QuoteUpload({ projectId, onUploadComplete }: QuoteUploadProps) {
       
       onUploadComplete?.();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to upload quote");
+      const errorMessage = err instanceof Error ? err.message : "Failed to upload quote";
+      console.error("Upload error:", err);
+      setError(errorMessage);
     } finally {
       setUploading(false);
     }
@@ -172,9 +175,15 @@ export function QuoteUpload({ projectId, onUploadComplete }: QuoteUploadProps) {
         <h3 style={{ fontSize: "18px", fontWeight: 600, marginBottom: "16px" }}>Upload Contractor Quote</h3>
         
         {error && (
-          <div style={{ padding: "12px", borderRadius: "8px", background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)", marginBottom: "16px", display: "flex", alignItems: "center", gap: "8px" }}>
-            <AlertCircle size={16} color="#ef4444" />
-            <span style={{ color: "#ef4444", fontSize: "14px" }}>{error}</span>
+          <div style={{ padding: "16px", borderRadius: "8px", background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)", marginBottom: "16px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px" }}>
+              <AlertCircle size={20} color="#ef4444" />
+              <span style={{ color: "#ef4444", fontSize: "16px", fontWeight: 600 }}>Upload Failed</span>
+            </div>
+            <p style={{ color: "#fca5a5", fontSize: "14px", marginLeft: "28px" }}>{error}</p>
+            <p style={{ color: "#64748b", fontSize: "12px", marginLeft: "28px", marginTop: "8px" }}>
+              Please check your connection and try again. If the problem persists, contact support.
+            </p>
           </div>
         )}
 
