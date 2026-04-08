@@ -46,3 +46,87 @@ next-env.d.ts
 
 # OS
 Thumbs.db
+
+# OpenClaw workspace files
+.openclaw/
+
+# Audit and summary files (internal development)
+*_SUMMARY.md
+*_REPORT.md
+*_FIX*.md
+TESTING_*.md
+UPGRADE_*.md
+COMPREHENSIVE_*.md
+CURRENT_*.md
+FINAL_*.md
+PHASE*.md
+POLISH_*.md
+PRISMA_*.md
+
+# Temporary test files
+app/test-*
+app/*/test-*
+test-*
+*.test.*
+*.spec.*
+
+# Backup files
+*.backup
+*.backup*
+*.old
+*.corrupted
+*.fixed
+*.simple
+*.updated
+*.error
+*.nextauth
+*.original
+
+# Scripts and temporary files
+*.sh
+*.js
+*.html
+*.txt
+*.sql
+
+# Cookies and session files
+cookies.txt
+*.cookies.txt
+*.session.txt
+
+# Node modules cache
+.npm
+.pnpm-store
+
+# Environment files (except example)
+.env
+.env.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+[Dd]esktop.ini
+$RECYCLE.BIN/
+
+# Linux
+*~
+
+# Directories to ignore
+node_modules/
+.next/
+out/
+build/
+coverage/
+.vercel/
+uploads/
+!uploads/.gitkeep
