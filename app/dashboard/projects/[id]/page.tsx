@@ -67,13 +67,14 @@ function generateEstimate(project: Project): { low: string; typical: string; hig
 export default function ProjectDetailPage() {
   const router  = useRouter();
   const params  = useParams();
-  const projectId = params.id as string;
+  const projectId = params?.id as string | undefined;
 
   const [project, setProject] = useState<Project | null>(null);
   const [loading, setLoading] = useState(true);
   const [error,   setError]   = useState("");
 
   useEffect(() => {
+    if (!projectId) return; // Wait for projectId to be available
     if (!isAuthenticated()) { router.push("/auth/signin"); return; }
     fetchProject();
   }, [projectId]);
@@ -97,11 +98,11 @@ export default function ProjectDetailPage() {
     }
   };
 
-  if (loading) {
+  if (!projectId || loading) {
     return (
       <div style={{ minHeight: "100vh", background: "linear-gradient(to bottom, #0b1020, #0f172a)", display: "flex", alignItems: "center", justifyContent: "center" }}>
         <Loader2 size={32} color="#a78bfa" style={{ animation: "spin 1s linear infinite", marginRight: "12px" }} />
-        <span style={{ color: "#94a3b8" }}>Loading project...</span>
+        <span style={{ color: "#94a3b8" }}>{!projectId ? "Loading..." : "Loading project..."}</span>
       </div>
     );
   }
@@ -246,9 +247,11 @@ export default function ProjectDetailPage() {
         </div>
 
         {/* Quote Upload Section */}
-        <div style={{ marginBottom: "24px" }}>
-          <QuoteUpload projectId={projectId} onUploadComplete={() => window.location.reload()} />
-        </div>
+        {projectId && (
+          <div style={{ marginBottom: "24px" }}>
+            <QuoteUpload projectId={projectId} onUploadComplete={() => window.location.reload()} />
+          </div>
+        )}
 
         {/* Next Steps */}
         <div style={{ marginBottom: "24px", padding: "24px", borderRadius: "16px", border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.02)" }}>
