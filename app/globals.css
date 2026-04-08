@@ -40,8 +40,29 @@ textarea {
 
 /* ===== DESIGN SYSTEM UTILITIES ===== */
 
-/* Container - Using Tailwind's built-in container with center: true */
-/* Container centering is now handled by tailwind.config.ts */
+/* Container - Explicit centering to fix alignment issues */
+.container {
+  margin-left: auto !important;
+  margin-right: auto !important;
+  width: 100%;
+  max-width: 1280px;
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+@media (min-width: 640px) {
+  .container {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .container {
+    padding-left: 2rem;
+    padding-right: 2rem;
+  }
+}
 
 /* Typography utilities */
 .text-display {

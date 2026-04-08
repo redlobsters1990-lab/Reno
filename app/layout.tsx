@@ -21,9 +21,11 @@ export default async function RootLayout({
 
   return (
     <html lang="en" className="dark">
-      <body className={`${inter.className} min-h-screen bg-background text-foreground`}>
+      <body className={`${inter.className} min-h-screen bg-background text-foreground flex flex-col items-center`}>
         <Providers session={session}>
-          {children}
+          <div className="w-full max-w-[1920px]">
+            {children}
+          </div>
         </Providers>
       </body>
     </html>
