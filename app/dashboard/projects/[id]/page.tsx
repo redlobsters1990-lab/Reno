@@ -8,6 +8,7 @@ import {
   Upload, MessageSquare, Loader2, AlertCircle, Calendar,
   CheckCircle, Circle, FileText, DollarSign, Sparkles
 } from "lucide-react";
+import { QuoteUpload } from "@/components/quote-upload";
 
 interface Project {
   id: string;
@@ -244,27 +245,29 @@ export default function ProjectDetailPage() {
           )}
         </div>
 
+        {/* Quote Upload Section */}
+        <div style={{ marginBottom: "24px" }}>
+          <QuoteUpload projectId={projectId} onUploadComplete={() => window.location.reload()} />
+        </div>
+
         {/* Next Steps */}
         <div style={{ marginBottom: "24px", padding: "24px", borderRadius: "16px", border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.02)" }}>
           <h2 style={{ fontSize: "18px", fontWeight: 600, marginBottom: "20px" }}>Next Steps</h2>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "16px" }}>
 
-            <div style={{ padding: "20px", borderRadius: "10px", border: "1px solid rgba(255,255,255,0.1)" }}>
+            <div style={{ padding: "20px", borderRadius: "10px", border: "1px solid rgba(255,255,255,0.1)", opacity: 0.6 }}>
               <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "12px" }}>
                 <div style={{ width: "40px", height: "40px", background: "rgba(139,92,246,0.1)", border: "1px solid rgba(139,92,246,0.3)", borderRadius: "10px", display: "flex", alignItems: "center", justifyContent: "center" }}>
                   <Upload size={20} color="#a78bfa" />
                 </div>
                 <div>
-                  <div style={{ fontWeight: 500 }}>Upload Contractor Quotes</div>
-                  <div style={{ fontSize: "12px", color: "#94a3b8" }}>Analyse pricing, compare contractors</div>
+                  <div style={{ fontWeight: 500 }}>Quote Analysis Complete</div>
+                  <div style={{ fontSize: "12px", color: "#94a3b8" }}>AI-powered analysis available above</div>
                 </div>
               </div>
-              <p style={{ fontSize: "12px", color: "#64748b", marginBottom: "12px" }}>
-                Upload PDF or image quotes to get an AI-powered fairness assessment and side-by-side comparison.
+              <p style={{ fontSize: "12px", color: "#64748b" }}>
+                Upload quotes above to get instant AI analysis and market comparison.
               </p>
-              <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "12px", padding: "6px 12px", borderRadius: "6px", background: "rgba(15,23,42,0.5)", border: "1px solid rgba(255,255,255,0.1)", color: "#94a3b8" }}>
-                <Clock size={12} /> Coming soon
-              </span>
             </div>
 
             <div style={{ padding: "20px", borderRadius: "10px", border: "1px solid rgba(255,255,255,0.1)" }}>

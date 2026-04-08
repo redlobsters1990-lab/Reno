@@ -102,6 +102,7 @@ model Project {
   projectSessions  ProjectSession[]
   projectMemories  ProjectShortTermMemory[]
   uploadedFiles    UploadedFile[]
+  quotes           Quote[]
 
   @@index([userId, createdAt])
 }
@@ -417,4 +418,23 @@ enum CostEventType {
   quote_analysis
   file_processing
   memory_processing
+}
+
+// Model for uploaded contractor quotes with AI analysis
+model Quote {
+  id             String   @id @default(cuid())
+  projectId      String
+  project        Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  contractorName String
+  companyName    String?
+  amount         Float
+  fileUrl        String
+  fileName       String
+  fileType       String
+  status         String   @default("pending") // pending, analyzing, analyzed, error
+  analysis       String?  @db.Text // JSON string of AI analysis
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([projectId])
 }
