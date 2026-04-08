@@ -24,6 +24,13 @@ interface QuoteData {
     strengths?: string[];
     redFlags: string[];
     recommendations: string[];
+    decision?: {
+      recommendation: string;
+      riskLevel: "low" | "medium" | "high";
+      reasons: string[];
+      mustClarify: string[];
+      negotiationPoints: string[];
+    };
     documentInsights?: {
       lineItemCount: number;
       exclusionsCount: number;
@@ -284,6 +291,22 @@ export function QuoteUpload({ projectId, onUploadComplete }: QuoteUploadProps) {
                     <div style={{ textAlign: "center" }}><div style={{ fontSize: "12px", color: "#64748b" }}>Average</div><div style={{ fontSize: "14px", fontWeight: 600, color: "#a78bfa" }}>${quote.analysis.marketComparison.marketAverage.toLocaleString()}</div></div>
                     <div style={{ textAlign: "center" }}><div style={{ fontSize: "12px", color: "#64748b" }}>Market High</div><div style={{ fontSize: "14px", fontWeight: 600, color: "#fbbf24" }}>${quote.analysis.marketComparison.marketHigh.toLocaleString()}</div></div>
                   </div>
+                  {quote.analysis.decision && (
+                    <div style={{ marginBottom: "12px", padding: "12px", borderRadius: "8px", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px", marginBottom: "10px", flexWrap: "wrap" }}>
+                        <div>
+                          <div style={{ fontSize: "12px", color: "#64748b", marginBottom: "4px" }}>Decision guidance</div>
+                          <div style={{ fontSize: "18px", fontWeight: 700, color: "white" }}>{quote.analysis.decision.recommendation}</div>
+                        </div>
+                        <div style={{ padding: "6px 10px", borderRadius: "999px", fontSize: "12px", fontWeight: 700, background: quote.analysis.decision.riskLevel === "low" ? "rgba(34,197,94,0.15)" : quote.analysis.decision.riskLevel === "medium" ? "rgba(245,158,11,0.15)" : "rgba(239,68,68,0.15)", color: quote.analysis.decision.riskLevel === "low" ? "#4ade80" : quote.analysis.decision.riskLevel === "medium" ? "#fbbf24" : "#f87171" }}>
+                          {quote.analysis.decision.riskLevel.toUpperCase()} RISK
+                        </div>
+                      </div>
+                      {quote.analysis.decision.reasons?.length > 0 && <div style={{ marginBottom: "10px" }}><p style={{ fontSize: "12px", fontWeight: 600, color: "#cbd5e1", marginBottom: "6px" }}>Why</p><ul style={{ margin: 0, paddingLeft: "16px", color: "#94a3b8", fontSize: "14px" }}>{quote.analysis.decision.reasons.map((item, i) => <li key={i}>{item}</li>)}</ul></div>}
+                      {quote.analysis.decision.mustClarify?.length > 0 && <div style={{ marginBottom: "10px" }}><p style={{ fontSize: "12px", fontWeight: 600, color: "#fbbf24", marginBottom: "6px" }}>Must clarify before signing</p><ul style={{ margin: 0, paddingLeft: "16px", color: "#94a3b8", fontSize: "14px" }}>{quote.analysis.decision.mustClarify.map((item, i) => <li key={i}>{item}</li>)}</ul></div>}
+                      {quote.analysis.decision.negotiationPoints?.length > 0 && <div><p style={{ fontSize: "12px", fontWeight: 600, color: "#a78bfa", marginBottom: "6px" }}>Negotiation points</p><ul style={{ margin: 0, paddingLeft: "16px", color: "#94a3b8", fontSize: "14px" }}>{quote.analysis.decision.negotiationPoints.map((item, i) => <li key={i}>{item}</li>)}</ul></div>}
+                    </div>
+                  )}
                   {quote.analysis.documentInsights && (
                     <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px", marginBottom: "12px" }}>
                       <Metric label="Line items" value={quote.analysis.documentInsights.lineItemCount} />

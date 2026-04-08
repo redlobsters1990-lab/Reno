@@ -117,6 +117,8 @@ function analyzeQuoteDocument({ quoteAmount, marketRates, parsedDoc, propertyTyp
   if (!parsedDoc.warrantyTerms.length) recommendations.push("Ask the contractor to add workmanship and material warranty terms.");
   if (!parsedDoc.materialsMentions.length) recommendations.push("Request more material detail if finishes or brands are not clearly specified.");
 
+  const decision = buildDecision({ isFair, quoteAmount, marketRates, parsedDoc, redFlags, recommendations });
+
   return {
     isFair,
     confidence,
@@ -124,6 +126,7 @@ function analyzeQuoteDocument({ quoteAmount, marketRates, parsedDoc, propertyTyp
     strengths,
     redFlags,
     recommendations,
+    decision,
     documentInsights: {
       lineItemCount: parsedDoc.lineItems.length,
       exclusionsCount: parsedDoc.exclusions.length,
@@ -139,4 +142,50 @@ function analyzeQuoteDocument({ quoteAmount, marketRates, parsedDoc, propertyTyp
       marketHigh: marketRates.high,
     },
   };
+}
+
+function buildDecision({ isFair, quoteAmount, marketRates, parsedDoc, redFlags, recommendations }: any) {
+  let riskLevel: "low" | "medium" | "high" = "medium";
+  let recommendation = "Proceed only after clarification";
+
+  const severeIssues = [
+    parsedDoc.paymentTerms.length === 0,
+    parsedDoc.warrantyTerms.length === 0,
+    parsedDoc.lineItems.length < 3,
+    quoteAmount > marketRates.high * 1.2,
+    quoteAmount < marketRates.low * 0.8,
+  ].filter(Boolean).length;
+
+  if (severeIssues >= 3) {
+    riskLevel = "high";
+    recommendation = "Do not proceed yet";
+  } else if (severeIssues === 0 && isFair && parsedDoc.exclusions.length <= 1) {
+    riskLevel = "low";
+    recommendation = "Proceed";
+  } else if (isFair) {
+    riskLevel = "medium";
+    recommendation = "Proceed, but negotiate";
+  }
+
+  const reasons: string[] = [];
+  if (isFair) reasons.push("Quoted price is within or near the expected market range.");
+  else reasons.push("Quoted price sits outside the expected market range.");
+  if (parsedDoc.lineItems.length >= 3) reasons.push("The quote is itemized enough to review scope at a practical level.");
+  if (parsedDoc.exclusions.length > 0) reasons.push(`There are ${parsedDoc.exclusions.length} exclusions that could turn into hidden costs.`);
+  if (parsedDoc.paymentTerms.length === 0) reasons.push("Payment terms are not clearly stated.");
+  if (parsedDoc.warrantyTerms.length === 0) reasons.push("Warranty terms are not clearly stated.");
+
+  const mustClarify: string[] = [];
+  if (parsedDoc.exclusions.length > 0) mustClarify.push("Ask the contractor to confirm every exclusion in writing and price any likely add-ons now.");
+  if (parsedDoc.paymentTerms.length === 0) mustClarify.push("Request a milestone-based payment schedule instead of vague or front-loaded payments.");
+  if (parsedDoc.warrantyTerms.length === 0) mustClarify.push("Request explicit workmanship and material warranty coverage in writing.");
+  if (parsedDoc.materialsMentions.length === 0) mustClarify.push("Ask for the exact material brands, models, and finish specifications.");
+  if (parsedDoc.lineItems.length < 3) mustClarify.push("Ask for a more detailed line-item breakdown before making a decision.");
+
+  const negotiationPoints: string[] = [];
+  if (quoteAmount > marketRates.average) negotiationPoints.push("Use market comparison to negotiate the total closer to the average range.");
+  if (parsedDoc.exclusions.length > 0) negotiationPoints.push("Negotiate to include high-probability exclusions now instead of treating them as later variation orders.");
+  if (parsedDoc.paymentTerms.length > 0) negotiationPoints.push("Tie payment releases to completed milestones, not just dates.");
+
+  return { recommendation, riskLevel, reasons, mustClarify, negotiationPoints };
 }
