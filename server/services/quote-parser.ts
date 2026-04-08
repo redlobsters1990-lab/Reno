@@ -4,6 +4,30 @@ import Tesseract from "tesseract.js";
 
 const execFileAsync = promisify(execFile);
 
+// ── Parser limits ─────────────────────────────────────────────────────────────
+const MAX_LINE_ITEMS             = 25;
+const MAX_PAYMENT_TERMS          = 10;
+const MAX_EXCLUSIONS             = 10;
+const MAX_WARRANTY_TERMS         = 10;
+const MAX_MATERIALS              = 10;
+const MAX_TIMELINE_MENTIONS      = 10;
+const CONTRACTOR_NAME_SCAN_LINES = 20;
+const CONTRACTOR_NAME_FALLBACK_LINES = 12;
+const MIN_DESCRIPTION_LENGTH     = 4;
+const MIN_ITEMIZATION_COUNT      = 3;
+const QUOTE_AMOUNT_MIN           = 500;
+const QUOTE_AMOUNT_MAX           = 2_000_000;
+const PDF_MAX_BUFFER_BYTES       = 20 * 1024 * 1024;
+const PDF_TIMEOUT_MS             = 30_000;
+const MATERIAL_KEYWORDS  = /laminate|vinyl|tile|quartz|granite|plywood|glass|aluminium|paint/i;
+const TIMELINE_KEYWORDS  = /week|weeks|month|months|working days|timeline|completion/i;
+const EXCLUSION_KEYWORDS = /exclude|excluding|not included|excludes/i;
+const PAYMENT_KEYWORDS   = /deposit|payment|progress payment|final payment|upon completion|installment/i;
+const WARRANTY_KEYWORDS  = /warranty|defect liability|guarantee/i;
+const LINE_ITEM_HEADER_PATTERN = /^(item|description|qty|quantity|unit|subtotal|total|grand total)/i;
+// Recognised legal entity and trade suffixes for company name detection
+const COMPANY_SUFFIX_PATTERN   = /Pte Ltd|LLP|LLC|Construction|Renovation|Interiors|Design/i;
+
 export interface ParsedQuoteLineItem {
   description: string;
   amount: number | null;
@@ -57,7 +81,7 @@ export async function extractQuoteDocument(filePath: string, fileType: string): 
 
   const documentQuality = {
     hasTotalAmount: !!totalAmount,
-    hasItemization: lineItems.length >= 3,
+    hasItemization: lineItems.length >= MIN_ITEMIZATION_COUNT,
     hasPaymentTerms: paymentTerms.length > 0,
     hasWarranty: warrantyTerms.length > 0,
     hasExclusions: exclusions.length > 0,
@@ -113,8 +137,8 @@ async function extractPdfTextViaPython(filePath: string): Promise<string> {
   ].join("\n");
   try {
     const { stdout, stderr } = await execFileAsync("python3", ["-c", pythonCode, filePath], {
-      maxBuffer: 20 * 1024 * 1024,
-      timeout: 30_000,
+      maxBuffer: PDF_MAX_BUFFER_BYTES,
+      timeout: PDF_TIMEOUT_MS,
     });
     if (stderr && stderr.trim()) {
       console.warn("PDF python parser stderr:", stderr);
@@ -168,7 +192,10 @@ function detectContractorName(text: string): string | undefined {
   );
 }
 function detectCompanyName(text: string): string | undefined {
-  const match = text.match(/([A-Z][A-Za-z&.,'\- ]+(Pte Ltd|LLP|LLC|Construction|Renovation|Interiors|Design))/i);
+  // COMPANY_SUFFIX_PATTERN lists recognised legal entity and trade suffixes
+  const match = text.match(new RegExp(
+    '([A-Z][A-Za-z&.,\'\\-\\s]+(' + COMPANY_SUFFIX_PATTERN.source + '))', 'i'
+  ));
   return match?.[1]?.trim();
 }
 function detectTotalAmount(text: string): number | undefined {
@@ -185,7 +212,7 @@ function detectTotalAmount(text: string): number | undefined {
     if (raw) {
       const value = parseCurrency(raw);
       // Sanity check: renovation quotes in SGD are typically between $500 and $2,000,000
-      if (value && value >= 500 && value <= 2_000_000) return value;
+      if (value && value >= QUOTE_AMOUNT_MIN && value <= QUOTE_AMOUNT_MAX) return value;
     }
   }
   return undefined;
@@ -194,29 +221,29 @@ function detectLineItems(text: string): ParsedQuoteLineItem[] {
   const lines = text.split("\n").map(l => l.trim()).filter(Boolean);
   const items: ParsedQuoteLineItem[] = [];
   for (const line of lines) {
-    if (/^(item|description|qty|quantity|unit|subtotal|total|grand total)/i.test(line)) continue;
+    if (LINE_ITEM_HEADER_PATTERN.test(line)) continue;
     const moneyMatch = line.match(/([$S]?\s?[\d,]+(?:\.\d{2})?)(?!.*[$S]?\s?[\d,]+(?:\.\d{2})?)/);
     if (moneyMatch && /[A-Za-z]{3,}/.test(line)) {
       const description = line.replace(moneyMatch[0], "").trim().replace(/^[-•\d.\s]+/, "");
-      if (description.length >= 4) items.push({ description, amount: parseCurrency(moneyMatch[0]) });
+      if (description.length >= MIN_DESCRIPTION_LENGTH) items.push({ description, amount: parseCurrency(moneyMatch[0]) });
     }
   }
-  return items.slice(0, 25);
+  return items.slice(0, MAX_LINE_ITEMS);
 }
 function detectPaymentTerms(text: string): string[] {
-  return text.split("\n").map(l => l.trim()).filter(line => /deposit|payment|progress payment|final payment|upon completion|installment/i.test(line)).slice(0, 10);
+  return text.split("\n").map(l => l.trim()).filter(line => PAYMENT_KEYWORDS.test(line)).slice(0, MAX_PAYMENT_TERMS);
 }
 function detectExclusions(text: string): string[] {
-  return text.split("\n").map(l => l.trim()).filter(line => /exclude|excluding|not included|excludes/i.test(line)).slice(0, 10);
+  return text.split("\n").map(l => l.trim()).filter(line => EXCLUSION_KEYWORDS.test(line)).slice(0, MAX_EXCLUSIONS);
 }
 function detectWarrantyTerms(text: string): string[] {
-  return text.split("\n").map(l => l.trim()).filter(line => /warranty|defect liability|guarantee/i.test(line)).slice(0, 10);
+  return text.split("\n").map(l => l.trim()).filter(line => WARRANTY_KEYWORDS.test(line)).slice(0, MAX_WARRANTY_TERMS);
 }
 function detectMaterials(text: string): string[] {
-  return text.split("\n").map(l => l.trim()).filter(line => /laminate|vinyl|tile|quartz|granite|plywood|glass|aluminium|paint/i.test(line)).slice(0, 10);
+  return text.split("\n").map(l => l.trim()).filter(line => MATERIAL_KEYWORDS.test(line)).slice(0, MAX_MATERIALS);
 }
 function detectTimeline(text: string): string[] {
-  return text.split("\n").map(l => l.trim()).filter(line => /week|weeks|month|months|working days|timeline|completion/i.test(line)).slice(0, 10);
+  return text.split("\n").map(l => l.trim()).filter(line => TIMELINE_KEYWORDS.test(line)).slice(0, MAX_TIMELINE_MENTIONS);
 }
 function detectWarnings(text: string, quality: ParsedQuoteDocument["documentQuality"]): string[] {
   const warnings: string[] = [];

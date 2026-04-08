@@ -4,6 +4,13 @@ import { writeFile, mkdir, access, unlink } from "fs/promises";
 import { join } from "path";
 import { constants } from "fs";
 
+// ── Upload limits ────────────────────────────────────────────────────────────
+const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB
+const ALLOWED_MIME_TYPES  = ["application/pdf", "image/jpeg", "image/png", "image/jpg"] as const;
+const UPLOAD_SUBDIRS      = ["uploads", "quotes"] as const;
+const FALLBACK_UPLOAD_DIRS = ["/tmp", "/var/tmp"] as const;
+const MIN_QUOTES_FOR_COMPARISON = 2;
+
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> | { id: string } }
@@ -37,7 +44,7 @@ export async function GET(
     // Build comparison summary when multiple analysed quotes exist
     const analysedQuotes = normalizedQuotes.filter(q => q.analysis);
     let comparison = null;
-    if (analysedQuotes.length >= 2) {
+    if (analysedQuotes.length >= MIN_QUOTES_FOR_COMPARISON) {
       const amounts = analysedQuotes.map(q => ({ id: q.id, contractorName: q.contractorName, companyName: q.companyName, amount: q.amount ?? 0, riskLevel: q.analysis?.decision?.riskLevel ?? "unknown", isFair: q.analysis?.isFair ?? false, priceAssessment: q.analysis?.priceAssessment ?? "" }));
       const sorted = [...amounts].sort((a, b) => a.amount - b.amount);
       const avg = amounts.reduce((s, q) => s + q.amount, 0) / amounts.length;
@@ -79,8 +86,12 @@ export async function POST(
 
     const formData = await request.formData();
     const file = formData.get("file") as File | null;
-    const contractorName = (formData.get("contractorName") as string | null)?.trim() || "Unknown contractor";
+    const contractorName = (formData.get("contractorName") as string | null)?.trim() || null;
     const companyName = (formData.get("companyName") as string | null)?.trim() || null;
+
+    if (!companyName) {
+      return NextResponse.json({ success: false, error: "Company name is required." }, { status: 400 });
+    }
     const amountRaw = (formData.get("amount") as string | null) || "";
     const amount = amountRaw ? parseFloat(amountRaw) : 0;
 
@@ -88,19 +99,18 @@ export async function POST(
       return NextResponse.json({ success: false, error: "Please select a file to upload" }, { status: 400 });
     }
 
-    const allowedTypes = ["application/pdf", "image/jpeg", "image/png", "image/jpg"];
-    if (!allowedTypes.includes(file.type)) {
+    if (!(ALLOWED_MIME_TYPES as readonly string[]).includes(file.type)) {
       return NextResponse.json({ success: false, error: "Invalid file type. Only PDF, JPG, and PNG are allowed" }, { status: 400 });
     }
-    if (file.size > 10 * 1024 * 1024) {
+    if (file.size > MAX_FILE_SIZE_BYTES) {
       return NextResponse.json({ success: false, error: "File too large. Maximum size is 10MB" }, { status: 400 });
     }
 
     let uploadDir = "";
     const possibleDirs = [
-      join(process.cwd(), "uploads", "quotes", projectId),
-      join("/tmp", "renovation-advisor", "uploads", "quotes", projectId),
-      join("/var/tmp", "renovation-advisor", "uploads", "quotes", projectId),
+      join(process.cwd(), ...UPLOAD_SUBDIRS, projectId),
+      join(FALLBACK_UPLOAD_DIRS[0], "renovation-advisor", ...UPLOAD_SUBDIRS, projectId),
+      join(FALLBACK_UPLOAD_DIRS[1], "renovation-advisor", ...UPLOAD_SUBDIRS, projectId),
     ];
     for (const dir of possibleDirs) {
       try {
@@ -139,7 +149,7 @@ export async function POST(
         data: {
           projectId,
           userId: project.userId,
-          contractorName,
+          contractorName: contractorName ?? "Unknown contractor",
           totalAmount: amount,
           status: "draft",
           parsingSummary: JSON.stringify({

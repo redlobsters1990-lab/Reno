@@ -2,6 +2,21 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/server/db";
 import { extractQuoteDocument } from "@/server/services/quote-parser";
 
+const MARKET_RATE_TABLE: Record<string, { low: number; avg: number; high: number }> = {
+  "HDB Resale":  { low: 40,  avg: 60,  high: 90  },
+  "HDB BTO":     { low: 35,  avg: 50,  high: 75  },
+  "Condo":       { low: 60,  avg: 90,  high: 130 },
+  "Landed":      { low: 80,  avg: 120, high: 180 },
+  "Commercial":  { low: 50,  avg: 75,  high: 110 },
+};
+const MARKET_RATE_DEFAULT = { low: 50, avg: 75, high: 110 };
+const DEFAULT_PROPERTY_SIZE_SQFT = 1000;
+const PRICE_BAND_VERY_LOW  = 0.80;
+const PRICE_BAND_PREMIUM   = 1.20;
+const SEVERE_ISSUES_HIGH_RISK    = 3;
+const MAX_EXCLUSIONS_FOR_LOW_RISK = 1;
+const MIN_LINE_ITEMS_FOR_SCOPE   = 3;
+
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string; quoteId: string }> | { id: string; quoteId: string } }
@@ -68,16 +83,31 @@ function parsePropertySizeFromNotes(notes: string | null): number | null {
   const m = notes?.match(/Property size: (\d+)/);
   return m ? parseInt(m[1]) : null;
 }
+// ── Market rate table (SGD per sqft) ────────────────────────────────────────────────────────────
+// Source: Singapore renovation industry benchmarks
+// Update these when market conditions change — do not hardcode inline.
+const MARKET_RATE_TABLE: Record<string, { low: number; avg: number; high: number }> = {
+  "HDB Resale":  { low: 40,  avg: 60,  high: 90  },
+  "HDB BTO":     { low: 35,  avg: 50,  high: 75  },
+  "Condo":       { low: 60,  avg: 90,  high: 130 },
+  "Landed":      { low: 80,  avg: 120, high: 180 },
+  "Commercial":  { low: 50,  avg: 75,  high: 110 },
+};
+const MARKET_RATE_DEFAULT        = { low: 50, avg: 75, high: 110 }; // Fallback for unknown types
+const DEFAULT_PROPERTY_SIZE_SQFT = 1000; // Used when no property size is available
+
+// ── Price band thresholds (relative to market bounds) ─────────────────────────────────
+const PRICE_BAND_VERY_LOW = 0.80; // < 80% of market low  → potential quality concern
+const PRICE_BAND_PREMIUM  = 1.20; // > 120% of market high → requires justification
+
+// ── Risk decision thresholds ────────────────────────────────────────────────────────────
+const SEVERE_ISSUES_HIGH_RISK     = 3; // ≥ this many severe issues → high risk
+const MAX_EXCLUSIONS_FOR_LOW_RISK = 1; // ≤ this many exclusions allowed for low risk
+const MIN_LINE_ITEMS_FOR_SCOPE    = 3; // < this many items → scope too vague
+
 function getMarketRates(propertyType: string, sqft: number | null) {
-  const baseRates: Record<string, { low: number; avg: number; high: number }> = {
-    "HDB Resale": { low: 40, avg: 60, high: 90 },
-    "HDB BTO": { low: 35, avg: 50, high: 75 },
-    "Condo": { low: 60, avg: 90, high: 130 },
-    "Landed": { low: 80, avg: 120, high: 180 },
-    "Commercial": { low: 50, avg: 75, high: 110 },
-  };
-  const rate = baseRates[propertyType] || { low: 50, avg: 75, high: 110 };
-  const size = sqft || 1000;
+  const rate = MARKET_RATE_TABLE[propertyType] ?? MARKET_RATE_DEFAULT;
+  const size = sqft ?? DEFAULT_PROPERTY_SIZE_SQFT;
   return { low: Math.round(rate.low * size), average: Math.round(rate.avg * size), high: Math.round(rate.high * size) };
 }
 
@@ -91,7 +121,7 @@ function analyzeQuoteDocument({ quoteAmount, marketRates, parsedDoc, propertyTyp
   if (parsedDoc.documentQuality.hasWarranty) strengths.push("Warranty language was found in the quote.");
 
   if (parsedDoc.exclusions.length) redFlags.push(`Found ${parsedDoc.exclusions.length} exclusion(s) in the uploaded quote.`);
-  if (parsedDoc.lineItems.length < 3) redFlags.push("Quote has very few identifiable line items. Scope may be too vague.");
+  if (parsedDoc.lineItems.length < MIN_LINE_ITEMS_FOR_SCOPE) redFlags.push("Quote has very few identifiable line items. Scope may be too vague.");
   if (!parsedDoc.totalAmount) redFlags.push("Could not confidently detect a total amount from the uploaded file.");
   if (parsedDoc.paymentTerms.length === 0) redFlags.push("No clear payment schedule detected in the uploaded quote.");
   if (parsedDoc.warrantyTerms.length === 0) redFlags.push("No clear workmanship/material warranty detected in the quote.");
@@ -157,7 +187,7 @@ function analyzeQuoteDocument({ quoteAmount, marketRates, parsedDoc, propertyTyp
     score: confidence,
   };
 
-  if (quoteAmount < marketRates.low * 0.8) {
+  if (quoteAmount < marketRates.low * PRICE_BAND_VERY_LOW) {
     priceAssessment = "Significantly below market rate - potential quality concerns";
     redFlags.push("Detected total is well below expected market range.");
   } else if (quoteAmount < marketRates.low) {
@@ -168,7 +198,7 @@ function analyzeQuoteDocument({ quoteAmount, marketRates, parsedDoc, propertyTyp
     isFair = true;
     priceAssessment = "Within market range - fair pricing";
     recommendations.push("Compare this quote's line items and exclusions against competing quotes.");
-  } else if (quoteAmount <= marketRates.high * 1.2) {
+  } else if (quoteAmount <= marketRates.high * PRICE_BAND_PREMIUM) {
     isFair = true;
     priceAssessment = "Above market rate - premium pricing";
     recommendations.push("Ask the contractor to justify the premium using itemized scope and material specifications.");
@@ -217,15 +247,15 @@ function buildDecision({ isFair, quoteAmount, marketRates, parsedDoc, redFlags, 
   const severeIssues = [
     parsedDoc.paymentTerms.length === 0,
     parsedDoc.warrantyTerms.length === 0,
-    parsedDoc.lineItems.length < 3,
-    quoteAmount > marketRates.high * 1.2,
-    quoteAmount < marketRates.low * 0.8,
+    parsedDoc.lineItems.length < MIN_LINE_ITEMS_FOR_SCOPE,
+    quoteAmount > marketRates.high * PRICE_BAND_PREMIUM,
+    quoteAmount < marketRates.low * PRICE_BAND_VERY_LOW,
   ].filter(Boolean).length;
 
-  if (severeIssues >= 3) {
+  if (severeIssues >= SEVERE_ISSUES_HIGH_RISK) {
     riskLevel = "high";
     recommendation = "Do not proceed yet";
-  } else if (severeIssues === 0 && isFair && parsedDoc.exclusions.length <= 1) {
+  } else if (severeIssues === 0 && isFair && parsedDoc.exclusions.length <= MAX_EXCLUSIONS_FOR_LOW_RISK) {
     riskLevel = "low";
     recommendation = "Proceed";
   } else if (isFair) {
@@ -236,7 +266,7 @@ function buildDecision({ isFair, quoteAmount, marketRates, parsedDoc, redFlags, 
   const reasons: string[] = [];
   if (isFair) reasons.push("Quoted price is within or near the expected market range.");
   else reasons.push("Quoted price sits outside the expected market range.");
-  if (parsedDoc.lineItems.length >= 3) reasons.push("The quote is itemized enough to review scope at a practical level.");
+  if (parsedDoc.lineItems.length >= MIN_LINE_ITEMS_FOR_SCOPE) reasons.push("The quote is itemized enough to review scope at a practical level.");
   if (parsedDoc.exclusions.length > 0) reasons.push(`There are ${parsedDoc.exclusions.length} exclusions that could turn into hidden costs.`);
   if (parsedDoc.paymentTerms.length === 0) reasons.push("Payment terms are not clearly stated.");
   if (parsedDoc.warrantyTerms.length === 0) reasons.push("Warranty terms are not clearly stated.");
@@ -246,7 +276,7 @@ function buildDecision({ isFair, quoteAmount, marketRates, parsedDoc, redFlags, 
   if (parsedDoc.paymentTerms.length === 0) mustClarify.push("Request a milestone-based payment schedule instead of vague or front-loaded payments.");
   if (parsedDoc.warrantyTerms.length === 0) mustClarify.push("Request explicit workmanship and material warranty coverage in writing.");
   if (parsedDoc.materialsMentions.length === 0) mustClarify.push("Ask for the exact material brands, models, and finish specifications.");
-  if (parsedDoc.lineItems.length < 3) mustClarify.push("Ask for a more detailed line-item breakdown before making a decision.");
+  if (parsedDoc.lineItems.length < MIN_LINE_ITEMS_FOR_SCOPE) mustClarify.push("Ask for a more detailed line-item breakdown before making a decision.");
 
   const negotiationPoints: string[] = [];
   if (quoteAmount > marketRates.average) negotiationPoints.push("Use market comparison to negotiate the total closer to the average range.");

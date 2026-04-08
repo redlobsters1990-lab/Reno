@@ -152,9 +152,9 @@ export function QuoteUpload({ projectId, onUploadComplete }: QuoteUploadProps) {
   };
 
   const uploadFile = async (file: File) => {
-    // Contractor name is required — block upload before touching the network
-    if (!formData.contractorName.trim()) {
-      setError("Contractor name is required. Please enter the contractor's name before uploading.");
+    // Company name is required — block upload before touching the network
+    if (!formData.companyName.trim()) {
+      setError("Company name is required. Please enter the company name before uploading.");
       return;
     }
 
@@ -166,7 +166,7 @@ export function QuoteUpload({ projectId, onUploadComplete }: QuoteUploadProps) {
       const fd = new FormData();
       fd.append("file", file);
       fd.append("contractorName", formData.contractorName.trim());
-      fd.append("companyName", formData.companyName);
+      fd.append("companyName", formData.companyName.trim());
       fd.append("amount", formData.amount);
 
       const response = await fetch(`/api/projects/${projectId}/quotes`, { method: "POST", body: fd });
@@ -246,21 +246,20 @@ export function QuoteUpload({ projectId, onUploadComplete }: QuoteUploadProps) {
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "16px", marginBottom: "16px" }}>
           <div>
             <label style={{ display: "block", fontSize: "14px", fontWeight: 500, color: "white", marginBottom: "8px" }}>
-              Contractor Name <span style={{ color: "#ef4444", marginLeft: "2px" }}>*</span>
+              Contractor Name <span style={{ fontSize: "11px", color: "#64748b", fontWeight: 400 }}>(optional)</span>
             </label>
             <div style={{ position: "relative" }}>
-              <User style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: formData.contractorName.trim() ? "#a78bfa" : "#64748b" }} size={16} />
+              <User style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: "#64748b" }} size={16} />
               <input
                 type="text"
-                placeholder="e.g. John Tan (required)"
+                placeholder="e.g. John Tan"
                 value={formData.contractorName}
                 onChange={(e) => setFormData(prev => ({ ...prev, contractorName: e.target.value }))}
-                required
                 style={{
                   width: "100%",
                   padding: "10px 12px 10px 40px",
                   background: "rgba(255,255,255,0.05)",
-                  border: `1px solid ${formData.contractorName.trim() ? "rgba(139,92,246,0.4)" : "rgba(239,68,68,0.4)"}`,
+                  border: "1px solid rgba(255,255,255,0.1)",
                   borderRadius: "8px",
                   color: "white",
                   fontSize: "14px",
@@ -268,16 +267,34 @@ export function QuoteUpload({ projectId, onUploadComplete }: QuoteUploadProps) {
                 }}
               />
             </div>
-            {!formData.contractorName.trim() && (
-              <p style={{ fontSize: "12px", color: "#f87171", marginTop: "4px" }}>Required before uploading</p>
-            )}
           </div>
           <div>
-            <label style={{ display: "block", fontSize: "14px", fontWeight: 500, color: "white", marginBottom: "8px" }}>Company Name</label>
+            <label style={{ display: "block", fontSize: "14px", fontWeight: 500, color: "white", marginBottom: "8px" }}>
+              Company Name <span style={{ color: "#ef4444", marginLeft: "2px" }}>*</span>
+            </label>
             <div style={{ position: "relative" }}>
-              <Building style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: "#64748b" }} size={16} />
-              <input type="text" placeholder="ABC Renovations" value={formData.companyName} onChange={(e) => setFormData(prev => ({ ...prev, companyName: e.target.value }))} style={{ width: "100%", padding: "10px 12px 10px 40px", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px", color: "white", fontSize: "14px", outline: "none" }} />
+              <Building style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: formData.companyName.trim() ? "#a78bfa" : "#64748b" }} size={16} />
+              <input
+                type="text"
+                placeholder="e.g. ABC Renovations Pte Ltd (required)"
+                value={formData.companyName}
+                onChange={(e) => setFormData(prev => ({ ...prev, companyName: e.target.value }))}
+                required
+                style={{
+                  width: "100%",
+                  padding: "10px 12px 10px 40px",
+                  background: "rgba(255,255,255,0.05)",
+                  border: `1px solid ${formData.companyName.trim() ? "rgba(139,92,246,0.4)" : "rgba(239,68,68,0.4)"}`,
+                  borderRadius: "8px",
+                  color: "white",
+                  fontSize: "14px",
+                  outline: "none",
+                }}
+              />
             </div>
+            {!formData.companyName.trim() && (
+              <p style={{ fontSize: "12px", color: "#f87171", marginTop: "4px" }}>Required before uploading</p>
+            )}
           </div>
           <div>
             <label style={{ display: "block", fontSize: "14px", fontWeight: 500, color: "white", marginBottom: "8px" }}>Quote Amount (optional override)</label>
@@ -288,35 +305,35 @@ export function QuoteUpload({ projectId, onUploadComplete }: QuoteUploadProps) {
           </div>
         </div>
 
-        {/* Upload drop zone — locked until contractor name is filled */}
+        {/* Upload drop zone — locked until company name is filled */}
         <div
-          onDragOver={formData.contractorName.trim() ? handleDragOver : undefined}
-          onDragLeave={formData.contractorName.trim() ? handleDragLeave : undefined}
-          onDrop={formData.contractorName.trim() ? handleDrop : undefined}
+          onDragOver={formData.companyName.trim() ? handleDragOver : undefined}
+          onDragLeave={formData.companyName.trim() ? handleDragLeave : undefined}
+          onDrop={formData.companyName.trim() ? handleDrop : undefined}
           style={{
             padding: "32px",
             borderRadius: "12px",
-            border: !formData.contractorName.trim()
+            border: !formData.companyName.trim()
               ? "2px dashed rgba(239,68,68,0.25)"
               : isDragging
               ? "2px dashed #8b5cf6"
               : "2px dashed rgba(255,255,255,0.2)",
-            background: !formData.contractorName.trim()
+            background: !formData.companyName.trim()
               ? "rgba(239,68,68,0.03)"
               : isDragging
               ? "rgba(139,92,246,0.1)"
               : "rgba(255,255,255,0.02)",
             textAlign: "center",
-            cursor: formData.contractorName.trim() ? "pointer" : "not-allowed",
+            cursor: formData.companyName.trim() ? "pointer" : "not-allowed",
             transition: "all 0.3s",
-            opacity: formData.contractorName.trim() ? 1 : 0.5,
+            opacity: formData.companyName.trim() ? 1 : 0.5,
           }}
         >
-          <input type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={handleFileSelect} style={{ display: "none" }} id="quote-file-input" disabled={!formData.contractorName.trim()} />
-          <label htmlFor="quote-file-input" style={{ cursor: formData.contractorName.trim() ? "pointer" : "not-allowed" }}>
+          <input type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={handleFileSelect} style={{ display: "none" }} id="quote-file-input" disabled={!formData.companyName.trim()} />
+          <label htmlFor="quote-file-input" style={{ cursor: formData.companyName.trim() ? "pointer" : "not-allowed" }}>
             {uploading ? (
               <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "12px" }}><Loader2 size={32} color="#a78bfa" style={{ animation: "spin 1s linear infinite" }} /><span style={{ color: "#94a3b8" }}>Uploading and analyzing...</span></div>
-            ) : formData.contractorName.trim() ? (
+            ) : formData.companyName.trim() ? (
               <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "12px" }}>
                 <Upload size={32} color="#a78bfa" />
                 <div>
@@ -326,8 +343,8 @@ export function QuoteUpload({ projectId, onUploadComplete }: QuoteUploadProps) {
               </div>
             ) : (
               <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "8px" }}>
-                <User size={28} color="#ef4444" style={{ opacity: 0.5 }} />
-                <p style={{ color: "#f87171", fontWeight: 500, fontSize: "14px" }}>Enter contractor name above to unlock upload</p>
+                <Building size={28} color="#ef4444" style={{ opacity: 0.5 }} />
+                <p style={{ color: "#f87171", fontWeight: 500, fontSize: "14px" }}>Enter company name above to unlock upload</p>
               </div>
             )}
           </label>
@@ -352,7 +369,7 @@ export function QuoteUpload({ projectId, onUploadComplete }: QuoteUploadProps) {
             <div style={{ textAlign: "center", padding: "12px", borderRadius: "8px", background: "rgba(0,0,0,0.2)" }}>
               <div style={{ fontSize: "12px", color: "#64748b", marginBottom: "4px" }}>Lowest</div>
               <div style={{ fontSize: "15px", fontWeight: 700, color: "#4ade80" }}>${comparison.lowestQuote.amount.toLocaleString()}</div>
-              <div style={{ fontSize: "12px", color: "#94a3b8", marginTop: "2px" }}>{comparison.lowestQuote.contractorName}</div>
+              <div style={{ fontSize: "12px", color: "#94a3b8", marginTop: "2px" }}>{comparison.lowestQuote.companyName || comparison.lowestQuote.contractorName}</div>
             </div>
             <div style={{ textAlign: "center", padding: "12px", borderRadius: "8px", background: "rgba(0,0,0,0.2)" }}>
               <div style={{ fontSize: "12px", color: "#64748b", marginBottom: "4px" }}>Average</div>
@@ -362,7 +379,7 @@ export function QuoteUpload({ projectId, onUploadComplete }: QuoteUploadProps) {
             <div style={{ textAlign: "center", padding: "12px", borderRadius: "8px", background: "rgba(0,0,0,0.2)" }}>
               <div style={{ fontSize: "12px", color: "#64748b", marginBottom: "4px" }}>Highest</div>
               <div style={{ fontSize: "15px", fontWeight: 700, color: "#fbbf24" }}>${comparison.highestQuote.amount.toLocaleString()}</div>
-              <div style={{ fontSize: "12px", color: "#94a3b8", marginTop: "2px" }}>{comparison.highestQuote.contractorName}</div>
+              <div style={{ fontSize: "12px", color: "#94a3b8", marginTop: "2px" }}>{comparison.highestQuote.companyName || comparison.highestQuote.contractorName}</div>
             </div>
             {comparison.spreadPercent !== null && (
               <div style={{ textAlign: "center", padding: "12px", borderRadius: "8px", background: "rgba(0,0,0,0.2)" }}>
@@ -391,8 +408,8 @@ export function QuoteUpload({ projectId, onUploadComplete }: QuoteUploadProps) {
                     <tr key={q.id} style={{ borderBottom: "1px solid rgba(255,255,255,0.05)", background: i === 0 ? "rgba(34,197,94,0.04)" : "transparent" }}>
                       <td style={{ padding: "10px 8px", color: i === 0 ? "#4ade80" : "#64748b", fontWeight: i === 0 ? 700 : 400 }}>#{i + 1}</td>
                       <td style={{ padding: "10px 8px" }}>
-                        <div style={{ fontWeight: 500, color: "white" }}>{q.contractorName}</div>
-                        {q.companyName && <div style={{ fontSize: "11px", color: "#64748b" }}>{q.companyName}</div>}
+                        <div style={{ fontWeight: 500, color: "white" }}>{q.companyName || q.contractorName}</div>
+                        {q.companyName && q.contractorName && <div style={{ fontSize: "11px", color: "#64748b" }}>{q.contractorName}</div>}
                       </td>
                       <td style={{ padding: "10px 8px", fontWeight: 700, color: "white" }}>${q.amount.toLocaleString()}</td>
                       <td style={{ padding: "10px 8px", color: diff <= 0 ? "#4ade80" : "#f87171", fontWeight: 600 }}>{diff <= 0 ? "" : "+"}{pct}%</td>
@@ -418,7 +435,7 @@ export function QuoteUpload({ projectId, onUploadComplete }: QuoteUploadProps) {
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "16px" }}>
                 <div>
                   <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px", flexWrap: "wrap" }}>
-                    <h4 style={{ fontSize: "16px", fontWeight: 600 }}>{quote.contractorName}</h4>
+                    <h4 style={{ fontSize: "16px", fontWeight: 600 }}>{quote.companyName || quote.contractorName}</h4>
                     {quote.status === "analyzing" && <span style={{ padding: "4px 8px", borderRadius: "4px", fontSize: "12px", background: "rgba(59,130,246,0.2)", color: "#60a5fa", display: "flex", alignItems: "center", gap: "4px" }}><Loader2 size={12} style={{ animation: "spin 1s linear infinite" }} />Analyzing</span>}
                     {quote.status === "analyzed" && quote.analysis?.isFair && <span style={{ padding: "4px 8px", borderRadius: "4px", fontSize: "12px", background: "rgba(34,197,94,0.2)", color: "#4ade80" }}>Fair Price</span>}
                     {quote.status === "analyzed" && !quote.analysis?.isFair && <span style={{ padding: "4px 8px", borderRadius: "4px", fontSize: "12px", background: "rgba(239,68,68,0.2)", color: "#ef4444" }}>Review Needed</span>}
