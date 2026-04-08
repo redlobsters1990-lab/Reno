@@ -1,5 +1,6 @@
 import { readFile } from "fs/promises";
 import pdfParse from "pdf-parse";
+import Tesseract from "tesseract.js";
 
 export interface ParsedQuoteLineItem {
   description: string;
@@ -25,8 +26,10 @@ export async function extractQuoteDocument(filePath: string, fileType: string): 
     const parsed = await pdfParse(buffer);
     text = parsed.text || "";
   } else if (["image/jpeg", "image/jpg", "image/png"].includes(fileType)) {
-    // OCR not installed yet, so surface this explicitly instead of pretending analysis came from the file.
-    throw new Error("Image quote OCR is not configured yet. Please upload a PDF quote for document-based analysis.");
+    const result = await Tesseract.recognize(filePath, "eng", {
+      logger: () => {},
+    });
+    text = result.data.text || "";
   } else {
     throw new Error("Unsupported quote file type for parsing.");
   }
