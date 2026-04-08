@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Mail, Lock, AlertCircle, Loader2 } from "lucide-react";
+import { Mail, Lock, AlertCircle, Loader2, Home, Sparkles } from "lucide-react";
 
 // Simple auth check - same as dashboard
 function isAuthenticated() {
@@ -48,17 +48,15 @@ export default function SimpleSignInPage() {
       
       // API sets HttpOnly cookies — also set client-side copies for auth checks
       // Use data.user.id (correct field from API response)
-      if (data.user?.id) {
-        document.cookie = `auth-token=user-${data.user.id}; path=/; max-age=2592000`; // 30 days
-        document.cookie = `user-email=${encodeURIComponent(data.user.email || email)}; path=/; max-age=2592000`;
-      }
+      document.cookie = `auth-token=user-${data.user.id}; path=/; max-age=2592000; SameSite=Lax`;
+      document.cookie = `user-email=${encodeURIComponent(data.user.email)}; path=/; max-age=2592000; SameSite=Lax`;
       
       // Redirect to dashboard
       router.push("/dashboard");
-      
-    } catch (err: any) {
-      console.error("Login error:", err);
-      setError(err.message || "Login failed. Please check your credentials.");
+      router.refresh();
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "Login failed";
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -77,35 +75,44 @@ export default function SimpleSignInPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-900 to-slate-950 flex items-center justify-center p-6">
-      <div className="w-full max-w-md">
+      {/* Background effects */}
+      <div className="absolute inset-0 -z-10 overflow-hidden">
+        <div className="absolute -top-40 -right-40 h-80 w-80 rounded-full bg-violet-500/10 blur-3xl" />
+        <div className="absolute -bottom-40 -left-40 h-80 w-80 rounded-full bg-purple-500/10 blur-3xl" />
+      </div>
+      
+      <div className="w-full max-w-lg">
         {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold mb-2">Welcome Back</h1>
-          <p className="text-slate-400">Sign in to your Renovation Advisor account</p>
+        <div className="text-center mb-12">
+          <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-violet-500/30 to-purple-500/30 border border-violet-400/40 flex items-center justify-center mx-auto mb-6 shadow-glow">
+            <Home className="h-8 w-8 text-violet-300" />
+          </div>
+          <h1 className="text-4xl font-bold mb-4 tracking-tight">Welcome Back</h1>
+          <p className="text-lg text-slate-400">Sign in to your Renovation Advisor account</p>
         </div>
 
         {/* Error Display */}
         {error && (
-          <div className="mb-6 p-4 rounded-xl bg-red-500/10 border border-red-500/20">
-            <div className="flex items-center gap-2 text-red-400">
-              <AlertCircle className="h-5 w-5" />
-              <span>{error}</span>
+          <div className="mb-8 p-6 rounded-2xl bg-red-500/10 border border-red-500/30 backdrop-blur-sm animate-fade-in">
+            <div className="flex items-center gap-3 text-red-400">
+              <AlertCircle className="h-5 w-5 flex-shrink-0" />
+              <span className="font-medium">{error}</span>
             </div>
           </div>
         )}
 
         {/* Login Form */}
-        <div className="p-8 rounded-2xl border border-white/10 bg-gradient-to-b from-white/2.5 to-transparent">
-          <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="p-10 rounded-3xl border border-white/20 bg-gradient-to-b from-white/5 to-transparent backdrop-blur-sm">
+          <form onSubmit={handleSubmit} className="space-y-8">
             <div>
-              <label className="block text-sm font-medium mb-2">
+              <label className="block text-sm font-medium mb-3 text-slate-300">
                 Email Address
               </label>
               <div className="relative">
                 <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-slate-500" />
                 <input
                   type="email"
-                  className="w-full pl-12 pr-4 py-3 rounded-xl bg-slate-900 border border-white/10 focus:border-violet-500 focus:outline-none"
+                  className="w-full pl-12 pr-4 py-4 rounded-2xl bg-white/10 border border-white/20 focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500/30 text-lg backdrop-blur-sm"
                   placeholder="you@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
@@ -116,14 +123,14 @@ export default function SimpleSignInPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-2">
+              <label className="block text-sm font-medium mb-3 text-slate-300">
                 Password
               </label>
               <div className="relative">
                 <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-slate-500" />
                 <input
                   type="password"
-                  className="w-full pl-12 pr-4 py-3 rounded-xl bg-slate-900 border border-white/10 focus:border-violet-500 focus:outline-none"
+                  className="w-full pl-12 pr-4 py-4 rounded-2xl bg-white/10 border border-white/20 focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500/30 text-lg backdrop-blur-sm"
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -136,13 +143,13 @@ export default function SimpleSignInPage() {
             <div className="flex items-center justify-between text-sm">
               <Link
                 href="/auth/signup"
-                className="text-violet-400 hover:text-violet-300 transition"
+                className="text-violet-400 hover:text-violet-300 font-medium transition-colors"
               >
                 Don't have an account?
               </Link>
               <Link
                 href="#"
-                className="text-slate-400 hover:text-slate-300 transition"
+                className="text-slate-400 hover:text-slate-300 transition-colors"
               >
                 Forgot password?
               </Link>
@@ -151,11 +158,11 @@ export default function SimpleSignInPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 rounded-xl bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="w-full py-4 rounded-2xl bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 text-white font-semibold text-lg transition-all duration-500 hover:shadow-glow hover:-translate-y-1 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3"
             >
               {loading ? (
                 <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <Loader2 className="h-5 w-5 animate-spin" />
                   Signing In...
                 </>
               ) : (
@@ -164,14 +171,14 @@ export default function SimpleSignInPage() {
             </button>
           </form>
 
-          <div className="mt-6 pt-6 border-t border-white/10">
+          <div className="mt-8 pt-8 border-t border-white/10">
             <p className="text-center text-sm text-slate-400">
               By signing in, you agree to our{" "}
-              <Link href="#" className="text-violet-400 hover:text-violet-300">
+              <Link href="#" className="text-violet-400 hover:text-violet-300 font-medium">
                 Terms of Service
               </Link>{" "}
               and{" "}
-              <Link href="#" className="text-violet-400 hover:text-violet-300">
+              <Link href="#" className="text-violet-400 hover:text-violet-300 font-medium">
                 Privacy Policy
               </Link>
             </p>
@@ -179,12 +186,15 @@ export default function SimpleSignInPage() {
         </div>
 
         {/* Back to home */}
-        <div className="mt-6 text-center">
+        <div className="mt-10 text-center">
           <Link
             href="/"
-            className="inline-flex items-center gap-2 text-slate-400 hover:text-white transition"
+            className="inline-flex items-center gap-2 text-slate-400 hover:text-slate-300 transition-colors group"
           >
-            ← Back to Home
+            <span className="h-5 w-5 rounded-full border border-slate-500 group-hover:border-slate-300 flex items-center justify-center">
+              ←
+            </span>
+            Back to Home
           </Link>
         </div>
       </div>
