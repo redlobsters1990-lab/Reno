@@ -1,5 +1,5 @@
 import { readFile } from "fs/promises";
-import { PDFParse } from "pdf-parse";
+import pdfParse from "pdf-parse";
 import Tesseract from "tesseract.js";
 
 export interface ParsedQuoteLineItem {
@@ -33,10 +33,8 @@ export async function extractQuoteDocument(filePath: string, fileType: string): 
 
   if (fileType === "application/pdf") {
     const buffer = await readFile(filePath);
-    const parser = new PDFParse({ data: buffer });
-    const parsed = await parser.getText();
+    const parsed = await pdfParse(buffer);
     text = parsed.text || "";
-    await parser.destroy();
   } else if (["image/jpeg", "image/jpg", "image/png"].includes(fileType)) {
     const result = await Tesseract.recognize(filePath, "eng", { logger: () => {} });
     text = result.data.text || "";
