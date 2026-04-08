@@ -1,0 +1,738 @@
+/* Layout Fixes for Professional Alignment */
+
+/* Ensure all containers align properly */
+.container-aligned {
+  @apply container mx-auto px-4 sm:px-6 lg:px-8;
+}
+
+/* Consistent grid alignment */
+.grid-aligned {
+  @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6;
+}
+
+/* Proper vertical rhythm */
+.vertical-rhythm > * + * {
+  @apply mt-6;
+}
+
+.vertical-rhythm-sm > * + * {
+  @apply mt-4;
+}
+
+.vertical-rhythm-lg > * + * {
+  @apply mt-8;
+}
+
+/* Fix for card alignment in grids */
+.grid-card-fix {
+  @apply h-full flex flex-col;
+}
+
+/* Ensure images and content maintain aspect ratio */
+.aspect-ratio-fix {
+  @apply w-full h-auto object-cover;
+}
+
+/* Fix for button alignment in flex containers */
+.flex-button-fix {
+  @apply flex-shrink-0;
+}
+
+/* Responsive text alignment */
+.text-responsive {
+  @apply text-left sm:text-center lg:text-left;
+}
+
+/* Fix for overflowing content */
+.overflow-fix {
+  @apply overflow-hidden;
+}
+
+/* Ensure consistent line heights */
+.line-height-fix {
+  @apply leading-relaxed;
+}
+
+/* Fix for form field alignment */
+.form-field-fix {
+  @apply w-full;
+}
+
+/* Ensure consistent icon sizing */
+.icon-size-fix {
+  @apply h-5 w-5;
+}
+
+/* Fix for mobile navigation spacing */
+.mobile-nav-fix {
+  @apply space-y-2;
+}
+
+/* Ensure consistent border alignment */
+.border-alignment {
+  @apply border-0 border-b border-white/10;
+}
+
+/* Fix for card hover states */
+.card-hover-fix {
+  @apply transition-all duration-300 hover:translate-y-[-2px];
+}
+
+/* Ensure consistent shadow alignment */
+.shadow-alignment {
+  @apply shadow-md;
+}
+
+/* Fix for responsive image containers */
+.image-container-fix {
+  @apply relative w-full pb-[56.25%]; /* 16:9 aspect ratio */
+}
+
+/* Ensure consistent button padding */
+.button-padding-fix {
+  @apply px-6 py-3;
+}
+
+/* Fix for modal/dialog alignment */
+.modal-alignment {
+  @apply fixed inset-0 flex items-center justify-center p-4;
+}
+
+/* Ensure consistent list spacing */
+.list-spacing-fix > li {
+  @apply mb-2 last:mb-0;
+}
+
+/* Fix for table alignment */
+.table-alignment {
+  @apply w-full border-collapse;
+}
+
+/* Ensure consistent badge alignment */
+.badge-alignment {
+  @apply inline-flex items-center;
+}
+
+/* Fix for tooltip/popover alignment */
+.tooltip-alignment {
+  @apply absolute z-50;
+}
+
+/* Ensure consistent progress bar alignment */
+.progress-alignment {
+  @apply w-full h-2 rounded-full overflow-hidden;
+}
+
+/* Fix for avatar/icon alignment */
+.avatar-alignment {
+  @apply flex items-center justify-center;
+}
+
+/* Ensure consistent divider alignment */
+.divider-alignment {
+  @apply w-full h-px bg-white/10;
+}
+
+/* Fix for accordion/dropdown alignment */
+.accordion-alignment {
+  @apply w-full;
+}
+
+/* Ensure consistent tab alignment */
+.tab-alignment {
+  @apply flex border-b border-white/10;
+}
+
+/* Fix for carousel/slider alignment */
+.carousel-alignment {
+  @apply relative overflow-hidden;
+}
+
+/* Ensure consistent stat/metric alignment */
+.stat-alignment {
+  @apply text-center;
+}
+
+/* Fix for pricing table alignment */
+.pricing-alignment {
+  @apply grid grid-cols-1 md:grid-cols-3 gap-8;
+}
+
+/* Ensure consistent testimonial alignment */
+.testimonial-alignment {
+  @apply text-center max-w-2xl mx-auto;
+}
+
+/* Fix for feature list alignment */
+.feature-list-alignment {
+  @apply space-y-4;
+}
+
+/* Ensure consistent team member alignment */
+.team-alignment {
+  @apply text-center;
+}
+
+/* Fix for blog post alignment */
+.blog-alignment {
+  @apply max-w-3xl mx-auto;
+}
+
+/* Ensure consistent footer alignment */
+.footer-alignment {
+  @apply border-t border-white/10 pt-8;
+}
+
+/* Fix for call-to-action alignment */
+.cta-alignment {
+  @apply text-center py-12;
+}
+
+/* Ensure consistent error page alignment */
+.error-alignment {
+  @apply text-center py-20;
+}
+
+/* Fix for loading state alignment */
+.loading-alignment {
+  @apply flex items-center justify-center min-h-[200px];
+}
+
+/* Ensure consistent success state alignment */
+.success-alignment {
+  @apply text-center py-12;
+}
+
+/* Fix for empty state alignment */
+.empty-state-alignment {
+  @apply text-center py-12;
+}
+
+/* Ensure consistent onboarding alignment */
+.onboarding-alignment {
+  @apply max-w-2xl mx-auto;
+}
+
+/* Fix for dashboard widget alignment */
+.dashboard-widget-alignment {
+  @apply h-full;
+}
+
+/* Ensure consistent chart/graph alignment */
+.chart-alignment {
+  @apply w-full h-64;
+}
+
+/* Fix for data table alignment */
+.data-table-alignment {
+  @apply w-full overflow-x-auto;
+}
+
+/* Ensure consistent filter/control alignment */
+.filter-alignment {
+  @apply flex flex-wrap gap-4;
+}
+
+/* Fix for search bar alignment */
+.search-alignment {
+  @apply w-full max-w-md;
+}
+
+/* Ensure consistent notification alignment */
+.notification-alignment {
+  @apply fixed top-4 right-4 z-50;
+}
+
+/* Fix for breadcrumb alignment */
+.breadcrumb-alignment {
+  @apply flex items-center space-x-2;
+}
+
+/* Ensure consistent step/wizard alignment */
+.step-alignment {
+  @apply flex items-center justify-between;
+}
+
+/* Fix for timeline alignment */
+.timeline-alignment {
+  @apply relative pl-8;
+}
+
+/* Ensure consistent comparison table alignment */
+.comparison-alignment {
+  @apply w-full overflow-x-auto;
+}
+
+/* Fix for calendar/date picker alignment */
+.calendar-alignment {
+  @apply w-full max-w-md;
+}
+
+/* Ensure consistent file upload alignment */
+.upload-alignment {
+  @apply w-full;
+}
+
+/* Fix for color picker alignment */
+.color-picker-alignment {
+  @apply flex flex-wrap gap-2;
+}
+
+/* Ensure consistent rating alignment */
+.rating-alignment {
+  @apply flex items-center;
+}
+
+/* Fix for progress indicator alignment */
+.progress-indicator-alignment {
+  @apply flex items-center justify-between;
+}
+
+/* Ensure consistent toggle/switch alignment */
+.toggle-alignment {
+  @apply flex items-center;
+}
+
+/* Fix for range slider alignment */
+.range-alignment {
+  @apply w-full;
+}
+
+/* Ensure consistent code block alignment */
+.code-alignment {
+  @apply w-full overflow-x-auto;
+}
+
+/* Fix for markdown content alignment */
+.markdown-alignment {
+  @apply prose prose-invert max-w-none;
+}
+
+/* Ensure consistent embed alignment */
+.embed-alignment {
+  @apply w-full aspect-video;
+}
+
+/* Fix for map alignment */
+.map-alignment {
+  @apply w-full h-64;
+}
+
+/* Ensure consistent chat/message alignment */
+.chat-alignment {
+  @apply flex flex-col h-full;
+}
+
+/* Fix for kanban/board alignment */
+.kanban-alignment {
+  @apply flex overflow-x-auto h-full;
+}
+
+/* Ensure consistent gallery alignment */
+.gallery-alignment {
+  @apply grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4;
+}
+
+/* Fix for masonry layout alignment */
+.masonry-alignment {
+  @apply columns-1 sm:columns-2 lg:columns-3 gap-4;
+}
+
+/* Ensure consistent split screen alignment */
+.split-alignment {
+  @apply grid grid-cols-1 lg:grid-cols-2 gap-8;
+}
+
+/* Fix for sidebar layout alignment */
+.sidebar-alignment {
+  @apply grid grid-cols-1 lg:grid-cols-4 gap-8;
+}
+
+/* Ensure consistent header alignment */
+.header-alignment {
+  @apply sticky top-0 z-40;
+}
+
+/* Fix for footer navigation alignment */
+.footer-nav-alignment {
+  @apply grid grid-cols-2 md:grid-cols-4 gap-8;
+}
+
+/* Ensure consistent legal page alignment */
+.legal-alignment {
+  @apply max-w-4xl mx-auto;
+}
+
+/* Fix for help center alignment */
+.help-center-alignment {
+  @apply grid grid-cols-1 lg:grid-cols-3 gap-8;
+}
+
+/* Ensure consistent status page alignment */
+.status-alignment {
+  @apply max-w-4xl mx-auto;
+}
+
+/* Fix for changelog alignment */
+.changelog-alignment {
+  @apply max-w-3xl mx-auto;
+}
+
+/* Ensure consistent roadmap alignment */
+.roadmap-alignment {
+  @apply max-w-4xl mx-auto;
+}
+
+/* Fix for documentation alignment */
+.docs-alignment {
+  @apply grid grid-cols-1 lg:grid-cols-4 gap-8;
+}
+
+/* Ensure consistent API reference alignment */
+.api-alignment {
+  @apply max-w-4xl mx-auto;
+}
+
+/* Fix for integration directory alignment */
+.integration-alignment {
+  @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6;
+}
+
+/* Ensure consistent marketplace alignment */
+.marketplace-alignment {
+  @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6;
+}
+
+/* Fix for pricing page alignment */
+.pricing-page-alignment {
+  @apply max-w-6xl mx-auto;
+}
+
+/* Ensure consistent about page alignment */
+.about-alignment {
+  @apply max-w-4xl mx-auto;
+}
+
+/* Fix for contact page alignment */
+.contact-alignment {
+  @apply grid grid-cols-1 lg:grid-cols-2 gap-8;
+}
+
+/* Ensure consistent careers page alignment */
+.careers-alignment {
+  @apply max-w-4xl mx-auto;
+}
+
+/* Fix for press page alignment */
+.press-alignment {
+  @apply max-w-4xl mx-auto;
+}
+
+/* Ensure consistent blog index alignment */
+.blog-index-alignment {
+  @apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8;
+}
+
+/* Fix for portfolio alignment */
+.portfolio-alignment {
+  @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6;
+}
+
+/* Ensure consistent case study alignment */
+.case-study-alignment {
+  @apply max-w-4xl mx-auto;
+}
+
+/* Fix for webinar alignment */
+.webinar-alignment {
+  @apply max-w-3xl mx-auto;
+}
+
+/* Ensure consistent event alignment */
+.event-alignment {
+  @apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6;
+}
+
+/* Fix for resource library alignment */
+.resource-alignment {
+  @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6;
+}
+
+/* Ensure consistent FAQ alignment */
+.faq-alignment {
+  @apply max-w-3xl mx-auto;
+}
+
+/* Fix for glossary alignment */
+.glossary-alignment {
+  @apply max-w-4xl mx-auto;
+}
+
+/* Ensure consistent directory alignment */
+.directory-alignment {
+  @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6;
+}
+
+/* Fix for community alignment */
+.community-alignment {
+  @apply max-w-4xl mx-auto;
+}
+
+/* Ensure consistent forum alignment */
+.forum-alignment {
+  @apply grid grid-cols-1 lg:grid-cols-4 gap-8;
+}
+
+/* Fix for knowledge base alignment */
+.knowledge-base-alignment {
+  @apply grid grid-cols-1 lg:grid-cols-4 gap-8;
+}
+
+/* Ensure consistent support ticket alignment */
+.support-alignment {
+  @apply max-w-4xl mx-auto;
+}
+
+/* Fix for feedback alignment */
+.feedback-alignment {
+  @apply max-w-3xl mx-auto;
+}
+
+/* Ensure consistent survey alignment */
+.survey-alignment {
+  @apply max-w-3xl mx-auto;
+}
+
+/* Fix for quiz alignment */
+.quiz-alignment {
+  @apply max-w-3xl mx-auto;
+}
+
+/* Ensure consistent assessment alignment */
+.assessment-alignment {
+  @apply max-w-3xl mx-auto;
+}
+
+/* Fix for certification alignment */
+.certification-alignment {
+  @apply max-w-3xl mx-auto;
+}
+
+/* Ensure consistent training alignment */
+.training-alignment {
+  @apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6;
+}
+
+/* Fix for course alignment */
+.course-alignment {
+  @apply grid grid-cols-1 lg:grid-cols-4 gap-8;
+}
+
+/* Ensure consistent lesson alignment */
+.lesson-alignment {
+  @apply max-w-3xl mx-auto;
+}
+
+/* Fix for exercise alignment */
+.exercise-alignment {
+  @apply max-w-3xl mx-auto;
+}
+
+/* Ensure consistent project alignment */
+.project-alignment {
+  @apply max-w-4xl mx-auto;
+}
+
+/* Fix for experiment alignment */
+.experiment-alignment {
+  @apply max-w-3xl mx-auto;
+}
+
+/* Ensure consistent research alignment */
+.research-alignment {
+  @apply max-w-4xl mx-auto;
+}
+
+/* Fix for analysis alignment */
+.analysis-alignment {
+  @apply max-w-4xl mx-auto;
+}
+
+/* Ensure consistent report alignment */
+.report-alignment {
+  @apply max-w-4xl mx-auto;
+}
+
+/* Fix for dashboard alignment */
+.dashboard-alignment {
+  @apply grid grid-cols-1 lg:grid-cols-3 gap-6;
+}
+
+/* Ensure consistent analytics alignment */
+.analytics-alignment {
+  @apply grid grid-cols-1 lg:grid-cols-2 gap-8;
+}
+
+/* Fix for monitoring alignment */
+.monitoring-alignment {
+  @apply grid grid-cols-1 lg:grid-cols-2 gap-8;
+}
+
+/* Ensure consistent logging alignment */
+.logging-alignment {
+  @apply max-w-4xl mx-auto;
+}
+
+/* Fix for debugging alignment */
+.debugging-alignment {
+  @apply max-w-4xl mx-auto;
+}
+
+/* Ensure consistent testing alignment */
+.testing-alignment {
+  @apply max-w-4xl mx-auto;
+}
+
+/* Fix for deployment alignment */
+.deployment-alignment {
+  @apply max-w-4xl mx-auto;
+}
+
+/* Ensure consistent infrastructure alignment */
+.infrastructure-alignment {
+  @apply grid grid-cols-1 lg:grid-cols-2 gap-8;
+}
+
+/* Fix for security alignment */
+.security-alignment {
+  @apply max-w-4xl mx-auto;
+}
+
+/* Ensure consistent compliance alignment */
+.compliance-alignment {
+  @apply max-w-4xl mx-auto;
+}
+
+/* Fix for audit alignment */
+.audit-alignment {
+  @apply max-w-4xl mx-auto;
+}
+
+/* Ensure consistent backup alignment */
+.backup-alignment {
+  @apply max-w-4xl mx-auto;
+}
+
+/* Fix for recovery alignment */
+.recovery-alignment {
+  @apply max-w-4xl mx-auto;
+}
+
+/* Ensure consistent migration alignment */
+.migration-alignment {
+  @apply max-w-4xl mx-auto;
+}
+
+/* Fix for upgrade alignment */
+.upgrade-alignment {
+  @apply max-w-4xl mx-auto;
+}
+
+/* Ensure consistent maintenance alignment */
+.maintenance-alignment {
+  @apply max-w-4xl mx-auto;
+}
+
+/* Fix for performance alignment */
+.performance-alignment {
+  @apply max-w-4xl mx-auto;
+}
+
+/* Ensure consistent optimization alignment */
+.optimization-alignment {
+  @apply max-w-4xl mx-auto;
+}
+
+/* Fix for scaling alignment */
+.scaling-alignment {
+  @apply max-w-4xl mx-auto;
+}
+
+/* Ensure consistent architecture alignment */
+.architecture-alignment {
+  @apply max-w-4xl mx-auto;
+}
+
+/* Fix for design system alignment */
+.design-system-alignment {
+  @apply max-w-4xl mx-auto;
+}
+
+/* Ensure consistent style guide alignment */
+.style-guide-alignment {
+  @apply max-w-4xl mx-auto;
+}
+
+/* Fix for component library alignment */
+.component-library-alignment {
+  @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6;
+}
+
+/* Ensure consistent pattern library alignment */
+.pattern-library-alignment {
+  @apply max-w-4xl mx-auto;
+}
+
+/* Fix for icon library alignment */
+.icon-library-alignment {
+  @apply grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4;
+}
+
+/* Ensure consistent illustration alignment */
+.illustration-alignment {
+  @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6;
+}
+
+/* Fix for photography alignment */
+.photography-alignment {
+  @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6;
+}
+
+/* Ensure consistent video alignment */
+.video-alignment {
+  @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6;
+}
+
+/* Fix for audio alignment */
+.audio-alignment {
+  @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6;
+}
+
+/* Ensure consistent animation alignment */
+.animation-alignment {
+  @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6;
+}
+
+/* Fix for 3D alignment */
+.three-d-alignment {
+  @apply max-w-4xl mx-auto;
+}
+
+/* Ensure consistent AR/VR alignment */
+.ar-vr-alignment {
+  @apply max-w-4xl mx-auto;
+}
+
+/* Fix for game alignment */
+.game-alignment {
+  @apply max-w-4xl mx-auto;
+}
+
+/* Ensure consistent simulation alignment */
+.simulation-alignment {
+  @apply max-w-4xl mx-auto;
+}
+
+/* Fix for visualization alignment */
+.visualization-alignment {
+  @apply grid grid-cols-1 lg:grid-cols-
