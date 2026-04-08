@@ -20,10 +20,14 @@ export default function SimpleSignInPage() {
   const [authChecked, setAuthChecked] = useState(false);
 
   useEffect(() => {
-    // Don't check auth on mount - let middleware handle it
-    // This prevents redirect loops
-    setAuthChecked(true);
-  }, []);
+    // Check if already authenticated
+    if (isAuthenticated()) {
+      console.log("Already authenticated, redirecting to dashboard");
+      router.push("/dashboard");
+    } else {
+      setAuthChecked(true);
+    }
+  }, [router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,12 +50,9 @@ export default function SimpleSignInPage() {
 
       console.log("Login successful, redirecting to dashboard");
       
-      // API sets HttpOnly cookies — also set client-side copies for auth checks
-      // Use data.user.id (correct field from API response)
-      if (data.user?.id) {
-        document.cookie = `auth-token=user-${data.user.id}; path=/; max-age=2592000`; // 30 days
-        document.cookie = `user-email=${encodeURIComponent(data.user.email || email)}; path=/; max-age=2592000`;
-      }
+      // Set auth cookie (API should set it, but ensure it's there)
+      document.cookie = `auth-token=user-${data.userId}; path=/; max-age=86400`; // 24 hours
+      document.cookie = `user-email=${encodeURIComponent(email)}; path=/; max-age=86400`;
       
       // Redirect to dashboard
       router.push("/dashboard");
@@ -191,3 +192,4 @@ export default function SimpleSignInPage() {
     </div>
   );
 }
+EOF && echo "Simple signin page created" && echo "" && echo "Replacing current signin page..." && mv app/auth/signin/page.tsx.simple app/auth/signin/page.tsx && echo "Signin page updated to use simple auth"

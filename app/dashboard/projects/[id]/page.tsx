@@ -1,22 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useSession } from "next-auth/react";
+import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
-import { 
-  Home, 
-  ArrowLeft, 
-  MessageSquare, 
-  FileText, 
-  Upload,
-  Calculator,
-  Folder,
-  Calendar,
-  Edit,
-  Trash2
+import {
+  Home, ArrowLeft, Building, Ruler, Palette, Clock,
+  Upload, MessageSquare, Loader2, AlertCircle, Calendar,
+  CheckCircle, Circle, FileText, DollarSign
 } from "lucide-react";
-import { formatCurrency, formatDate } from "@/lib/utils";
 
 interface Project {
   id: string;
@@ -26,368 +17,299 @@ interface Project {
   budget: number | null;
   stylePreference: string | null;
   notes: string | null;
+  status: string;
   createdAt: string;
   updatedAt: string;
-  uploadedFiles: Array<{
-    id: string;
-    fileType: string;
-    originalName: string;
-    createdAt: string;
-  }>;
-  contractorQuotes: Array<{
-    id: string;
-    contractorName: string;
-    totalAmount: number | null;
-    status: string;
-    createdAt: string;
-  }>;
-  estimates: Array<{
-    id: string;
-    realisticMin: number;
-    realisticMax: number;
-    confidence: string;
-    createdAt: string;
-  }>;
-  projectMemories: Array<{
-    id: string;
-    memoryType: string;
-    note: string;
-    createdAt: string;
-  }>;
-  _count: {
-    chatMessages: number;
+}
+
+function isAuthenticated(): boolean {
+  if (typeof window === "undefined") return false;
+  return document.cookie.includes("auth-token=");
+}
+
+function formatDate(dateStr: string): string {
+  return new Date(dateStr).toLocaleDateString("en-SG", {
+    day: "numeric", month: "long", year: "numeric",
+  });
+}
+
+// Rough estimate based on property type and size parsed from notes
+function generateEstimate(project: Project): { low: string; typical: string; high: string } | null {
+  // Parse property size from notes if stored there
+  const sizeMatch = project.notes?.match(/Property size: (\d+)/);
+  const sqft = sizeMatch ? parseInt(sizeMatch[1]) : null;
+
+  if (!sqft) return null;
+
+  const baseRates: Record<string, [number, number, number]> = {
+    "HDB Resale": [40, 60, 90],
+    "HDB BTO": [35, 50, 75],
+    "Condo": [60, 90, 130],
+    "Landed": [80, 120, 180],
+  };
+
+  const rates = baseRates[project.propertyType] || [50, 75, 110];
+  return {
+    low: `$${(sqft * rates[0]).toLocaleString()}`,
+    typical: `$${(sqft * rates[1]).toLocaleString()}`,
+    high: `$${(sqft * rates[2]).toLocaleString()}`,
   };
 }
 
 export default function ProjectDetailPage() {
-  const { data: session, status } = useSession();
   const router = useRouter();
   const params = useParams();
   const projectId = params.id as string;
-  
+
   const [project, setProject] = useState<Project | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("overview");
-  const [chatMessage, setChatMessage] = useState("");
-  const [sendingChat, setSendingChat] = useState(false);
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    if (status === "unauthenticated") {
+    if (!isAuthenticated()) {
       router.push("/auth/signin");
+      return;
     }
-  }, [status, router]);
-
-  useEffect(() => {
-    if (status === "authenticated") {
-      fetchProject();
-    }
-  }, [status, projectId]);
+    fetchProject();
+  }, [projectId]);
 
   const fetchProject = async () => {
     try {
       const response = await fetch(`/api/projects/${projectId}`);
-      const data = await response.json();
-      if (response.ok) {
-        setProject(data.project);
+      if (response.status === 401) {
+        router.push("/auth/signin");
+        return;
       }
-    } catch (error) {
-      console.error("Failed to fetch project:", error);
+      if (response.status === 404) {
+        setError("This project doesn't exist or you don't have permission to view it.");
+        setLoading(false);
+        return;
+      }
+      const data = await response.json();
+      if (data.success) {
+        setProject(data.project);
+      } else {
+        setError(data.error || "Failed to load project.");
+      }
+    } catch (err) {
+      setError("Network error. Please check your connection and try again.");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSendChat = async () => {
-    if (!chatMessage.trim() || sendingChat) return;
-    
-    setSendingChat(true);
-    try {
-      const response = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          projectId,
-          message: chatMessage,
-        }),
-      });
-      
-      if (response.ok) {
-        setChatMessage("");
-        fetchProject(); // Refresh to get new messages
-      }
-    } catch (error) {
-      console.error("Failed to send chat:", error);
-    } finally {
-      setSendingChat(false);
-    }
-  };
-
-  if (status === "loading" || loading) {
+  // Loading state
+  if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-b from-slate-900 to-slate-950 flex items-center justify-center">
         <div className="text-center">
-          <div className="h-12 w-12 rounded-full border-2 border-violet-500 border-t-transparent animate-spin mx-auto mb-4"></div>
-          <p className="text-slate-400">Loading project...</p>
+          <Loader2 className="h-8 w-8 animate-spin text-violet-400 mx-auto mb-4" />
+          <p className="text-slate-400">Loading your project…</p>
         </div>
       </div>
     );
   }
 
-  if (!session || !project) {
-    return null;
+  // Error state
+  if (error || !project) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-slate-900 to-slate-950 p-6">
+        <div className="max-w-3xl mx-auto pt-20 text-center">
+          <AlertCircle className="h-12 w-12 text-red-400 mx-auto mb-4" />
+          <h2 className="text-xl font-semibold mb-2">Project not found</h2>
+          <p className="text-slate-400 mb-6">{error || "Something went wrong loading this project."}</p>
+          <Link
+            href="/dashboard"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 transition"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to Dashboard
+          </Link>
+        </div>
+      </div>
+    );
   }
 
+  const estimate = generateEstimate(project);
+
+  // Parse property size and rooms from notes
+  const sizeMatch = project.notes?.match(/Property size: (\d+)/);
+  const propertySize = sizeMatch ? `${sizeMatch[1]} sqft` : null;
+
   return (
-    <div className="min-h-screen">
-      {/* Navigation */}
-      <nav className="border-b border-white/10">
-        <div className="container py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Link
-              href="/"
-              className="h-8 w-8 rounded-lg bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center"
-            >
-              <Home className="h-5 w-5 text-white" />
-            </Link>
-            <span className="text-xl font-bold">Renovation Advisor AI</span>
-          </div>
-          
-          <div className="flex items-center gap-4">
+    <div className="min-h-screen bg-gradient-to-b from-slate-900 to-slate-950 p-6">
+      <div className="max-w-5xl mx-auto">
+
+        {/* Header */}
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center gap-3">
             <Link
               href="/dashboard"
-              className="px-4 py-2 rounded-xl border border-white/10 hover:bg-white/5 transition flex items-center gap-2"
+              className="h-10 w-10 rounded-xl border border-white/10 hover:border-white/20 transition flex items-center justify-center"
             >
-              <ArrowLeft className="h-4 w-4" />
-              Back to Dashboard
+              <ArrowLeft className="h-5 w-5" />
             </Link>
+            <div>
+              <h1 className="text-2xl font-bold">{project.title}</h1>
+              <p className="text-sm text-slate-400 flex items-center gap-1.5 mt-0.5">
+                <Calendar className="h-3.5 w-3.5" />
+                Created {formatDate(project.createdAt)}
+              </p>
+            </div>
           </div>
         </div>
-      </nav>
 
-      <div className="container py-8">
-        {/* Project Header */}
-        <div className="mb-8">
-          <div className="flex items-start justify-between mb-4">
-            <div>
-              <h1 className="text-3xl font-bold mb-2">{project.title}</h1>
-              <div className="flex items-center gap-3">
-                <div className="inline-flex items-center px-3 py-1 rounded-full bg-slate-800 text-sm">
-                  {project.propertyType}
+        {/* Project Summary */}
+        <div className="mb-6 p-6 rounded-2xl border border-white/10 bg-gradient-to-b from-white/2.5 to-transparent">
+          <h2 className="text-lg font-semibold mb-5">Project Summary</h2>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            <div className="p-4 rounded-xl border border-white/10">
+              <div className="flex items-center gap-2 mb-1">
+                <Building className="h-4 w-4 text-blue-300" />
+                <span className="text-xs text-slate-400">Property Type</span>
+              </div>
+              <div className="font-medium">{project.propertyType}</div>
+            </div>
+            <div className="p-4 rounded-xl border border-white/10">
+              <div className="flex items-center gap-2 mb-1">
+                <Ruler className="h-4 w-4 text-emerald-300" />
+                <span className="text-xs text-slate-400">Size</span>
+              </div>
+              <div className="font-medium">{propertySize || "Not specified"}</div>
+            </div>
+            <div className="p-4 rounded-xl border border-white/10">
+              <div className="flex items-center gap-2 mb-1">
+                <Home className="h-4 w-4 text-amber-300" />
+                <span className="text-xs text-slate-400">Rooms</span>
+              </div>
+              <div className="font-medium">{project.roomCount ? `${project.roomCount} rooms` : "Not specified"}</div>
+            </div>
+            <div className="p-4 rounded-xl border border-white/10">
+              <div className="flex items-center gap-2 mb-1">
+                <Palette className="h-4 w-4 text-violet-300" />
+                <span className="text-xs text-slate-400">Style</span>
+              </div>
+              <div className="font-medium">{project.stylePreference || "Not specified"}</div>
+            </div>
+          </div>
+
+          {project.notes && (
+            <div className="pt-5 border-t border-white/10">
+              <h3 className="text-sm font-medium text-slate-300 mb-2 flex items-center gap-2">
+                <FileText className="h-4 w-4" /> Project Notes
+              </h3>
+              <p className="text-slate-400 text-sm leading-relaxed">
+                {/* Strip internal metadata prefix from notes */}
+                {project.notes.replace(/^Property size: \d+ sqft, Rooms: [^.]+\.\s*/, "") || "No additional notes."}
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* Estimated Budget */}
+        <div className="mb-6 p-6 rounded-2xl border border-white/10 bg-gradient-to-b from-white/2.5 to-transparent">
+          <h2 className="text-lg font-semibold mb-5 flex items-center gap-2">
+            <DollarSign className="h-5 w-5 text-emerald-400" />
+            Estimated Renovation Cost
+          </h2>
+
+          {estimate ? (
+            <>
+              <div className="grid sm:grid-cols-3 gap-4 mb-5">
+                <div className="p-5 rounded-xl border border-white/10 text-center">
+                  <div className="text-2xl font-bold text-emerald-400 mb-1">{estimate.low}</div>
+                  <div className="text-sm text-slate-400">Low Range</div>
+                  <div className="text-xs text-slate-500 mt-1.5">Basic materials, standard fixtures</div>
                 </div>
-                {project.roomCount && (
-                  <div className="text-slate-400 text-sm">
-                    {project.roomCount} room{project.roomCount !== 1 ? 's' : ''}
-                  </div>
-                )}
-                {project.budget && (
-                  <div className="text-slate-400 text-sm">
-                    Budget hint: {formatCurrency(project.budget)}
-                  </div>
-                )}
+                <div className="p-5 rounded-xl border border-violet-500/30 bg-gradient-to-b from-violet-500/5 to-transparent text-center ring-1 ring-violet-500/20">
+                  <div className="text-3xl font-bold text-white mb-1">{estimate.typical}</div>
+                  <div className="text-sm text-violet-300 font-medium">Typical Range</div>
+                  <div className="text-xs text-slate-400 mt-1.5">Recommended for most renovations</div>
+                </div>
+                <div className="p-5 rounded-xl border border-white/10 text-center">
+                  <div className="text-2xl font-bold text-amber-400 mb-1">{estimate.high}</div>
+                  <div className="text-sm text-slate-400">High Range</div>
+                  <div className="text-xs text-slate-500 mt-1.5">Premium materials, custom features</div>
+                </div>
+              </div>
+              <p className="text-xs text-slate-500 text-center">
+                * AI-generated estimate based on property type and size. Upload contractor quotes for a precise figure.
+              </p>
+            </>
+          ) : (
+            <div className="p-5 rounded-xl bg-slate-900/50 border border-white/10 text-center">
+              <DollarSign className="h-8 w-8 text-slate-500 mx-auto mb-2" />
+              <p className="text-slate-400 text-sm mb-1">No estimate available yet.</p>
+              <p className="text-slate-500 text-xs">Upload contractor quotes or add more project details to generate a cost estimate.</p>
+            </div>
+          )}
+        </div>
+
+        {/* Next Actions */}
+        <div className="mb-6 p-6 rounded-2xl border border-white/10 bg-gradient-to-b from-white/2.5 to-transparent">
+          <h2 className="text-lg font-semibold mb-5">Next Steps</h2>
+          <div className="grid sm:grid-cols-2 gap-4">
+            <div className="p-5 rounded-xl border border-white/10 hover:border-violet-400/30 transition">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="h-10 w-10 rounded-xl bg-violet-500/10 border border-violet-400/20 flex items-center justify-center">
+                  <Upload className="h-5 w-5 text-violet-300" />
+                </div>
+                <div>
+                  <div className="font-medium">Upload Contractor Quotes</div>
+                  <div className="text-xs text-slate-400">Analyze pricing, compare contractors</div>
+                </div>
+              </div>
+              <p className="text-xs text-slate-500 mb-3">
+                Upload PDF or image quotes from contractors to get an AI-powered fairness assessment.
+              </p>
+              <div className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-slate-800 border border-white/10 text-slate-400">
+                <Clock className="h-3 w-3" /> Coming soon
               </div>
             </div>
-            
-            <div className="flex items-center gap-2">
-              <button className="px-4 py-2 rounded-xl border border-white/10 hover:bg-white/5 transition flex items-center gap-2">
-                <Edit className="h-4 w-4" />
-                Edit
-              </button>
-              <button className="px-4 py-2 rounded-xl border border-red-500/20 text-red-400 hover:bg-red-500/10 transition flex items-center gap-2">
-                <Trash2 className="h-4 w-4" />
-                Archive
-              </button>
+
+            <div className="p-5 rounded-xl border border-white/10 hover:border-blue-400/30 transition">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="h-10 w-10 rounded-xl bg-blue-500/10 border border-blue-400/20 flex items-center justify-center">
+                  <MessageSquare className="h-5 w-5 text-blue-300" />
+                </div>
+                <div>
+                  <div className="font-medium">Chat with AI Advisor</div>
+                  <div className="text-xs text-slate-400">Get personalised recommendations</div>
+                </div>
+              </div>
+              <p className="text-xs text-slate-500 mb-3">
+                Ask the AI advisor about design choices, materials, timelines, and more for your project.
+              </p>
+              <div className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-slate-800 border border-white/10 text-slate-400">
+                <Clock className="h-3 w-3" /> Coming soon
+              </div>
             </div>
-          </div>
-          
-          <div className="text-sm text-slate-400">
-            Created {formatDate(project.createdAt)} • Last updated {formatDate(project.updatedAt)}
           </div>
         </div>
 
-        {/* Tabs */}
-        <div className="border-b border-white/10 mb-8">
-          <div className="flex gap-6">
-            {["overview", "chat", "files", "estimates", "quotes", "memories"].map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={`pb-3 px-1 capitalize font-medium transition ${
-                  activeTab === tab
-                    ? "text-violet-400 border-b-2 border-violet-400"
-                    : "text-slate-400 hover:text-white"
-                }`}
-              >
-                {tab}
-              </button>
+        {/* Project Status */}
+        <div className="p-6 rounded-2xl border border-white/10">
+          <h2 className="text-lg font-semibold mb-4">Project Status</h2>
+          <div className="space-y-3">
+            {[
+              { label: "Project created", done: true },
+              { label: "Add contractor quotes for analysis", done: false },
+              { label: "Finalise design and materials", done: false },
+              { label: "Select contractor", done: false },
+              { label: "Begin renovation", done: false },
+            ].map((step, i) => (
+              <div key={i} className="flex items-center gap-3">
+                {step.done ? (
+                  <CheckCircle className="h-5 w-5 text-emerald-400 flex-shrink-0" />
+                ) : (
+                  <Circle className="h-5 w-5 text-slate-600 flex-shrink-0" />
+                )}
+                <span className={step.done ? "text-slate-300" : "text-slate-500"}>{step.label}</span>
+              </div>
             ))}
           </div>
         </div>
 
-        {/* Tab Content */}
-        <div className="grid lg:grid-cols-3 gap-8">
-          {/* Left Column - Overview & Chat */}
-          <div className="lg:col-span-2 space-y-8">
-            {/* Overview Tab */}
-            {activeTab === "overview" && (
-              <div className="space-y-8">
-                {/* Project Summary */}
-                <div className="card p-6">
-                  <h2 className="text-xl font-semibold mb-4">Project Summary</h2>
-                  <div className="space-y-4">
-                    {project.stylePreference && (
-                      <div>
-                        <div className="text-sm text-slate-400 mb-1">Style Preference</div>
-                        <div className="font-medium">{project.stylePreference}</div>
-                      </div>
-                    )}
-                    {project.notes && (
-                      <div>
-                        <div className="text-sm text-slate-400 mb-1">Notes</div>
-                        <div className="text-slate-300 whitespace-pre-wrap">{project.notes}</div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Quick Stats */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div className="card p-4 text-center">
-                    <div className="flex items-center justify-center gap-2 mb-2">
-                      <MessageSquare className="h-5 w-5 text-violet-300" />
-                      <div className="text-2xl font-bold">{project._count.chatMessages}</div>
-                    </div>
-                    <div className="text-sm text-slate-400">Chat Messages</div>
-                  </div>
-                  <div className="card p-4 text-center">
-                    <div className="flex items-center justify-center gap-2 mb-2">
-                      <Upload className="h-5 w-5 text-violet-300" />
-                      <div className="text-2xl font-bold">{project.uploadedFiles.length}</div>
-                    </div>
-                    <div className="text-sm text-slate-400">Files</div>
-                  </div>
-                  <div className="card p-4 text-center">
-                    <div className="flex items-center justify-center gap-2 mb-2">
-                      <FileText className="h-5 w-5 text-violet-300" />
-                      <div className="text-2xl font-bold">{project.contractorQuotes.length}</div>
-                    </div>
-                    <div className="text-sm text-slate-400">Quotes</div>
-                  </div>
-                  <div className="card p-4 text-center">
-                    <div className="flex items-center justify-center gap-2 mb-2">
-                      <Calculator className="h-5 w-5 text-violet-300" />
-                      <div className="text-2xl font-bold">{project.estimates.length}</div>
-                    </div>
-                    <div className="text-sm text-slate-400">Estimates</div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Chat Tab */}
-            {activeTab === "chat" && (
-              <div className="card p-6">
-                <h2 className="text-xl font-semibold mb-4">Chat with AI Advisor</h2>
-                
-                {/* Chat Messages */}
-                <div className="h-96 overflow-y-auto mb-4 p-4 rounded-lg bg-slate-900/50">
-                  <div className="space-y-4">
-                    <div className="flex justify-start">
-                      <div className="max-w-[80%] rounded-xl rounded-tl-none bg-slate-800 p-4">
-                        <div className="text-sm text-slate-400 mb-1">AI Advisor</div>
-                        <div>Hello! I'm your renovation advisor. I can help you plan your project, estimate costs, and answer questions about the renovation process. What would you like to discuss today?</div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                
-                {/* Chat Input */}
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={chatMessage}
-                    onChange={(e) => setChatMessage(e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && handleSendChat()}
-                    placeholder="Type your message..."
-                    className="input flex-1"
-                    disabled={sendingChat}
-                  />
-                  <button
-                    onClick={handleSendChat}
-                    disabled={sendingChat || !chatMessage.trim()}
-                    className="btn-primary px-6"
-                  >
-                    {sendingChat ? "Sending..." : "Send"}
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* Other tabs would go here */}
-          </div>
-
-          {/* Right Column - Actions & Info */}
-          <div className="space-y-6">
-            {/* Quick Actions */}
-            <div className="card p-6">
-              <h3 className="font-semibold mb-4">Quick Actions</h3>
-              <div className="space-y-3">
-                <button className="w-full btn-primary py-3 flex items-center justify-center gap-2">
-                  <Calculator className="h-4 w-4" />
-                  Get Cost Estimate
-                </button>
-                <button className="w-full btn-secondary py-3 flex items-center justify-center gap-2">
-                  <Upload className="h-4 w-4" />
-                  Upload File
-                </button>
-                <button className="w-full btn-secondary py-3 flex items-center justify-center gap-2">
-                  <FileText className="h-4 w-4" />
-                  Add Quote
-                </button>
-              </div>
-            </div>
-
-            {/* Latest Estimate */}
-            {project.estimates.length > 0 && (
-              <div className="card p-6">
-                <h3 className="font-semibold mb-4">Latest Estimate</h3>
-                <div className="space-y-3">
-                  <div className="text-2xl font-bold">
-                    {formatCurrency(project.estimates[0].realisticMin)} - {formatCurrency(project.estimates[0].realisticMax)}
-                  </div>
-                  <div className="text-sm text-slate-400">
-                    Confidence: <span className="capitalize">{project.estimates[0].confidence}</span>
-                  </div>
-                  <div className="text-sm text-slate-400">
-                    Created {formatDate(project.estimates[0].createdAt)}
-                  </div>
-                  <button className="w-full btn-secondary py-2 text-sm">
-                    View All Estimates
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* Recent Memories */}
-            {project.projectMemories.length > 0 && (
-              <div className="card p-6">
-                <h3 className="font-semibold mb-4">Recent Memories</h3>
-                <div className="space-y-3">
-                  {project.projectMemories.slice(0, 3).map((memory) => (
-                    <div key={memory.id} className="p-3 rounded-lg bg-slate-800/50">
-                      <div className="text-xs text-slate-400 mb-1 capitalize">
-                        {memory.memoryType.replace(/_/g, ' ')}
-                      </div>
-                      <div className="text-sm line-clamp-2">{memory.note}</div>
-                    </div>
-                  ))}
-                  <button className="w-full btn-secondary py-2 text-sm">
-                    View All Memories
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
       </div>
     </div>
   );

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-// signIn from next-auth not used — using direct-login instead
+import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Home, UserPlus } from "lucide-react";
@@ -44,22 +44,19 @@ export default function SignUpPage() {
         throw new Error(data.error || "Sign up failed");
       }
 
-      // Auto-login after successful registration using direct-login
-      const loginResponse = await fetch("/api/direct-login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+      // Auto-login after successful registration
+      const signInResult = await signIn("credentials", {
+        email,
+        password,
+        redirect: false,
       });
-      const loginData = await loginResponse.json();
 
-      if (loginResponse.ok && loginData.user?.id) {
-        // Set client-side cookies
-        document.cookie = `auth-token=user-${loginData.user.id}; path=/; max-age=2592000`;
-        document.cookie = `user-email=${encodeURIComponent(email)}; path=/; max-age=2592000`;
-        router.push("/dashboard");
-      } else {
-        // Fallback: redirect to signin
+      if (signInResult?.error) {
+        // If auto-login fails, redirect to signin with success message
         router.push("/auth/signin?registered=true&email=" + encodeURIComponent(email));
+      } else {
+        // Successful auto-login, redirect to dashboard
+        router.push("/dashboard");
       }
     } catch (err) {
       // Handle duplicate email and other errors
@@ -69,7 +66,7 @@ export default function SignUpPage() {
         setError("An account with this email already exists. Please use a different email or sign in.");
       } else if (errorMessage.includes("Invalid email")) {
         setError("Please enter a valid email address");
-      } else if (errorMessage.includes("Password") || errorMessage.includes("password")) {
+      } else if (errorMessage.includes("Password must be")) {
         setError(errorMessage);
       } else {
         setError("Sign up failed. Please try again.");

@@ -1,65 +1,108 @@
 "use client";
 
-import { useEffect } from "react";
-import { useSession } from "next-auth/react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Home, Plus, LogOut } from "lucide-react";
+import { Home, Plus, LogOut, Loader2, FolderOpen, ChevronRight, Calendar } from "lucide-react";
 
-export default function SimpleDashboardPage() {
-  const { data: session, status } = useSession();
+interface Project {
+  id: string;
+  title: string;
+  propertyType: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+function getUserEmail(): string {
+  if (typeof window === "undefined") return "";
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; user-email=`);
+  if (parts.length === 2) return decodeURIComponent(parts.pop()?.split(";").shift() || "");
+  return "";
+}
+
+function isAuthenticated(): boolean {
+  if (typeof window === "undefined") return false;
+  return document.cookie.includes("auth-token=");
+}
+
+export default function DashboardPage() {
   const router = useRouter();
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [userEmail, setUserEmail] = useState("");
 
   useEffect(() => {
-    if (status === "unauthenticated") {
+    if (!isAuthenticated()) {
       router.push("/auth/signin");
+      return;
     }
-  }, [status, router]);
+    setUserEmail(getUserEmail());
+    fetchProjects();
+  }, []);
 
-  const handleSignOut = async () => {
-    // Simple sign out - will implement properly later
+  const fetchProjects = async () => {
+    try {
+      const response = await fetch("/api/projects");
+      if (response.status === 401) {
+        // Session invalid — redirect to signin
+        router.push("/auth/signin");
+        return;
+      }
+      const data = await response.json();
+      if (data.success) {
+        setProjects(data.projects);
+      } else {
+        setError("Could not load your projects. Please refresh the page.");
+      }
+    } catch (err) {
+      setError("Network error. Please check your connection and refresh.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSignOut = () => {
+    // Clear all auth cookies
+    ["auth-token", "user-email", "next-auth.session-token", "next-auth.callback-url", "next-auth.csrf-token"].forEach(name => {
+      document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
+    });
     router.push("/auth/signin");
   };
 
-  if (status === "loading") {
-    return (
-      <div className="min-h-screen bg-gradient-to-b from-slate-900 to-slate-950 p-6">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex items-center justify-center h-96">
-            <div className="text-center">
-              <div className="h-10 w-10 rounded-xl bg-slate-800 animate-pulse mx-auto mb-4"></div>
-              <div className="h-6 w-48 bg-slate-800 rounded animate-pulse mx-auto"></div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  const formatDate = (dateStr: string) => {
+    return new Date(dateStr).toLocaleDateString("en-SG", {
+      day: "numeric", month: "short", year: "numeric"
+    });
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-900 to-slate-950 p-6">
-      <div className="max-w-7xl mx-auto">
+      <div className="max-w-5xl mx-auto">
+
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-violet-500/20 to-purple-500/20 border border-violet-400/30 flex items-center justify-center">
               <Home className="h-5 w-5 text-violet-300" />
             </div>
-            <h1 className="text-2xl font-bold">Dashboard</h1>
+            <div>
+              <h1 className="text-2xl font-bold">Dashboard</h1>
+              {userEmail && <p className="text-sm text-slate-400">{userEmail}</p>}
+            </div>
           </div>
-          
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             <Link
               href="/dashboard/new"
-              className="px-4 py-2 rounded-xl bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 transition flex items-center gap-2"
+              className="px-4 py-2 rounded-xl bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 transition flex items-center gap-2 text-sm font-medium"
             >
               <Plus className="h-4 w-4" />
               New Project
             </Link>
-            
             <button
               onClick={handleSignOut}
-              className="px-4 py-2 rounded-xl border border-white/10 hover:border-white/20 transition flex items-center gap-2"
+              className="px-4 py-2 rounded-xl border border-white/10 hover:border-white/20 transition flex items-center gap-2 text-sm"
             >
               <LogOut className="h-4 w-4" />
               Sign Out
@@ -67,106 +110,85 @@ export default function SimpleDashboardPage() {
           </div>
         </div>
 
-        {/* Welcome Message */}
-        <div className="mb-8 p-6 rounded-2xl border border-white/10 bg-gradient-to-br from-violet-500/5 to-purple-500/5">
-          <h2 className="text-xl font-semibold mb-2">
-            🎉 Authentication System Ready!
-          </h2>
-          <p className="text-slate-400 mb-2">
-            Welcome, <span className="text-white font-medium">{session?.user?.name || "User"}</span>!
-          </p>
-          <p className="text-slate-400">
-            Your email: <span className="text-white font-medium">{session?.user?.email || "Not signed in"}</span>
-          </p>
-        </div>
+        {/* Projects Section */}
+        <div>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold">Your Projects</h2>
+            <span className="text-sm text-slate-400">{!loading && `${projects.length} project${projects.length !== 1 ? "s" : ""}`}</span>
+          </div>
 
-        {/* Status Dashboard */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-          <div className="p-6 rounded-2xl border border-white/10 bg-gradient-to-b from-white/2.5 to-transparent">
-            <div className="text-sm text-slate-400 mb-2">Server Status</div>
-            <div className="text-2xl font-bold text-green-400">✅ Running</div>
-          </div>
-          
-          <div className="p-6 rounded-2xl border border-white/10 bg-gradient-to-b from-white/2.5 to-transparent">
-            <div className="text-sm text-slate-400 mb-2">Database</div>
-            <div className="text-2xl font-bold text-green-400">✅ Migrated</div>
-          </div>
-          
-          <div className="p-6 rounded-2xl border border-white/10 bg-gradient-to-b from-white/2.5 to-transparent">
-            <div className="text-sm text-slate-400 mb-2">Authentication</div>
-            <div className="text-2xl font-bold text-green-400">✅ Working</div>
-          </div>
-          
-          <div className="p-6 rounded-2xl border border-white/10 bg-gradient-to-b from-white/2.5 to-transparent">
-            <div className="text-sm text-slate-400 mb-2">Security</div>
-            <div className="text-2xl font-bold text-green-400">✅ Patched</div>
-          </div>
-        </div>
+          {/* Loading */}
+          {loading && (
+            <div className="flex items-center justify-center py-16">
+              <Loader2 className="h-6 w-6 animate-spin text-violet-400 mr-3" />
+              <span className="text-slate-400">Loading your projects…</span>
+            </div>
+          )}
 
-        {/* Quick Actions */}
-        <div className="mb-8">
-          <h3 className="text-lg font-semibold mb-4">Quick Actions</h3>
-          <div className="grid grid-cols-2 gap-4">
-            <Link
-              href="/dashboard/new"
-              className="p-6 rounded-2xl border border-white/10 bg-gradient-to-b from-white/2.5 to-transparent hover:border-violet-400/30 transition text-center"
-            >
-              <h4 className="font-medium mb-2">Create Project</h4>
-              <p className="text-sm text-slate-400">Start a renovation plan</p>
-            </Link>
-            
-            <Link
-              href="/"
-              className="p-6 rounded-2xl border border-white/10 bg-gradient-to-b from-white/2.5 to-transparent hover:border-blue-400/30 transition text-center"
-            >
-              <h4 className="font-medium mb-2">View Homepage</h4>
-              <p className="text-sm text-slate-400">See landing page</p>
-            </Link>
-          </div>
-        </div>
+          {/* Error */}
+          {!loading && error && (
+            <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
+              {error}
+            </div>
+          )}
 
-        {/* Next Steps */}
-        <div className="p-6 rounded-2xl border border-white/10">
-          <h3 className="text-lg font-semibold mb-4">🎯 Project Status</h3>
-          <div className="space-y-3">
-            <div className="flex items-center gap-3">
-              <div className="h-6 w-6 rounded-full bg-green-500/20 border border-green-400/30 flex items-center justify-center">
-                <div className="h-2 w-2 rounded-full bg-green-400"></div>
+          {/* Empty state */}
+          {!loading && !error && projects.length === 0 && (
+            <div className="p-10 rounded-2xl border border-dashed border-white/10 text-center">
+              <div className="h-14 w-14 rounded-full bg-violet-500/10 border border-violet-400/20 flex items-center justify-center mx-auto mb-4">
+                <FolderOpen className="h-7 w-7 text-violet-300" />
               </div>
-              <span className="text-slate-300">Database migrated successfully</span>
+              <h3 className="font-semibold text-lg mb-2">No projects yet</h3>
+              <p className="text-slate-400 text-sm mb-6 max-w-sm mx-auto">
+                Create your first renovation project to get AI-powered cost estimates, quote analysis, and planning guidance.
+              </p>
+              <Link
+                href="/dashboard/new"
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 transition font-medium"
+              >
+                <Plus className="h-4 w-4" />
+                Create Your First Project
+              </Link>
             </div>
-            
-            <div className="flex items-center gap-3">
-              <div className="h-6 w-6 rounded-full bg-green-500/20 border border-green-400/30 flex items-center justify-center">
-                <div className="h-2 w-2 rounded-full bg-green-400"></div>
+          )}
+
+          {/* Projects list */}
+          {!loading && !error && projects.length > 0 && (
+            <div className="space-y-3">
+              {projects.map((project) => (
+                <Link
+                  key={project.id}
+                  href={`/dashboard/projects/${project.id}`}
+                  className="flex items-center justify-between p-5 rounded-2xl border border-white/10 hover:border-violet-400/30 bg-gradient-to-b from-white/2.5 to-transparent transition group"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="h-10 w-10 rounded-xl bg-violet-500/10 border border-violet-400/20 flex items-center justify-center flex-shrink-0">
+                      <Home className="h-5 w-5 text-violet-300" />
+                    </div>
+                    <div>
+                      <div className="font-medium group-hover:text-violet-300 transition">{project.title}</div>
+                      <div className="flex items-center gap-3 text-sm text-slate-400 mt-0.5">
+                        <span>{project.propertyType}</span>
+                        <span>·</span>
+                        <Calendar className="h-3 w-3" />
+                        <span>{formatDate(project.createdAt)}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <ChevronRight className="h-5 w-5 text-slate-500 group-hover:text-violet-400 transition" />
+                </Link>
+              ))}
+              <div className="pt-2 text-center">
+                <Link
+                  href="/dashboard/new"
+                  className="inline-flex items-center gap-2 text-sm text-violet-400 hover:text-violet-300 transition"
+                >
+                  <Plus className="h-3 w-3" />
+                  Add another project
+                </Link>
               </div>
-              <span className="text-slate-300">All security patches applied</span>
             </div>
-            
-            <div className="flex items-center gap-3">
-              <div className="h-6 w-6 rounded-full bg-green-500/20 border border-green-400/30 flex items-center justify-center">
-                <div className="h-2 w-2 rounded-full bg-green-400"></div>
-              </div>
-              <span className="text-slate-300">GitHub repository updated</span>
-            </div>
-            
-            <div className="flex items-center gap-3">
-              <div className="h-6 w-6 rounded-full bg-amber-500/20 border border-amber-400/30 flex items-center justify-center">
-                <div className="h-2 w-2 rounded-full bg-amber-400"></div>
-              </div>
-              <span className="text-slate-300">Testing authentication flow</span>
-            </div>
-          </div>
-          
-          <div className="mt-6 pt-6 border-t border-white/10">
-            <h4 className="font-medium mb-3">Test Authentication:</h4>
-            <div className="text-sm text-slate-400 space-y-2">
-              <p>1. Try creating a new account</p>
-              <p>2. Login with test@example.com / password123</p>
-              <p>3. Test duplicate email prevention</p>
-              <p>4. Verify security features (rate limiting, validation)</p>
-            </div>
-          </div>
+          )}
         </div>
       </div>
     </div>

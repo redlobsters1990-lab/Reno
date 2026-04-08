@@ -1,6 +1,19 @@
 import { z } from "zod";
 
 // Project validation schemas
+export const createProjectSchema = z.object({
+  name: z.string()
+    .min(3, "Project name must be at least 3 characters")
+    .max(100, "Project name must be less than 100 characters"),
+  propertyType: z.string().min(1, "Property type is required"),
+  propertySize: z.string().min(1, "Property size is required"),
+  rooms: z.string().optional(),
+  budget: z.string().optional(),
+  stylePreference: z.string().optional(),
+  timeline: z.string().optional(),
+  notes: z.string().optional(),
+});
+
 export const projectSchema = z.object({
   title: z.string()
     .min(3, "Project title must be at least 3 characters")

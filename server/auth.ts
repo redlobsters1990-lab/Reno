@@ -10,6 +10,54 @@ import { normalizeEmail, isValidEmail } from "@/lib/email-utils";
 export const { handlers, auth, signIn, signOut } = NextAuth({
   debug: true,
   adapter: PrismaAdapter(prisma),
+  secret: process.env.NEXTAUTH_SECRET,
+  trustHost: true, // Required for NextAuth v5 in development
+  // CSRF configuration
+  cookies: {
+    sessionToken: {
+      name: `next-auth.session-token`,
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: process.env.NODE_ENV === "production",
+      },
+    },
+    csrfToken: {
+      name: `next-auth.csrf-token`,
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: process.env.NODE_ENV === "production",
+      },
+    },
+  },
+  session: {
+    strategy: "jwt",
+    maxAge: 30 * 24 * 60 * 60, // 30 days
+  },
+  pages: {
+    signIn: "/auth/signin",
+    signUp: "/auth/signup",
+    error: "/auth/signin",
+  },
+  callbacks: {
+    async jwt({ token, user }) {
+      if (user) {
+        token.id = user.id;
+        token.email = user.email;
+      }
+      return token;
+    },
+    async session({ session, token }) {
+      if (session.user) {
+        session.user.id = token.id as string;
+        session.user.email = token.email as string;
+      }
+      return session;
+    },
+  },
   providers: [
     Credentials({
       name: "credentials",
@@ -63,31 +111,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       },
     }),
   ],
-  session: {
-    strategy: "jwt",
-    maxAge: 30 * 24 * 60 * 60,
-  },
-  pages: {
-    signIn: "/auth/signin",
-    signUp: "/auth/signup",
-    error: "/auth/signin",
-  },
-  callbacks: {
-    async jwt({ token, user }) {
-      if (user) {
-        token.id = user.id;
-        token.email = user.email;
-      }
-      return token;
-    },
-    async session({ session, token }) {
-      if (session.user) {
-        session.user.id = token.id as string;
-        session.user.email = token.email as string;
-      }
-      return session;
-    },
-  },
 });
 
 // Keep the signUpUser function for API routes
@@ -119,6 +142,30 @@ export async function signUpUser(data: { name: string; email: string; password: 
     return { id: user.id, email: user.email, name: user.name };
   } catch (error: any) {
     console.error("Auth: Signup error:", error.message);
+    
+    // Format Zod validation errors
+    if (error.name === 'ZodError') {
+      const firstError = error.errors[0];
+      let message = firstError.message;
+      
+      // Make error messages more user-friendly
+      if (firstError.path.includes('password')) {
+        if (firstError.validation === 'regex') {
+          if (firstError.code === 'invalid_string') {
+            if (firstError.validation === 'regex') {
+              message = "Password must contain at least one " + 
+                (firstError.message.includes('uppercase') ? "uppercase letter" :
+                 firstError.message.includes('lowercase') ? "lowercase letter" :
+                 firstError.message.includes('number') ? "number" :
+                 "special character");
+            }
+          }
+        }
+      }
+      
+      throw new Error(message);
+    }
+    
     throw error;
   }
 }

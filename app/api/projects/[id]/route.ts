@@ -1,77 +1,77 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/server/auth";
-import { ProjectService } from "@/server/services/project";
+import { prisma } from "@/server/db";
+import { verifyUserAuth } from "@/lib/auth-utils";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions);
-    
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-    
     const { id } = await params;
-    const project = await ProjectService.get(session.user.id, id);
-    
-    return NextResponse.json({ project });
-  } catch (error) {
-    console.error("GET /api/projects/[id] error:", error);
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Internal server error" },
-      { status: 500 },
-    );
-  }
-}
+    const { userId, response: authResponse } = await verifyUserAuth(request, prisma);
+    if (authResponse) return authResponse;
 
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
-) {
-  try {
-    const session = await getServerSession(authOptions);
-    
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const project = await prisma.project.findFirst({
+      where: { id, userId }, // ownership check
+      select: {
+        id: true,
+        title: true,
+        propertyType: true,
+        roomCount: true,
+        budget: true,
+        stylePreference: true,
+        notes: true,
+        status: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    if (!project) {
+      return NextResponse.json(
+        { error: "Project not found or you don't have access to it." },
+        { status: 404 }
+      );
     }
-    
-    const { id } = await params;
-    const body = await request.json();
-    const project = await ProjectService.update(session.user.id, id, body);
-    
-    return NextResponse.json({ project });
+
+    return NextResponse.json({ success: true, project });
   } catch (error) {
-    console.error("PATCH /api/projects/[id] error:", error);
+    console.error("Error fetching project:", error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Internal server error" },
-      { status: 500 },
+      { error: "Failed to load project. Please try again." },
+      { status: 500 }
     );
   }
 }
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions);
-    
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-    
     const { id } = await params;
-    const project = await ProjectService.archive(session.user.id, id);
-    
-    return NextResponse.json({ project });
+    const { userId, response: authResponse } = await verifyUserAuth(request, prisma);
+    if (authResponse) return authResponse;
+
+    const project = await prisma.project.findFirst({
+      where: { id, userId },
+    });
+
+    if (!project) {
+      return NextResponse.json(
+        { error: "Project not found or you don't have access to it." },
+        { status: 404 }
+      );
+    }
+
+    await prisma.project.delete({ where: { id } });
+
+    return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("DELETE /api/projects/[id] error:", error);
+    console.error("Error deleting project:", error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Internal server error" },
-      { status: 500 },
+      { error: "Failed to delete project." },
+      { status: 500 }
     );
   }
 }

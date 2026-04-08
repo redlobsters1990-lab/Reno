@@ -34,16 +34,13 @@ export default function SimpleNewProjectPage() {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    // Simple check for auth cookie
-    const hasAuthCookie = document.cookie.includes('auth-token=');
-    if (!hasAuthCookie) {
-      console.warn("No auth cookie found, redirecting to signin");
+    // Check authentication
+    if (!isAuthenticated()) {
       router.push("/auth/signin");
-      return;
+    } else {
+      setAuthChecked(true);
+      setLoading(false);
     }
-    
-    setAuthChecked(true);
-    setLoading(false);
   }, [router]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -91,7 +88,6 @@ export default function SimpleNewProjectPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
-        credentials: "include", // Include cookies
       });
       
       const data = await response.json();
@@ -105,60 +101,7 @@ export default function SimpleNewProjectPage() {
       
     } catch (error: any) {
       console.error("Error creating project:", error);
-      console.error("Error details:", {
-        message: error.message,
-        name: error.name,
-        stack: error.stack
-      });
-      
-      let errorMessage = "Failed to create project. Please try again.";
-      
-      // Try to get the actual error from the API response
-      try {
-        if (error.message && error.message.includes("{")) {
-          const jsonMatch = error.message.match(/\{.*\}/);
-          if (jsonMatch) {
-            const apiError = JSON.parse(jsonMatch[0]);
-            if (apiError.error) {
-              errorMessage = apiError.error;
-            }
-          }
-        }
-      } catch (e) {
-        // If parsing fails, use original error
-        errorMessage = error.message || "Failed to create project. Please try again.";
-      }
-      
-      // Add more helpful messages for common errors
-      if (errorMessage.includes("401") || errorMessage.includes("Unauthorized") || errorMessage.includes("Authentication required")) {
-        errorMessage = "🔐 Authentication required. Please sign in first.";
-      } else if (errorMessage.includes("Invalid authentication")) {
-        errorMessage = "🔐 Invalid authentication session. You need to clear your cookies and sign in again.";
-      } else if (errorMessage.includes("Network") || errorMessage.includes("fetch")) {
-        errorMessage = "🌐 Network error. Please check your connection and try again.";
-      } else if (errorMessage.includes("Foreign key constraint")) {
-        errorMessage = "🔄 Account synchronization issue. Your user account doesn't exist in the database.";
-      } else if (errorMessage.includes("Failed to create project")) {
-        errorMessage = "❌ Failed to create project. Please try again or contact support if the issue persists.";
-      }
-      
-      setErrors({ submit: errorMessage });
-      
-      // Log detailed error info for debugging
-      console.log("=== PROJECT CREATION ERROR DEBUG ===");
-      console.log("Error message:", errorMessage);
-      console.log("Full error:", error);
-      console.log("Current URL:", window.location.href);
-      console.log("Cookies:", document.cookie);
-      
-      // If it's an auth error, suggest cookie cleanup
-      if (errorMessage.includes("Authentication") || errorMessage.includes("session") || errorMessage.includes("sign in") || errorMessage.includes("invalid") || errorMessage.includes("🔐") || errorMessage.includes("401")) {
-        console.log("Auth error detected, suggesting cookie cleanup");
-        // Auto-redirect to cookie cleanup after 1 second
-        setTimeout(() => {
-          router.push("/auth/cleanup");
-        }, 1000);
-      }
+      setErrors({ submit: error.message || "Failed to create project. Please try again." });
     } finally {
       setSubmitting(false);
     }
@@ -213,17 +156,10 @@ export default function SimpleNewProjectPage() {
 
         {errors.submit && (
           <div className="mb-6 p-4 rounded-xl bg-red-500/10 border border-red-500/20">
-            <div className="flex items-center gap-2 text-red-400 mb-2">
+            <div className="flex items-center gap-2 text-red-400">
               <AlertCircle className="h-5 w-5" />
               <span>{errors.submit}</span>
             </div>
-            {(errors.submit.includes("Authentication") || errors.submit.includes("session") || errors.submit.includes("sign in")) && (
-              <div className="text-sm text-red-300 mt-2">
-                <Link href="/auth/cleanup" className="underline hover:text-red-200">
-                  Clear invalid cookies and try again
-                </Link>
-              </div>
-            )}
           </div>
         )}
 
@@ -475,3 +411,4 @@ export default function SimpleNewProjectPage() {
     </div>
   );
 }
+EOF && echo "Simple project creation page created" && echo "" && echo "Replacing original..." && mv app/dashboard/new/page.tsx.simple app/dashboard/new/page.tsx && echo "Project creation page updated to use simple auth and project API"

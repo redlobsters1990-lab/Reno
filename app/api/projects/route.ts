@@ -1,46 +1,88 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/server/auth";
-import { ProjectService } from "@/server/services/project";
+import { prisma } from "@/server/db";
+import { verifyUserAuth } from "@/lib/auth-utils";
 
-export async function GET(request: NextRequest) {
+export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    // Verify user authentication
+    const { userId, response: authResponse } = await verifyUserAuth(request, prisma);
+    if (authResponse) {
+      return authResponse; // Returns 401 with cleared cookies
     }
     
-    const status = request.nextUrl.searchParams.get("status");
-    const projects = await ProjectService.list(session.user.id, status as any);
+    const data = await request.json();
     
-    return NextResponse.json({ projects });
+    // Validate required fields
+    if (!data.name || !data.propertySize) {
+      return NextResponse.json(
+        { error: "Project name and property size are required" },
+        { status: 400 }
+      );
+    }
+    
+    // Create project in database
+    const project = await prisma.project.create({
+      data: {
+        title: data.name,
+        notes: `Property size: ${data.propertySize} sqft, Rooms: ${data.rooms || 'Not specified'}. ${data.notes || ''}`,
+        propertyType: data.propertyType || "HDB Resale",
+        roomCount: data.rooms ? parseInt(data.rooms) : null,
+        userId: userId,
+      },
+      select: {
+        id: true,
+        title: true,
+        propertyType: true,
+        createdAt: true,
+      },
+    });
+    
+    return NextResponse.json({
+      success: true,
+      project,
+      redirect: `/dashboard/projects/${project.id}`
+    });
+    
   } catch (error) {
-    console.error("GET /api/projects error:", error);
+    console.error("Project creation error:", error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Internal server error" },
-      { status: 500 },
+      { error: "Failed to create project" },
+      { status: 500 }
     );
   }
 }
 
-export async function POST(request: NextRequest) {
+export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    // Verify user authentication
+    const { userId, response: authResponse } = await verifyUserAuth(request, prisma);
+    if (authResponse) {
+      return authResponse; // Returns 401 with cleared cookies
     }
     
-    const body = await request.json();
-    const project = await ProjectService.create(session.user.id, body);
+    // Get user's projects
+    const projects = await prisma.project.findMany({
+      where: { userId },
+      select: {
+        id: true,
+        title: true,
+        propertyType: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
     
-    return NextResponse.json({ project }, { status: 201 });
+    return NextResponse.json({
+      success: true,
+      projects,
+    });
+    
   } catch (error) {
-    console.error("POST /api/projects error:", error);
+    console.error("Error fetching projects:", error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Internal server error" },
-      { status: 500 },
+      { error: "Failed to fetch projects" },
+      { status: 500 }
     );
   }
 }
