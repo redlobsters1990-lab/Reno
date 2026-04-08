@@ -7,10 +7,11 @@ import { constants } from "fs";
 // GET /api/projects/[id]/quotes - Get all quotes for a project
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> | { id: string } }
 ) {
   try {
-    const projectId = params.id;
+    const resolvedParams = await Promise.resolve(params);
+    const projectId = resolvedParams?.id;
 
     const quotes = await prisma.quote.findMany({
       where: { projectId },
@@ -30,15 +31,20 @@ export async function GET(
 // POST /api/projects/[id]/quotes - Upload a new quote
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> | { id: string } }
 ) {
   try {
-    // Validate projectId
-    const projectId = params?.id;
+    // Handle both Promise and direct object (Next.js version compatibility)
+    const resolvedParams = await Promise.resolve(params);
+    const projectId = resolvedParams?.id;
+    
+    console.log("API Route - Received params:", resolvedParams);
+    console.log("API Route - Extracted projectId:", projectId);
+    
     if (!projectId) {
-      console.error("Missing projectId in params:", params);
+      console.error("Missing projectId in params:", resolvedParams);
       return NextResponse.json(
-        { success: false, error: "Invalid project ID" },
+        { success: false, error: "Invalid project ID: parameter is missing" },
         { status: 400 }
       );
     }

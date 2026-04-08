@@ -87,7 +87,11 @@ export function QuoteUpload({ projectId, onUploadComplete }: QuoteUploadProps) {
       formDataObj.append("amount", formData.amount);
       formDataObj.append("projectId", projectId);
 
-      const response = await fetch(`/api/projects/${projectId}/quotes`, {
+      const url = `/api/projects/${projectId}/quotes`;
+      console.log("QuoteUpload - Uploading to URL:", url);
+      console.log("QuoteUpload - ProjectId:", projectId);
+      
+      const response = await fetch(url, {
         method: "POST",
         body: formDataObj,
       });
