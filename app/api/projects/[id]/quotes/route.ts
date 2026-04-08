@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/server/db";
-import { writeFile } from "fs/promises";
+import { writeFile, mkdir, access } from "fs/promises";
 import { join } from "path";
-import { mkdir } from "fs/promises";
+import { constants } from "fs";
 
 // GET /api/projects/[id]/quotes - Get all quotes for a project
 export async function GET(
@@ -82,13 +82,38 @@ export async function POST(
 
     // Create uploads directory if it doesn't exist
     let uploadDir: string;
-    try {
-      uploadDir = join(process.cwd(), "uploads", "quotes", projectId);
-      await mkdir(uploadDir, { recursive: true });
-    } catch (dirError) {
-      console.error("Error creating upload directory:", dirError);
+    const possibleDirs = [
+      join(process.cwd(), "uploads", "quotes", projectId),
+      join("/tmp", "renovation-advisor", "uploads", "quotes", projectId),
+      join("/var/tmp", "renovation-advisor", "uploads", "quotes", projectId),
+    ];
+    
+    let dirCreated = false;
+    for (const dir of possibleDirs) {
+      try {
+        console.log("Trying to create/access directory:", dir);
+        await mkdir(dir, { recursive: true });
+        // Test if directory is writable
+        const testFile = join(dir, ".write-test");
+        await writeFile(testFile, "test");
+        await access(testFile, constants.W_OK);
+        // Clean up test file
+        const { unlink } = await import("fs/promises");
+        await unlink(testFile);
+        uploadDir = dir;
+        dirCreated = true;
+        console.log("Using upload directory:", uploadDir);
+        break;
+      } catch (err) {
+        console.log("Failed to use directory:", dir, err);
+        continue;
+      }
+    }
+    
+    if (!dirCreated) {
+      console.error("All upload directories failed");
       return NextResponse.json(
-        { success: false, error: "Server error: Unable to create upload directory" },
+        { success: false, error: "Server error: Unable to create upload directory. All fallback locations failed." },
         { status: 500 }
       );
     }
