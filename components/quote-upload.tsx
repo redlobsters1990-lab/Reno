@@ -20,6 +20,11 @@ interface QuoteData {
   analysis?: {
     isFair: boolean;
     confidence: number;
+    confidenceBreakdown?: {
+      base: number;
+      signals: Array<{ label: string; weight: number; met: boolean }>;
+      score: number;
+    };
     priceAssessment: string;
     strengths?: string[];
     redFlags: string[];
@@ -147,6 +152,12 @@ export function QuoteUpload({ projectId, onUploadComplete }: QuoteUploadProps) {
   };
 
   const uploadFile = async (file: File) => {
+    // Contractor name is required — block upload before touching the network
+    if (!formData.contractorName.trim()) {
+      setError("Contractor name is required. Please enter the contractor's name before uploading.");
+      return;
+    }
+
     setUploading(true);
     setError("");
     setSuccess("");
@@ -154,7 +165,7 @@ export function QuoteUpload({ projectId, onUploadComplete }: QuoteUploadProps) {
     try {
       const fd = new FormData();
       fd.append("file", file);
-      fd.append("contractorName", formData.contractorName);
+      fd.append("contractorName", formData.contractorName.trim());
       fd.append("companyName", formData.companyName);
       fd.append("amount", formData.amount);
 
@@ -234,11 +245,32 @@ export function QuoteUpload({ projectId, onUploadComplete }: QuoteUploadProps) {
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "16px", marginBottom: "16px" }}>
           <div>
-            <label style={{ display: "block", fontSize: "14px", fontWeight: 500, color: "white", marginBottom: "8px" }}>Contractor Name (optional)</label>
+            <label style={{ display: "block", fontSize: "14px", fontWeight: 500, color: "white", marginBottom: "8px" }}>
+              Contractor Name <span style={{ color: "#ef4444", marginLeft: "2px" }}>*</span>
+            </label>
             <div style={{ position: "relative" }}>
-              <User style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: "#64748b" }} size={16} />
-              <input type="text" placeholder="John Doe" value={formData.contractorName} onChange={(e) => setFormData(prev => ({ ...prev, contractorName: e.target.value }))} style={{ width: "100%", padding: "10px 12px 10px 40px", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px", color: "white", fontSize: "14px", outline: "none" }} />
+              <User style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: formData.contractorName.trim() ? "#a78bfa" : "#64748b" }} size={16} />
+              <input
+                type="text"
+                placeholder="e.g. John Tan (required)"
+                value={formData.contractorName}
+                onChange={(e) => setFormData(prev => ({ ...prev, contractorName: e.target.value }))}
+                required
+                style={{
+                  width: "100%",
+                  padding: "10px 12px 10px 40px",
+                  background: "rgba(255,255,255,0.05)",
+                  border: `1px solid ${formData.contractorName.trim() ? "rgba(139,92,246,0.4)" : "rgba(239,68,68,0.4)"}`,
+                  borderRadius: "8px",
+                  color: "white",
+                  fontSize: "14px",
+                  outline: "none",
+                }}
+              />
             </div>
+            {!formData.contractorName.trim() && (
+              <p style={{ fontSize: "12px", color: "#f87171", marginTop: "4px" }}>Required before uploading</p>
+            )}
           </div>
           <div>
             <label style={{ display: "block", fontSize: "14px", fontWeight: 500, color: "white", marginBottom: "8px" }}>Company Name</label>
@@ -256,13 +288,47 @@ export function QuoteUpload({ projectId, onUploadComplete }: QuoteUploadProps) {
           </div>
         </div>
 
-        <div onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop} style={{ padding: "32px", borderRadius: "12px", border: isDragging ? "2px dashed #8b5cf6" : "2px dashed rgba(255,255,255,0.2)", background: isDragging ? "rgba(139,92,246,0.1)" : "rgba(255,255,255,0.02)", textAlign: "center", cursor: "pointer", transition: "all 0.3s" }}>
-          <input type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={handleFileSelect} style={{ display: "none" }} id="quote-file-input" />
-          <label htmlFor="quote-file-input" style={{ cursor: "pointer" }}>
+        {/* Upload drop zone — locked until contractor name is filled */}
+        <div
+          onDragOver={formData.contractorName.trim() ? handleDragOver : undefined}
+          onDragLeave={formData.contractorName.trim() ? handleDragLeave : undefined}
+          onDrop={formData.contractorName.trim() ? handleDrop : undefined}
+          style={{
+            padding: "32px",
+            borderRadius: "12px",
+            border: !formData.contractorName.trim()
+              ? "2px dashed rgba(239,68,68,0.25)"
+              : isDragging
+              ? "2px dashed #8b5cf6"
+              : "2px dashed rgba(255,255,255,0.2)",
+            background: !formData.contractorName.trim()
+              ? "rgba(239,68,68,0.03)"
+              : isDragging
+              ? "rgba(139,92,246,0.1)"
+              : "rgba(255,255,255,0.02)",
+            textAlign: "center",
+            cursor: formData.contractorName.trim() ? "pointer" : "not-allowed",
+            transition: "all 0.3s",
+            opacity: formData.contractorName.trim() ? 1 : 0.5,
+          }}
+        >
+          <input type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={handleFileSelect} style={{ display: "none" }} id="quote-file-input" disabled={!formData.contractorName.trim()} />
+          <label htmlFor="quote-file-input" style={{ cursor: formData.contractorName.trim() ? "pointer" : "not-allowed" }}>
             {uploading ? (
               <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "12px" }}><Loader2 size={32} color="#a78bfa" style={{ animation: "spin 1s linear infinite" }} /><span style={{ color: "#94a3b8" }}>Uploading and analyzing...</span></div>
+            ) : formData.contractorName.trim() ? (
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "12px" }}>
+                <Upload size={32} color="#a78bfa" />
+                <div>
+                  <p style={{ color: "white", fontWeight: 500, marginBottom: "4px" }}>Drop quote file here or click to browse</p>
+                  <p style={{ color: "#64748b", fontSize: "14px" }}>Supports PDF, JPG, PNG (max 10MB)</p>
+                </div>
+              </div>
             ) : (
-              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "12px" }}><Upload size={32} color="#a78bfa" /><div><p style={{ color: "white", fontWeight: 500, marginBottom: "4px" }}>Drop quote file here or click to browse</p><p style={{ color: "#64748b", fontSize: "14px" }}>Supports PDF, JPG, PNG (max 10MB)</p></div></div>
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "8px" }}>
+                <User size={28} color="#ef4444" style={{ opacity: 0.5 }} />
+                <p style={{ color: "#f87171", fontWeight: 500, fontSize: "14px" }}>Enter contractor name above to unlock upload</p>
+              </div>
             )}
           </label>
         </div>
@@ -371,11 +437,39 @@ export function QuoteUpload({ projectId, onUploadComplete }: QuoteUploadProps) {
 
               {quote.analysis && (
                 <div style={{ padding: "16px", borderRadius: "8px", background: quote.analysis.isFair ? "rgba(34,197,94,0.05)" : "rgba(239,68,68,0.05)", border: `1px solid ${quote.analysis.isFair ? "rgba(34,197,94,0.2)" : "rgba(239,68,68,0.2)"}` }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "12px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px" }}>
                     {quote.analysis.isFair ? <CheckCircle size={20} color="#4ade80" /> : <AlertCircle size={20} color="#ef4444" />}
                     <span style={{ fontWeight: 600, color: quote.analysis.isFair ? "#4ade80" : "#ef4444" }}>{quote.analysis.priceAssessment}</span>
                     <span style={{ fontSize: "12px", color: "#64748b" }}>({Math.round(quote.analysis.confidence * 100)}% confidence)</span>
                   </div>
+
+                  {/* Confidence breakdown — shows user exactly how the score was earned */}
+                  {quote.analysis.confidenceBreakdown && (
+                    <details style={{ marginBottom: "12px" }}>
+                      <summary style={{ fontSize: "12px", color: "#64748b", cursor: "pointer", userSelect: "none", marginBottom: "8px" }}>
+                        How is the {Math.round(quote.analysis.confidence * 100)}% confidence calculated?
+                      </summary>
+                      <div style={{ padding: "10px", borderRadius: "8px", background: "rgba(0,0,0,0.2)", fontSize: "12px" }}>
+                        <div style={{ color: "#64748b", marginBottom: "8px" }}>
+                          Base score: {Math.round(quote.analysis.confidenceBreakdown.base * 100)}% — raised by signals found in your document:
+                        </div>
+                        <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                          {quote.analysis.confidenceBreakdown.signals.map((s, i) => (
+                            <div key={i} style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                              <span style={{ width: "14px", height: "14px", borderRadius: "50%", background: s.met ? "rgba(34,197,94,0.2)" : "rgba(100,116,139,0.2)", border: `1px solid ${s.met ? "#4ade80" : "#475569"}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "9px", color: s.met ? "#4ade80" : "#475569", flexShrink: 0 }}>
+                                {s.met ? "✓" : "×"}
+                              </span>
+                              <span style={{ flex: 1, color: s.met ? "#cbd5e1" : "#475569" }}>{s.label}</span>
+                              <span style={{ color: s.met ? "#4ade80" : "#475569", fontWeight: 600 }}>{s.met ? `+${Math.round(s.weight * 100)}%` : `+0%`}</span>
+                            </div>
+                          ))}
+                        </div>
+                        <div style={{ marginTop: "8px", paddingTop: "8px", borderTop: "1px solid rgba(255,255,255,0.08)", color: "#94a3b8" }}>
+                          Total: {Math.round(quote.analysis.confidenceBreakdown.base * 100)}% base + {Math.round((quote.analysis.confidence - quote.analysis.confidenceBreakdown.base) * 100)}% from signals = <strong style={{ color: "white" }}>{Math.round(quote.analysis.confidence * 100)}%</strong>
+                        </div>
+                      </div>
+                    </details>
+                  )}
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "8px", marginBottom: "12px", padding: "12px", borderRadius: "6px", background: "rgba(0,0,0,0.2)" }}>
                     <div style={{ textAlign: "center" }}><div style={{ fontSize: "12px", color: "#64748b" }}>Your Quote</div><div style={{ fontSize: "14px", fontWeight: 600, color: "white" }}>${quote.analysis.marketComparison.yourQuote.toLocaleString()}</div></div>
                     <div style={{ textAlign: "center" }}><div style={{ fontSize: "12px", color: "#64748b" }}>Market Low</div><div style={{ fontSize: "14px", fontWeight: 600, color: "#4ade80" }}>${quote.analysis.marketComparison.marketLow.toLocaleString()}</div></div>

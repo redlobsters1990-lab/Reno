@@ -47,7 +47,7 @@ export async function POST(
       },
     });
 
-    return NextResponse.json({ success: true, analysis, parsedDocument: parsedDoc });
+    return NextResponse.json({ success: true, analysis, parsedDocument: parsedDoc, confidenceBreakdown: analysis.confidenceBreakdown });
   } catch (error) {
     console.error("Error analyzing quote:", error);
     const message = error instanceof Error ? error.message : "Failed to analyze quote";
@@ -99,18 +99,63 @@ function analyzeQuoteDocument({ quoteAmount, marketRates, parsedDoc, propertyTyp
   let isFair = false;
   let priceAssessment = "";
 
-  // Dynamic confidence based on actual document quality
-  let confidenceScore = 0.5;
-  if (parsedDoc.totalAmount) confidenceScore += 0.15;
-  if (parsedDoc.documentQuality.hasItemization) confidenceScore += 0.10;
-  if (parsedDoc.documentQuality.hasPaymentTerms) confidenceScore += 0.08;
-  if (parsedDoc.documentQuality.hasWarranty) confidenceScore += 0.07;
-  if (parsedDoc.lineItems.length >= 5) confidenceScore += 0.05;
-  if (parsedDoc.lineItems.length >= 10) confidenceScore += 0.05;
-  if (parsedDoc.contractorName) confidenceScore += 0.03;
-  if (parsedDoc.materialsMentions.length > 0) confidenceScore += 0.03;
-  if (parsedDoc.timelineMentions.length > 0) confidenceScore += 0.02;
-  const confidence = Math.min(Math.round(confidenceScore * 100) / 100, 0.97);
+  // ---------------------------------------------------------------------------
+  // Confidence scoring — each weight reflects how much that signal reduces
+  // uncertainty in the price assessment:
+  //
+  //  BASE (0.50)  — minimum baseline; even with zero signals we have market data
+  //  +0.15 totalAmount    — most critical: the number we're actually judging
+  //  +0.10 itemization    — scope is legible; we can reason about what's included
+  //  +0.08 paymentTerms   — structured doc; contractor is professional
+  //  +0.07 warranty       — further marker of a complete, professional quote
+  //  +0.05 5+ line items  — deeper breakdown = better parsing accuracy
+  //  +0.05 10+ line items — detailed itemization nearly eliminates scope guessing
+  //  +0.03 contractorName — identity is verifiable in the document
+  //  +0.03 materials      — spec detail reduces ambiguity in scope
+  //  +0.02 timeline       — minor positive; schedule info = complete document
+  //
+  //  MAX cap: 0.97 — we never claim 100% certainty (market data has variance)
+  // ---------------------------------------------------------------------------
+  const CONFIDENCE_BASE          = 0.50;
+  const CONF_TOTAL_AMOUNT        = 0.15; // Without a total, the whole assessment is speculative
+  const CONF_ITEMIZATION         = 0.10; // Itemized = parseable scope
+  const CONF_PAYMENT_TERMS       = 0.08; // Structured payment = professional document
+  const CONF_WARRANTY            = 0.07; // Warranty clause = complete document
+  const CONF_FIVE_LINE_ITEMS     = 0.05; // Enough items to cross-check scope
+  const CONF_TEN_LINE_ITEMS      = 0.05; // Detailed enough to trust line-item parsing
+  const CONF_CONTRACTOR_NAME     = 0.03; // Identity confirmed in doc
+  const CONF_MATERIALS_MENTIONED = 0.03; // Material spec reduces price ambiguity
+  const CONF_TIMELINE_MENTIONED  = 0.02; // Indicates a complete, structured quote
+  const CONFIDENCE_MAX           = 0.97; // Never claim certainty — market data varies
+
+  let confidenceScore = CONFIDENCE_BASE;
+  if (parsedDoc.totalAmount)                       confidenceScore += CONF_TOTAL_AMOUNT;
+  if (parsedDoc.documentQuality.hasItemization)    confidenceScore += CONF_ITEMIZATION;
+  if (parsedDoc.documentQuality.hasPaymentTerms)   confidenceScore += CONF_PAYMENT_TERMS;
+  if (parsedDoc.documentQuality.hasWarranty)       confidenceScore += CONF_WARRANTY;
+  if (parsedDoc.lineItems.length >= 5)             confidenceScore += CONF_FIVE_LINE_ITEMS;
+  if (parsedDoc.lineItems.length >= 10)            confidenceScore += CONF_TEN_LINE_ITEMS;
+  if (parsedDoc.contractorName)                    confidenceScore += CONF_CONTRACTOR_NAME;
+  if (parsedDoc.materialsMentions.length > 0)      confidenceScore += CONF_MATERIALS_MENTIONED;
+  if (parsedDoc.timelineMentions.length > 0)       confidenceScore += CONF_TIMELINE_MENTIONED;
+  const confidence = Math.min(Math.round(confidenceScore * 100) / 100, CONFIDENCE_MAX);
+
+  // Expose confidence breakdown so the UI can explain it to the user
+  const confidenceBreakdown = {
+    base: CONFIDENCE_BASE,
+    signals: [
+      { label: "Total amount detected",    weight: CONF_TOTAL_AMOUNT,        met: !!parsedDoc.totalAmount },
+      { label: "Quote is itemized",         weight: CONF_ITEMIZATION,         met: parsedDoc.documentQuality.hasItemization },
+      { label: "Payment terms present",     weight: CONF_PAYMENT_TERMS,       met: parsedDoc.documentQuality.hasPaymentTerms },
+      { label: "Warranty clause present",   weight: CONF_WARRANTY,            met: parsedDoc.documentQuality.hasWarranty },
+      { label: "5+ line items",             weight: CONF_FIVE_LINE_ITEMS,     met: parsedDoc.lineItems.length >= 5 },
+      { label: "10+ line items",            weight: CONF_TEN_LINE_ITEMS,      met: parsedDoc.lineItems.length >= 10 },
+      { label: "Contractor name in doc",    weight: CONF_CONTRACTOR_NAME,     met: !!parsedDoc.contractorName },
+      { label: "Materials mentioned",       weight: CONF_MATERIALS_MENTIONED, met: parsedDoc.materialsMentions.length > 0 },
+      { label: "Timeline mentioned",        weight: CONF_TIMELINE_MENTIONED,  met: parsedDoc.timelineMentions.length > 0 },
+    ],
+    score: confidence,
+  };
 
   if (quoteAmount < marketRates.low * 0.8) {
     priceAssessment = "Significantly below market rate - potential quality concerns";
@@ -142,6 +187,7 @@ function analyzeQuoteDocument({ quoteAmount, marketRates, parsedDoc, propertyTyp
   return {
     isFair,
     confidence,
+    confidenceBreakdown,
     priceAssessment,
     strengths,
     redFlags,
