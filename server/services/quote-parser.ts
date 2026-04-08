@@ -1,6 +1,8 @@
-import { readFile } from "fs/promises";
-import * as pdfjsLib from "pdfjs-dist/legacy/build/pdf.mjs";
+import { execFile } from "child_process";
+import { promisify } from "util";
 import Tesseract from "tesseract.js";
+
+const execFileAsync = promisify(execFile);
 
 export interface ParsedQuoteLineItem {
   description: string;
@@ -32,17 +34,7 @@ export async function extractQuoteDocument(filePath: string, fileType: string): 
   let text = "";
 
   if (fileType === "application/pdf") {
-    const buffer = await readFile(filePath);
-    const loadingTask = pdfjsLib.getDocument({ data: new Uint8Array(buffer), useWorkerFetch: false, isEvalSupported: false, useSystemFonts: true });
-    const pdf = await loadingTask.promise;
-    const pages: string[] = [];
-    for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
-      const page = await pdf.getPage(pageNum);
-      const content = await page.getTextContent();
-      const pageText = content.items.map((item: any) => ("str" in item ? item.str : "")).join(" ");
-      pages.push(pageText);
-    }
-    text = pages.join("\n");
+    text = await extractPdfTextViaPython(filePath);
   } else if (["image/jpeg", "image/jpg", "image/png"].includes(fileType)) {
     const result = await Tesseract.recognize(filePath, "eng", { logger: () => {} });
     text = result.data.text || "";
@@ -87,20 +79,41 @@ export async function extractQuoteDocument(filePath: string, fileType: string): 
   };
 }
 
+async function extractPdfTextViaPython(filePath: string): Promise<string> {
+  const pythonCode = `
+from pypdf import PdfReader
+import sys
+path = sys.argv[1]
+reader = PdfReader(path)
+texts = []
+for page in reader.pages:
+    texts.append(page.extract_text() or "")
+print("\n".join(texts))
+`;
+  try {
+    const { stdout, stderr } = await execFileAsync("python3", ["-c", pythonCode, filePath], {
+      maxBuffer: 20 * 1024 * 1024,
+    });
+    if (stderr && stderr.trim()) {
+      console.warn("PDF python parser stderr:", stderr);
+    }
+    return stdout || "";
+  } catch (error: any) {
+    throw new Error(`PDF text extraction failed: ${error?.stderr || error?.message || "Unknown error"}`);
+  }
+}
+
 function normalizeText(text: string): string {
   return text.replace(/\r/g, "\n").replace(/\t/g, " ").replace(/[ ]{2,}/g, " ");
 }
-
 function detectContractorName(text: string): string | undefined {
   const lines = text.split("\n").map(l => l.trim()).filter(Boolean);
   return lines.slice(0, 12).find(line => /[A-Za-z]/.test(line) && !/quote|invoice|page\s+\d+/i.test(line));
 }
-
 function detectCompanyName(text: string): string | undefined {
   const match = text.match(/([A-Z][A-Za-z&.,'\- ]+(Pte Ltd|LLP|LLC|Construction|Renovation|Interiors|Design))/i);
   return match?.[1]?.trim();
 }
-
 function detectTotalAmount(text: string): number | undefined {
   const patterns = [
     /grand\s+total[^\d$S]*([$S]?\s?[\d,]+(?:\.\d{2})?)/i,
@@ -116,7 +129,6 @@ function detectTotalAmount(text: string): number | undefined {
   }
   return undefined;
 }
-
 function detectLineItems(text: string): ParsedQuoteLineItem[] {
   const lines = text.split("\n").map(l => l.trim()).filter(Boolean);
   const items: ParsedQuoteLineItem[] = [];
@@ -130,7 +142,6 @@ function detectLineItems(text: string): ParsedQuoteLineItem[] {
   }
   return items.slice(0, 25);
 }
-
 function detectPaymentTerms(text: string): string[] {
   return text.split("\n").map(l => l.trim()).filter(line => /deposit|payment|progress payment|final payment|upon completion|installment/i.test(line)).slice(0, 10);
 }
@@ -146,7 +157,6 @@ function detectMaterials(text: string): string[] {
 function detectTimeline(text: string): string[] {
   return text.split("\n").map(l => l.trim()).filter(line => /week|weeks|month|months|working days|timeline|completion/i.test(line)).slice(0, 10);
 }
-
 function detectWarnings(text: string, quality: ParsedQuoteDocument["documentQuality"]): string[] {
   const warnings: string[] = [];
   if (!quality.hasWarranty) warnings.push("No clear warranty term found in the uploaded quote.");
@@ -155,7 +165,6 @@ function detectWarnings(text: string, quality: ParsedQuoteDocument["documentQual
   if (!quality.hasTotalAmount) warnings.push("No clear total amount detected from the uploaded file.");
   return warnings;
 }
-
 function parseCurrency(raw: string): number | null {
   const cleaned = raw.replace(/[S$\s,]/g, "").trim();
   const value = Number(cleaned);
