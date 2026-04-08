@@ -6,10 +6,11 @@ import { existsSync } from "fs";
 // GET /api/files/quotes/[projectId]/[filename] - Serve uploaded quote files
 export async function GET(
   request: NextRequest,
-  { params }: { params: { path: string[] } }
+  { params }: { params: Promise<{ path: string[] }> | { path: string[] } }
 ) {
   try {
-    const [projectId, filename] = params.path;
+    const resolvedParams = await Promise.resolve(params);
+    const [projectId, filename] = resolvedParams.path || [];
 
     if (!projectId || !filename) {
       return NextResponse.json(
@@ -26,26 +27,40 @@ export async function GET(
       );
     }
 
-    const filepath = join(process.cwd(), "uploads", "quotes", projectId, filename);
+    const candidatePaths = [
+      join(process.cwd(), "uploads", "quotes", projectId, filename),
+      join("/tmp", "renovation-advisor", "uploads", "quotes", projectId, filename),
+      join("/var/tmp", "renovation-advisor", "uploads", "quotes", projectId, filename),
+    ];
 
-    // Security: Ensure file is within uploads directory
-    const uploadsDir = join(process.cwd(), "uploads", "quotes");
-    if (!filepath.startsWith(uploadsDir)) {
-      return NextResponse.json(
-        { success: false, error: "Access denied" },
-        { status: 403 }
-      );
+    let filepath = "";
+    for (const candidate of candidatePaths) {
+      if (existsSync(candidate)) {
+        filepath = candidate;
+        break;
+      }
     }
 
-    // Check if file exists
-    if (!existsSync(filepath)) {
+    if (!filepath) {
       return NextResponse.json(
         { success: false, error: "File not found" },
         { status: 404 }
       );
     }
 
-    // Read file
+    // Security: ensure file path ends up in allowed quote directories
+    const allowedRoots = [
+      join(process.cwd(), "uploads", "quotes"),
+      join("/tmp", "renovation-advisor", "uploads", "quotes"),
+      join("/var/tmp", "renovation-advisor", "uploads", "quotes"),
+    ];
+    if (!allowedRoots.some(root => filepath.startsWith(root))) {
+      return NextResponse.json(
+        { success: false, error: "Access denied" },
+        { status: 403 }
+      );
+    }
+
     const fileBuffer = await readFile(filepath);
 
     // Determine content type
