@@ -81,10 +81,23 @@ function Metric({ label, value }: { label: string; value: number }) {
   );
 }
 
+interface ComparisonData {
+  quoteCount: number;
+  lowestQuote: { id: string; contractorName: string; companyName: string; amount: number; riskLevel: string; isFair: boolean };
+  highestQuote: { id: string; contractorName: string; companyName: string; amount: number; riskLevel: string; isFair: boolean };
+  averageAmount: number;
+  spreadPercent: number | null;
+  rankedByAmount: Array<{ id: string; contractorName: string; companyName: string; amount: number; riskLevel: string; isFair: boolean; priceAssessment: string }>;
+  fairQuotes: number;
+  lowRiskQuotes: number;
+  recommendation: string;
+}
+
 export function QuoteUpload({ projectId, onUploadComplete }: QuoteUploadProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [quotes, setQuotes] = useState<QuoteData[]>([]);
+  const [comparison, setComparison] = useState<ComparisonData | null>(null);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [lastEvent, setLastEvent] = useState("");
@@ -98,6 +111,7 @@ export function QuoteUpload({ projectId, onUploadComplete }: QuoteUploadProps) {
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Failed to load quotes");
       setQuotes((data.quotes || []).map(mapQuote));
+      setComparison(data.comparison || null);
     } catch (err) {
       console.error(err);
     } finally {
@@ -259,6 +273,76 @@ export function QuoteUpload({ projectId, onUploadComplete }: QuoteUploadProps) {
         {loadingQuotes && <span style={{ color: "#64748b", fontSize: "14px" }}>Refreshing…</span>}
       </div>
 
+      {comparison && (
+        <div style={{ padding: "20px", borderRadius: "12px", border: "1px solid rgba(139,92,246,0.3)", background: "rgba(139,92,246,0.05)" }}>
+          <h4 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "4px", color: "#a78bfa" }}>Quote Comparison</h4>
+          <p style={{ fontSize: "13px", color: "#64748b", marginBottom: "16px" }}>{comparison.quoteCount} quotes analysed</p>
+
+          <div style={{ padding: "12px", borderRadius: "8px", background: "rgba(255,255,255,0.04)", marginBottom: "16px", fontSize: "14px", color: "#cbd5e1" }}>
+            💡 {comparison.recommendation}
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: "10px", marginBottom: "16px" }}>
+            <div style={{ textAlign: "center", padding: "12px", borderRadius: "8px", background: "rgba(0,0,0,0.2)" }}>
+              <div style={{ fontSize: "12px", color: "#64748b", marginBottom: "4px" }}>Lowest</div>
+              <div style={{ fontSize: "15px", fontWeight: 700, color: "#4ade80" }}>${comparison.lowestQuote.amount.toLocaleString()}</div>
+              <div style={{ fontSize: "12px", color: "#94a3b8", marginTop: "2px" }}>{comparison.lowestQuote.contractorName}</div>
+            </div>
+            <div style={{ textAlign: "center", padding: "12px", borderRadius: "8px", background: "rgba(0,0,0,0.2)" }}>
+              <div style={{ fontSize: "12px", color: "#64748b", marginBottom: "4px" }}>Average</div>
+              <div style={{ fontSize: "15px", fontWeight: 700, color: "#a78bfa" }}>${comparison.averageAmount.toLocaleString()}</div>
+              <div style={{ fontSize: "12px", color: "#94a3b8", marginTop: "2px" }}>across all quotes</div>
+            </div>
+            <div style={{ textAlign: "center", padding: "12px", borderRadius: "8px", background: "rgba(0,0,0,0.2)" }}>
+              <div style={{ fontSize: "12px", color: "#64748b", marginBottom: "4px" }}>Highest</div>
+              <div style={{ fontSize: "15px", fontWeight: 700, color: "#fbbf24" }}>${comparison.highestQuote.amount.toLocaleString()}</div>
+              <div style={{ fontSize: "12px", color: "#94a3b8", marginTop: "2px" }}>{comparison.highestQuote.contractorName}</div>
+            </div>
+            {comparison.spreadPercent !== null && (
+              <div style={{ textAlign: "center", padding: "12px", borderRadius: "8px", background: "rgba(0,0,0,0.2)" }}>
+                <div style={{ fontSize: "12px", color: "#64748b", marginBottom: "4px" }}>Price Spread</div>
+                <div style={{ fontSize: "15px", fontWeight: 700, color: comparison.spreadPercent > 50 ? "#ef4444" : "#f97316" }}>{comparison.spreadPercent}%</div>
+                <div style={{ fontSize: "12px", color: "#94a3b8", marginTop: "2px" }}>low to high</div>
+              </div>
+            )}
+          </div>
+
+          <div style={{ overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}>
+              <thead>
+                <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.1)" }}>
+                  {["Rank", "Contractor", "Amount", "vs Average", "Risk", "Assessment"].map(h => (
+                    <th key={h} style={{ textAlign: "left", padding: "8px", color: "#64748b", fontWeight: 600 }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {comparison.rankedByAmount.map((q, i) => {
+                  const diff = q.amount - comparison.averageAmount;
+                  const pct = comparison.averageAmount > 0 ? Math.round((diff / comparison.averageAmount) * 100) : 0;
+                  const riskColor = q.riskLevel === "low" ? "#4ade80" : q.riskLevel === "medium" ? "#fbbf24" : "#f87171";
+                  return (
+                    <tr key={q.id} style={{ borderBottom: "1px solid rgba(255,255,255,0.05)", background: i === 0 ? "rgba(34,197,94,0.04)" : "transparent" }}>
+                      <td style={{ padding: "10px 8px", color: i === 0 ? "#4ade80" : "#64748b", fontWeight: i === 0 ? 700 : 400 }}>#{i + 1}</td>
+                      <td style={{ padding: "10px 8px" }}>
+                        <div style={{ fontWeight: 500, color: "white" }}>{q.contractorName}</div>
+                        {q.companyName && <div style={{ fontSize: "11px", color: "#64748b" }}>{q.companyName}</div>}
+                      </td>
+                      <td style={{ padding: "10px 8px", fontWeight: 700, color: "white" }}>${q.amount.toLocaleString()}</td>
+                      <td style={{ padding: "10px 8px", color: diff <= 0 ? "#4ade80" : "#f87171", fontWeight: 600 }}>{diff <= 0 ? "" : "+"}{pct}%</td>
+                      <td style={{ padding: "10px 8px" }}>
+                        <span style={{ padding: "3px 8px", borderRadius: "999px", fontSize: "11px", fontWeight: 700, background: `${riskColor}22`, color: riskColor }}>{q.riskLevel.toUpperCase()}</span>
+                      </td>
+                      <td style={{ padding: "10px 8px", color: "#94a3b8", maxWidth: "180px" }}>{q.priceAssessment}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
       {quotes.length === 0 && !loadingQuotes ? (
         <div style={{ padding: "20px", borderRadius: "12px", border: "1px dashed rgba(255,255,255,0.15)", color: "#94a3b8", textAlign: "center" }}>No contractor quotes uploaded yet.</div>
       ) : (
@@ -342,7 +426,7 @@ export function QuoteUpload({ projectId, onUploadComplete }: QuoteUploadProps) {
                       <Metric label="Timeline refs" value={quote.analysis.documentInsights.timelineMentionsCount} />
                     </div>
                   )}
-                  {quote.analysis.strengths?.length > 0 && <div style={{ marginBottom: "12px" }}><p style={{ fontSize: "12px", fontWeight: 600, color: "#4ade80", marginBottom: "8px" }}>Strengths:</p><ul style={{ margin: 0, paddingLeft: "16px", color: "#94a3b8", fontSize: "14px" }}>{quote.analysis.strengths.map((item, i) => <li key={i}>{item}</li>)}</ul></div>}
+                  {(quote.analysis.strengths ?? []).length > 0 && <div style={{ marginBottom: "12px" }}><p style={{ fontSize: "12px", fontWeight: 600, color: "#4ade80", marginBottom: "8px" }}>Strengths:</p><ul style={{ margin: 0, paddingLeft: "16px", color: "#94a3b8", fontSize: "14px" }}>{(quote.analysis.strengths ?? []).map((item, i) => <li key={i}>{item}</li>)}</ul></div>}
                   {quote.analysis.redFlags?.length > 0 && <div style={{ marginBottom: "12px" }}><p style={{ fontSize: "12px", fontWeight: 600, color: "#ef4444", marginBottom: "8px" }}>Red Flags:</p><ul style={{ margin: 0, paddingLeft: "16px", color: "#94a3b8", fontSize: "14px" }}>{quote.analysis.redFlags.map((flag, i) => <li key={i}>{flag}</li>)}</ul></div>}
                   {quote.analysis.recommendations?.length > 0 && <div><p style={{ fontSize: "12px", fontWeight: 600, color: "#4ade80", marginBottom: "8px" }}>Recommendations:</p><ul style={{ margin: 0, paddingLeft: "16px", color: "#94a3b8", fontSize: "14px" }}>{quote.analysis.recommendations.map((rec, i) => <li key={i}>{rec}</li>)}</ul></div>}
                 </div>

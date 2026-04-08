@@ -34,7 +34,27 @@ export async function GET(
       };
     });
 
-    return NextResponse.json({ success: true, quotes: normalizedQuotes });
+    // Build comparison summary when multiple analysed quotes exist
+    const analysedQuotes = normalizedQuotes.filter(q => q.analysis);
+    let comparison = null;
+    if (analysedQuotes.length >= 2) {
+      const amounts = analysedQuotes.map(q => ({ id: q.id, contractorName: q.contractorName, companyName: q.companyName, amount: q.amount ?? 0, riskLevel: q.analysis?.decision?.riskLevel ?? "unknown", isFair: q.analysis?.isFair ?? false, priceAssessment: q.analysis?.priceAssessment ?? "" }));
+      const sorted = [...amounts].sort((a, b) => a.amount - b.amount);
+      const avg = amounts.reduce((s, q) => s + q.amount, 0) / amounts.length;
+      comparison = {
+        quoteCount: analysedQuotes.length,
+        lowestQuote: sorted[0],
+        highestQuote: sorted[sorted.length - 1],
+        averageAmount: Math.round(avg),
+        spreadPercent: sorted[0].amount > 0 ? Math.round(((sorted[sorted.length - 1].amount - sorted[0].amount) / sorted[0].amount) * 100) : null,
+        rankedByAmount: sorted,
+        fairQuotes: amounts.filter(q => q.isFair).length,
+        lowRiskQuotes: amounts.filter(q => q.riskLevel === "low").length,
+        recommendation: sorted[0].isFair ? `${sorted[0].contractorName} offers the lowest price and is fair market value.` : `${sorted[0].contractorName} is lowest but flagged for review — check red flags before deciding.`,
+      };
+    }
+
+    return NextResponse.json({ success: true, quotes: normalizedQuotes, comparison });
   } catch (error) {
     console.error("Error fetching quotes:", error);
     return NextResponse.json({ success: false, error: "Failed to fetch quotes" }, { status: 500 });

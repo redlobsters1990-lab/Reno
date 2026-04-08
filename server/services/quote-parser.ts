@@ -79,7 +79,28 @@ export async function extractQuoteDocument(filePath: string, fileType: string): 
   };
 }
 
+async function checkPythonDeps(): Promise<boolean> {
+  try {
+    await execFileAsync("python3", ["-c", "import pypdf; import sys; sys.exit(0)"]);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 async function extractPdfTextViaPython(filePath: string): Promise<string> {
+  const hasDeps = await checkPythonDeps();
+  if (!hasDeps) {
+    console.warn("python3/pypdf not available — falling back to OCR for PDF");
+    // Fall back to Tesseract OCR on the PDF (requires pdftoppm or similar, best-effort)
+    try {
+      const result = await Tesseract.recognize(filePath, "eng", { logger: () => {} });
+      return result.data.text || "";
+    } catch (ocrErr) {
+      throw new Error("PDF extraction failed: python3/pypdf not installed and OCR fallback also failed.");
+    }
+  }
+
   const pythonCode = [
     "from pypdf import PdfReader",
     "import sys",
@@ -93,13 +114,28 @@ async function extractPdfTextViaPython(filePath: string): Promise<string> {
   try {
     const { stdout, stderr } = await execFileAsync("python3", ["-c", pythonCode, filePath], {
       maxBuffer: 20 * 1024 * 1024,
+      timeout: 30_000,
     });
     if (stderr && stderr.trim()) {
       console.warn("PDF python parser stderr:", stderr);
     }
-    return stdout || "";
+    const text = stdout?.trim() || "";
+    if (!text) {
+      // PDF may be image-based — fall back to Tesseract
+      console.warn("pypdf returned empty text — falling back to OCR");
+      const result = await Tesseract.recognize(filePath, "eng", { logger: () => {} });
+      return result.data.text || "";
+    }
+    return text;
   } catch (error: any) {
-    throw new Error(`PDF text extraction failed: ${error?.stderr || error?.message || "Unknown error"}`);
+    // On failure, try OCR as last resort
+    console.warn("pypdf extraction failed, trying OCR fallback:", error?.message);
+    try {
+      const result = await Tesseract.recognize(filePath, "eng", { logger: () => {} });
+      return result.data.text || "";
+    } catch {
+      throw new Error(`PDF text extraction failed: ${error?.stderr || error?.message || "Unknown error"}`);
+    }
   }
 }
 
@@ -107,8 +143,29 @@ function normalizeText(text: string): string {
   return text.replace(/\r/g, "\n").replace(/\t/g, " ").replace(/[ ]{2,}/g, " ");
 }
 function detectContractorName(text: string): string | undefined {
+  // First, look for explicit "prepared by", "contact", "from" labels near the top
+  const explicit = text.match(/(?:prepared by|submitted by|from|contact|sales rep)[:\s]+([A-Za-z][A-Za-z\s]{2,40}?)(?:\n|\r|,|\.|$)/i);
+  if (explicit?.[1]?.trim()) return explicit[1].trim();
+
+  // Look for a line near a phone/email which is likely the contact name
   const lines = text.split("\n").map(l => l.trim()).filter(Boolean);
-  return lines.slice(0, 12).find(line => /[A-Za-z]/.test(line) && !/quote|invoice|page\s+\d+/i.test(line));
+  for (let i = 0; i < Math.min(lines.length, 20); i++) {
+    const nearby = lines.slice(Math.max(0, i - 2), i + 3).join(" ");
+    if (/\b[689]\d{7}\b|@[a-zA-Z]/.test(nearby)) {
+      const candidate = lines[i];
+      if (/^[A-Z][a-z]+ [A-Z][a-z]+/.test(candidate) && candidate.length < 50) {
+        return candidate;
+      }
+    }
+  }
+
+  // Fall back: first non-header, non-title line in top 12 lines
+  return lines.slice(0, 12).find(
+    line =>
+      /[A-Za-z]/.test(line) &&
+      !/quote|invoice|page\s+\d+|quotation|proposal|renovation|to whom|attn|date:|ref:/i.test(line) &&
+      line.length < 60
+  );
 }
 function detectCompanyName(text: string): string | undefined {
   const match = text.match(/([A-Z][A-Za-z&.,'\- ]+(Pte Ltd|LLP|LLC|Construction|Renovation|Interiors|Design))/i);
@@ -116,15 +173,19 @@ function detectCompanyName(text: string): string | undefined {
 }
 function detectTotalAmount(text: string): number | undefined {
   const patterns = [
-    /grand\s+total[^\d$S]*([$S]?\s?[\d,]+(?:\.\d{2})?)/i,
-    /total(?:\s+amount)?[^\d$S]*([$S]?\s?[\d,]+(?:\.\d{2})?)/i,
-    /net\s+total[^\d$S]*([$S]?\s?[\d,]+(?:\.\d{2})?)/i,
+    /grand\s+total[^\d$S]*(SGD|S\$|\$)?\s?([\d,]+(?:\.\d{2})?)/i,
+    /total(?:\s+amount)?[^\d$S]*(SGD|S\$|\$)?\s?([\d,]+(?:\.\d{2})?)/i,
+    /net\s+total[^\d$S]*(SGD|S\$|\$)?\s?([\d,]+(?:\.\d{2})?)/i,
+    /amount\s+due[^\d$S]*(SGD|S\$|\$)?\s?([\d,]+(?:\.\d{2})?)/i,
+    /payable[^\d$S]*(SGD|S\$|\$)?\s?([\d,]+(?:\.\d{2})?)/i,
   ];
   for (const p of patterns) {
     const m = text.match(p);
-    if (m?.[1]) {
-      const value = parseCurrency(m[1]);
-      if (value) return value;
+    const raw = m?.[2];
+    if (raw) {
+      const value = parseCurrency(raw);
+      // Sanity check: renovation quotes in SGD are typically between $500 and $2,000,000
+      if (value && value >= 500 && value <= 2_000_000) return value;
     }
   }
   return undefined;
@@ -166,7 +227,8 @@ function detectWarnings(text: string, quality: ParsedQuoteDocument["documentQual
   return warnings;
 }
 function parseCurrency(raw: string): number | null {
-  const cleaned = raw.replace(/[S$\s,]/g, "").trim();
+  // Strip SGD prefix, S$, $, spaces, and commas
+  const cleaned = raw.replace(/SGD/gi, "").replace(/[S$\s,]/g, "").trim();
   const value = Number(cleaned);
-  return Number.isFinite(value) ? value : null;
+  return Number.isFinite(value) && value > 0 ? value : null;
 }

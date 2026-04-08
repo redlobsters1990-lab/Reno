@@ -25,7 +25,9 @@ export async function POST(
 
     const parsedDoc = await extractQuoteDocument(meta.storagePath, meta.fileType);
     const effectiveAmount = parsedDoc.totalAmount || quote.totalAmount;
-    const marketRates = getMarketRates(quote.project.propertyType, parsePropertySize(quote.project.notes));
+    // Use dedicated propertySize field first, then fall back to notes regex for backwards compat
+    const sqft = parsePropertySizeField(quote.project) ?? parsePropertySizeFromNotes(quote.project.notes);
+    const marketRates = getMarketRates(quote.project.propertyType, sqft);
     const analysis = analyzeQuoteDocument({ quoteAmount: effectiveAmount, marketRates, parsedDoc, propertyType: quote.project.propertyType });
 
     await prisma.contractorQuote.update({
@@ -56,7 +58,13 @@ export async function POST(
 function safeParse(value: string | null) {
   try { return value ? JSON.parse(value) : null; } catch { return null; }
 }
-function parsePropertySize(notes: string | null): number | null {
+// Use a dedicated numeric field if the schema has one (future-proof)
+function parsePropertySizeField(project: any): number | null {
+  if (typeof project.propertySize === "number" && project.propertySize > 0) return project.propertySize;
+  return null;
+}
+// Backwards-compat: extract size from notes string
+function parsePropertySizeFromNotes(notes: string | null): number | null {
   const m = notes?.match(/Property size: (\d+)/);
   return m ? parseInt(m[1]) : null;
 }
@@ -90,7 +98,19 @@ function analyzeQuoteDocument({ quoteAmount, marketRates, parsedDoc, propertyTyp
 
   let isFair = false;
   let priceAssessment = "";
-  let confidence = parsedDoc.totalAmount ? 0.88 : 0.72;
+
+  // Dynamic confidence based on actual document quality
+  let confidenceScore = 0.5;
+  if (parsedDoc.totalAmount) confidenceScore += 0.15;
+  if (parsedDoc.documentQuality.hasItemization) confidenceScore += 0.10;
+  if (parsedDoc.documentQuality.hasPaymentTerms) confidenceScore += 0.08;
+  if (parsedDoc.documentQuality.hasWarranty) confidenceScore += 0.07;
+  if (parsedDoc.lineItems.length >= 5) confidenceScore += 0.05;
+  if (parsedDoc.lineItems.length >= 10) confidenceScore += 0.05;
+  if (parsedDoc.contractorName) confidenceScore += 0.03;
+  if (parsedDoc.materialsMentions.length > 0) confidenceScore += 0.03;
+  if (parsedDoc.timelineMentions.length > 0) confidenceScore += 0.02;
+  const confidence = Math.min(Math.round(confidenceScore * 100) / 100, 0.97);
 
   if (quoteAmount < marketRates.low * 0.8) {
     priceAssessment = "Significantly below market rate - potential quality concerns";

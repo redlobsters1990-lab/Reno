@@ -36,9 +36,9 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# uploads
-/uploads
-!/uploads/.gitkeep
+# uploads — never commit actual files, only keep the placeholder
+uploads/
+!uploads/.gitkeep
 
 # IDE
 .vscode
@@ -139,3 +139,6 @@ TOOLS.md
 USER.md
 app/test/
 .openclaw/
+
+# Agent memory files (session logs, should not be in SaaS repo)
+memory/
