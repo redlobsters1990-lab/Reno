@@ -74,25 +74,75 @@ textarea {
   @apply text-caption text-text-tertiary uppercase tracking-wide;
 }
 
-/* Button system */
+/* ===== STANDARDIZED BUTTON SYSTEM ===== */
 .btn {
-  @apply inline-flex items-center justify-center rounded-lg px-4 py-2.5 text-sm font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary-500/30 disabled:opacity-50 disabled:cursor-not-allowed;
+  @apply inline-flex items-center justify-center gap-2 rounded-xl font-semibold transition-all duration-200 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed;
+  @apply px-6 py-3 text-base;
 }
 
 .btn-primary {
-  @apply btn bg-gradient-to-r from-primary-600 to-secondary-600 text-white hover:from-primary-500 hover:to-secondary-500 hover:shadow-glow-sm active:scale-[0.98];
+  @apply btn bg-gradient-to-r from-primary-600 to-secondary-600 text-white hover:from-primary-500 hover:to-secondary-500 hover:shadow-glow-sm active:scale-[0.98] focus:ring-2 focus:ring-primary-500/50;
 }
 
 .btn-secondary {
-  @apply btn border border-white/20 bg-white/5 text-text-primary hover:bg-white/10 hover:border-white/30;
+  @apply btn border-2 border-white/20 bg-white/5 text-text-primary hover:bg-white/10 hover:border-white/30 focus:ring-2 focus:ring-white/30;
 }
 
 .btn-ghost {
-  @apply btn text-text-secondary hover:text-text-primary hover:bg-white/5;
+  @apply btn text-text-secondary hover:text-text-primary hover:bg-white/5 focus:ring-2 focus:ring-white/20;
 }
 
 .btn-danger {
-  @apply btn bg-error-600 text-white hover:bg-error-500;
+  @apply btn bg-error-600 text-white hover:bg-error-500 focus:ring-2 focus:ring-error-500/50;
+}
+
+/* Button size variants */
+.btn-sm {
+  @apply px-4 py-2 text-sm rounded-lg;
+}
+
+.btn-lg {
+  @apply px-8 py-4 text-lg rounded-xl;
+}
+
+.btn-xl {
+  @apply px-10 py-5 text-xl rounded-xl;
+}
+
+/* ===== UNIFIED SPACING UTILITIES ===== */
+.section {
+  @apply py-16 md:py-20 lg:py-24;
+}
+
+.section-sm {
+  @apply py-8 md:py-12 lg:py-16;
+}
+
+.section-lg {
+  @apply py-20 md:py-24 lg:py-32;
+}
+
+/* ===== UNIFIED CARD STYLES ===== */
+.card {
+  @apply rounded-2xl bg-white/5 border border-white/10 p-6;
+}
+
+.card-hover {
+  @apply transition-all duration-300 hover:scale-105 hover:shadow-xl hover:border-primary-500/30;
+}
+
+/* ===== ACCESSIBILITY FOCUS STATES ===== */
+.focus-ring:focus {
+  @apply outline-none ring-2 ring-primary-500 ring-offset-2 ring-offset-background;
+}
+
+/* Improved focus states */
+.btn:focus {
+  @apply outline-none ring-2 ring-primary-500 ring-offset-2 ring-offset-background;
+}
+
+.input:focus {
+  @apply outline-none ring-2 ring-primary-500/30;
 }
 
 /* Form system */

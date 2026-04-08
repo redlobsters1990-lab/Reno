@@ -173,13 +173,13 @@ export function HomePage() {
             <>
               <Link
                 href="/dashboard"
-                className="btn-secondary whitespace-nowrap px-5 py-2.5 font-medium shadow-md hover:shadow-lg transition-shadow"
+                className="btn-secondary whitespace-nowrap"
               >
                 Dashboard
               </Link>
               <button
                 onClick={() => signOut({ callbackUrl: "/", redirect: true })}
-                className="btn-ghost whitespace-nowrap px-5 py-2.5 font-medium hover:bg-white/10 transition-colors"
+                className="btn-ghost whitespace-nowrap"
               >
                 Sign Out
               </button>
@@ -188,13 +188,13 @@ export function HomePage() {
             <>
               <Link
                 href="/auth/signin"
-                className="btn-secondary whitespace-nowrap px-5 py-2.5 font-medium shadow-md hover:shadow-lg transition-shadow"
+                className="btn-secondary whitespace-nowrap"
               >
                 Sign In
               </Link>
               <Link
                 href="/auth/signup"
-                className="btn-primary whitespace-nowrap px-6 py-2.5 font-medium shadow-lg hover:shadow-xl transition-all hover:scale-105"
+                className="btn-primary whitespace-nowrap"
               >
                 Get Started
               </Link>
@@ -255,7 +255,7 @@ export function HomePage() {
             <div className="flex flex-col sm:flex-row gap-6 justify-center items-center">
               <Link
                 href={status === "authenticated" ? "/dashboard" : "/auth/signup"}
-                className="btn-primary group relative overflow-hidden px-10 py-5 text-xl font-semibold shadow-2xl hover:shadow-3xl transition-all duration-300 hover:scale-105"
+                className="btn-xl btn-primary group relative overflow-hidden shadow-2xl hover:shadow-3xl"
               >
                 <span className="relative z-10 flex items-center">
                   Start Your Free Project
@@ -267,7 +267,7 @@ export function HomePage() {
               <div className="flex flex-col items-center gap-2">
                 <Link
                   href="#features"
-                  className="btn-secondary px-8 py-4 text-lg font-medium border-2 border-white/20 hover:border-white/40 transition-colors"
+                  className="btn-lg btn-secondary"
                 >
                   <span className="flex items-center gap-2">
                     <Sparkles className="h-5 w-5" />
@@ -315,7 +315,7 @@ export function HomePage() {
             </h2>
             
             <div className="grid md:grid-cols-3 gap-8 mb-12">
-              <div className="card-hover p-6 text-center">
+              <div className="card-hover p-6 text-center h-full">
                 <div className="h-16 w-16 rounded-2xl bg-error-500/10 border border-error-500/20 flex items-center justify-center mx-auto mb-6">
                   <div className="text-h2 font-bold text-error-400">?</div>
                 </div>
@@ -325,7 +325,7 @@ export function HomePage() {
                 </p>
               </div>
               
-              <div className="card-hover p-6 text-center">
+              <div className="card-hover p-6 text-center h-full">
                 <div className="h-16 w-16 rounded-2xl bg-warning-500/10 border border-warning-500/20 flex items-center justify-center mx-auto mb-6">
                   <div className="text-h2 font-bold text-warning-400">⏰</div>
                 </div>
@@ -335,7 +335,7 @@ export function HomePage() {
                 </p>
               </div>
               
-              <div className="card-hover p-6 text-center">
+              <div className="card-hover p-6 text-center h-full">
                 <div className="h-16 w-16 rounded-2xl bg-info-500/10 border border-info-500/20 flex items-center justify-center mx-auto mb-6">
                   <div className="text-h2 font-bold text-info-400">💼</div>
                 </div>
@@ -410,7 +410,7 @@ export function HomePage() {
               return (
                 <div
                   key={index}
-                  className="card-hover p-8 h-full flex flex-col transform transition-all duration-300 hover:scale-105 hover:shadow-2xl border border-white/10 hover:border-primary-500/30"
+                  className="card-hover p-6 h-full flex flex-col transform transition-all duration-300 hover:scale-105 hover:shadow-2xl border border-white/10 hover:border-primary-500/30"
                   onMouseEnter={() => setHoveredFeature(index)}
                   onMouseLeave={() => setHoveredFeature(null)}
                 >
@@ -441,7 +441,7 @@ export function HomePage() {
           </p>
           <Link
             href={status === "authenticated" ? "/dashboard" : "/auth/signup"}
-            className="btn-primary inline-flex items-center px-10 py-5 text-xl font-semibold shadow-xl hover:shadow-2xl transition-all hover:scale-105"
+            className="btn-xl btn-primary inline-flex items-center shadow-xl"
           >
             <span className="flex items-center gap-3">
               <Sparkles className="h-6 w-6" />
@@ -650,7 +650,7 @@ export function HomePage() {
                 />
                 <button
                   type="submit"
-                  className="btn-primary px-8 py-4 text-lg"
+                  className="btn-lg btn-primary"
                 >
                   Join Waitlist
                 </button>
