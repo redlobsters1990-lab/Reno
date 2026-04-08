@@ -159,13 +159,13 @@ export function HomePage() {
         Skip to main content
       </a>
 
-      {/* Navigation */}
-      <nav className="container py-6 flex items-center justify-between gap-4">
+      {/* Navigation - Enhanced visibility */}
+      <nav className="container py-4 md:py-6 flex items-center justify-between gap-4 bg-background/80 backdrop-blur-sm sticky top-0 z-50 border-b border-white/10">
         <div className="flex items-center gap-3 flex-shrink-0">
-          <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-primary-500 to-secondary-600 flex items-center justify-center flex-shrink-0">
+          <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-primary-500 to-secondary-600 flex items-center justify-center flex-shrink-0 shadow-lg">
             <Home className="h-5 w-5 text-white" />
           </div>
-          <span className="text-h3 font-bold whitespace-nowrap">Renovation Advisor AI</span>
+          <span className="text-h3 font-bold whitespace-nowrap text-white">Renovation Advisor AI</span>
         </div>
         
         <div className="flex items-center gap-3 flex-shrink-0">
@@ -173,13 +173,13 @@ export function HomePage() {
             <>
               <Link
                 href="/dashboard"
-                className="btn-secondary whitespace-nowrap"
+                className="btn-secondary whitespace-nowrap px-5 py-2.5 font-medium shadow-md hover:shadow-lg transition-shadow"
               >
                 Dashboard
               </Link>
               <button
                 onClick={() => signOut({ callbackUrl: "/", redirect: true })}
-                className="btn-ghost whitespace-nowrap"
+                className="btn-ghost whitespace-nowrap px-5 py-2.5 font-medium hover:bg-white/10 transition-colors"
               >
                 Sign Out
               </button>
@@ -188,13 +188,13 @@ export function HomePage() {
             <>
               <Link
                 href="/auth/signin"
-                className="btn-secondary whitespace-nowrap"
+                className="btn-secondary whitespace-nowrap px-5 py-2.5 font-medium shadow-md hover:shadow-lg transition-shadow"
               >
                 Sign In
               </Link>
               <Link
                 href="/auth/signup"
-                className="btn-primary whitespace-nowrap"
+                className="btn-primary whitespace-nowrap px-6 py-2.5 font-medium shadow-lg hover:shadow-xl transition-all hover:scale-105"
               >
                 Get Started
               </Link>
@@ -214,15 +214,15 @@ export function HomePage() {
             </div>
             
             {/* Heading */}
-            <h1 className="text-display font-bold mb-6">
-              Plan Your Dream Renovation
-              <span className="block text-transparent bg-clip-text bg-gradient-to-r from-primary-400 to-secondary-400 animate-gradient mt-4">
+            <h1 className="text-display font-bold mb-6 leading-tight">
+              <span className="block">Plan Your Dream Renovation</span>
+              <span className="block text-transparent bg-clip-text bg-gradient-to-r from-primary-400 to-secondary-400 animate-gradient mt-2 md:mt-4">
                 With AI Guidance
               </span>
             </h1>
             
             {/* Description */}
-            <p className="text-h3 text-text-secondary mb-12 max-w-3xl mx-auto font-light">
+            <p className="text-h3 text-text-secondary mb-12 max-w-3xl mx-auto font-light leading-relaxed md:leading-loose">
               Get personalized advice, accurate cost estimates, and organized planning 
               for your home renovation projects—all powered by artificial intelligence.
             </p>
@@ -262,10 +262,10 @@ export function HomePage() {
                   <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-primary-500/10 to-secondary-500/10 border border-primary-500/20 flex items-center justify-center mx-auto mb-4">
                     <Icon className="h-6 w-6 text-primary-300" />
                   </div>
-                  <div className="text-h1 font-bold mb-2 bg-gradient-to-r from-white to-text-secondary bg-clip-text text-transparent">
+                  <div className="text-h1 font-bold mb-3 bg-gradient-to-r from-white to-text-secondary bg-clip-text text-transparent leading-none">
                     {stat.value}
                   </div>
-                  <div className="text-caption text-text-tertiary">
+                  <div className="text-caption text-text-tertiary leading-tight">
                     {stat.label}
                   </div>
                 </div>
@@ -299,8 +299,8 @@ export function HomePage() {
                     <Icon className="h-7 w-7 text-white" />
                   </div>
                   
-                  <h3 className="text-h3 font-semibold mb-4">{feature.title}</h3>
-                  <p className="text-body text-text-secondary mb-6 flex-grow">{feature.description}</p>
+                  <h3 className="text-h3 font-semibold mb-4 leading-snug">{feature.title}</h3>
+                  <p className="text-body text-text-secondary mb-6 flex-grow leading-relaxed">{feature.description}</p>
                   
                   <div className={`h-1.5 w-16 rounded-full bg-gradient-to-r ${feature.color} transition-all duration-300 ${hoveredFeature === index ? 'w-24' : 'w-16'}`} />
                 </div>
@@ -314,8 +314,8 @@ export function HomePage() {
       <section className="section">
         <div className="container">
           <div className="text-center mb-12">
-            <h2 className="text-h1 font-bold mb-4">How It Works</h2>
-            <p className="text-h3 text-text-secondary max-w-3xl mx-auto font-light">
+            <h2 className="text-h1 font-bold mb-6">How It Works</h2>
+            <p className="text-h3 text-text-secondary max-w-3xl mx-auto font-light leading-relaxed">
               A simple three-step process that transforms your renovation vision into reality
             </p>
           </div>
@@ -338,8 +338,8 @@ export function HomePage() {
                   </div>
                 </div>
                 
-                <h3 className="text-h2 font-semibold mb-4">{step.title}</h3>
-                <p className="text-body text-text-secondary leading-relaxed flex-grow">
+                <h3 className="text-h2 font-semibold mb-6 leading-tight">{step.title}</h3>
+                <p className="text-body text-text-secondary leading-relaxed md:leading-loose flex-grow">
                   {step.description}
                 </p>
               </div>
@@ -364,8 +364,8 @@ export function HomePage() {
             </div>
             
             {/* Heading */}
-            <h2 className="text-h1 font-bold mb-6">Join the Future of Renovation Planning</h2>
-            <p className="text-h3 text-text-primary mb-12 max-w-2xl mx-auto font-light">
+            <h2 className="text-h1 font-bold mb-8">Join the Future of Renovation Planning</h2>
+            <p className="text-h3 text-text-primary mb-12 max-w-2xl mx-auto font-light leading-relaxed">
               Be among the first to experience AI-powered renovation guidance. 
               Early access includes premium features at no cost for our founding members.
             </p>

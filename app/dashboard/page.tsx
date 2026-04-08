@@ -92,7 +92,7 @@ export default function DashboardPage() {
               <Home className="h-6 w-6 text-primary-300" />
             </div>
             <div>
-              <h1 className="text-h1 font-bold">Dashboard</h1>
+              <h1 className="text-h1 font-bold leading-tight">Dashboard</h1>
               {userEmail && (
                 <div className="flex items-center gap-3 mt-2">
                   <div className="h-3 w-3 rounded-full bg-success-400 animate-pulse-slow" />
@@ -124,7 +124,7 @@ export default function DashboardPage() {
           {/* Projects Section */}
           <div>
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-h2 font-bold">Your Projects</h2>
+              <h2 className="text-h2 font-bold leading-snug">Your Projects</h2>
               <span className="badge-primary">
                 {!loading && `${projects.length} project${projects.length !== 1 ? "s" : ""}`}
               </span>
@@ -136,7 +136,7 @@ export default function DashboardPage() {
                 <div className="h-16 w-16 rounded-xl bg-gradient-to-br from-primary-500/20 to-secondary-500/20 border border-primary-400/30 flex items-center justify-center mb-6 animate-pulse-slow">
                   <Loader2 className="h-8 w-8 animate-spin text-primary-400" />
                 </div>
-                <span className="text-body text-text-secondary">Loading your projects…</span>
+                <span className="text-body text-text-secondary leading-relaxed">Loading your projects…</span>
               </div>
             )}
 
@@ -156,7 +156,7 @@ export default function DashboardPage() {
                 <div className="h-20 w-20 rounded-xl bg-gradient-to-br from-primary-500/20 to-secondary-500/20 border-2 border-primary-400/30 flex items-center justify-center mx-auto mb-6 animate-float">
                   <FolderOpen className="h-10 w-10 text-primary-300" />
                 </div>
-                <h3 className="text-h2 font-bold mb-4">No projects yet</h3>
+                <h3 className="text-h2 font-bold mb-6 leading-tight">No projects yet</h3>
                 <p className="text-body text-text-secondary mb-8 max-w-md mx-auto">
                   Create your first renovation project to get AI-powered cost estimates, quote analysis, and planning guidance.
                 </p>
@@ -185,7 +185,7 @@ export default function DashboardPage() {
                           <Home className="h-6 w-6 text-primary-300" />
                         </div>
                         <div>
-                          <div className="text-h3 font-bold group-hover:text-primary-300 transition-colors">
+                          <div className="text-h3 font-bold group-hover:text-primary-300 transition-colors leading-tight">
                             {project.title}
                           </div>
                           <div className="flex items-center gap-4 text-small text-text-secondary mt-1.5">
