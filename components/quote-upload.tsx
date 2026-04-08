@@ -35,16 +35,16 @@ interface QuoteData {
 function mapQuote(raw: any): QuoteData {
   let meta: any = {};
   try { meta = raw.parsingSummary ? JSON.parse(raw.parsingSummary) : {}; } catch {}
-  const analysis = meta.analysis;
+  const analysis = raw.analysis || meta.analysis;
   return {
     id: raw.id,
     contractorName: raw.contractorName,
-    companyName: meta.companyName || "",
+    companyName: raw.companyName || meta.companyName || "",
     amount: raw.totalAmount ?? raw.amount ?? 0,
-    fileName: meta.fileName || "Uploaded quote",
-    fileUrl: meta.fileUrl || "#",
+    fileName: raw.fileName || meta.fileName || "Uploaded quote",
+    fileUrl: raw.fileUrl || meta.fileUrl || "#",
     uploadedAt: raw.createdAt,
-    status: analysis ? "analyzed" : raw.status === "draft" ? "pending" : raw.status === "parsed" ? "analyzed" : raw.status === "reviewed" ? "analyzed" : "error",
+    status: analysis ? "analyzed" : raw.status === "draft" ? "pending" : raw.status === "parsed" ? "analyzed" : raw.status === "reviewed" ? "analyzed" : raw.status === "error" ? "error" : "pending",
     analysis,
   };
 }
@@ -54,6 +54,7 @@ export function QuoteUpload({ projectId, onUploadComplete }: QuoteUploadProps) {
   const [uploading, setUploading] = useState(false);
   const [quotes, setQuotes] = useState<QuoteData[]>([]);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const [loadingQuotes, setLoadingQuotes] = useState(true);
   const [formData, setFormData] = useState({ contractorName: "", companyName: "", amount: "" });
 
@@ -116,20 +117,19 @@ export function QuoteUpload({ projectId, onUploadComplete }: QuoteUploadProps) {
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(data.error || `Upload failed: ${response.status}`);
 
-      setQuotes(prev => [{
-        id: data.quote.id,
-        contractorName: formData.contractorName,
-        companyName: formData.companyName,
-        amount: parseFloat(formData.amount),
-        fileName: file.name,
-        fileUrl: data.quote.fileUrl,
-        uploadedAt: new Date().toISOString(),
-        status: "analyzing",
-      }, ...prev]);
+      const optimisticQuote = mapQuote({
+        ...data.quote,
+        status: "pending",
+        createdAt: new Date().toISOString(),
+      });
+
+      setQuotes(prev => [{ ...optimisticQuote, status: "analyzing" }, ...prev]);
       setFormData({ contractorName: "", companyName: "", amount: "" });
+      setSuccess("Quote uploaded. Running AI analysis...");
 
       await analyzeQuote(data.quote.id);
       await loadQuotes();
+      setSuccess("Quote uploaded and analyzed successfully.");
       onUploadComplete?.();
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Failed to upload quote";
@@ -150,6 +150,7 @@ export function QuoteUpload({ projectId, onUploadComplete }: QuoteUploadProps) {
       console.error("Analyze error:", err);
       setQuotes(prev => prev.map(q => q.id === quoteId ? { ...q, status: "error" } : q));
       setError(err instanceof Error ? err.message : "Quote uploaded but analysis failed");
+      setSuccess("");
     }
   };
 
@@ -161,9 +162,15 @@ export function QuoteUpload({ projectId, onUploadComplete }: QuoteUploadProps) {
           <div style={{ padding: "16px", borderRadius: "8px", background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)", marginBottom: "16px" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px" }}>
               <AlertCircle size={20} color="#ef4444" />
-              <span style={{ color: "#ef4444", fontSize: "16px", fontWeight: 600 }}>Upload Failed</span>
+              <span style={{ color: "#ef4444", fontSize: "16px", fontWeight: 600 }}>Quote workflow failed</span>
             </div>
             <p style={{ color: "#fca5a5", fontSize: "14px", marginLeft: "28px" }}>{error}</p>
+          </div>
+        )}
+        {success && (
+          <div style={{ padding: "14px 16px", borderRadius: "8px", background: "rgba(34,197,94,0.1)", border: "1px solid rgba(34,197,94,0.3)", marginBottom: "16px", display: "flex", alignItems: "center", gap: "8px" }}>
+            <CheckCircle size={18} color="#4ade80" />
+            <span style={{ color: "#86efac", fontSize: "14px", fontWeight: 500 }}>{success}</span>
           </div>
         )}
 

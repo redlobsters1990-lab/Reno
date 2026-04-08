@@ -20,7 +20,21 @@ export async function GET(
       orderBy: { createdAt: "desc" },
     });
 
-    return NextResponse.json({ success: true, quotes });
+    const normalizedQuotes = quotes.map((quote) => {
+      let meta: any = {};
+      try { meta = quote.parsingSummary ? JSON.parse(quote.parsingSummary) : {}; } catch {}
+      return {
+        ...quote,
+        amount: quote.totalAmount,
+        companyName: meta.companyName || "",
+        fileUrl: meta.fileUrl || "",
+        fileName: meta.fileName || "Uploaded quote",
+        fileType: meta.fileType || "",
+        analysis: meta.analysis || null,
+      };
+    });
+
+    return NextResponse.json({ success: true, quotes: normalizedQuotes });
   } catch (error) {
     console.error("Error fetching quotes:", error);
     return NextResponse.json({ success: false, error: "Failed to fetch quotes" }, { status: 500 });
@@ -130,10 +144,13 @@ export async function POST(
           contractorName: quote.contractorName,
           companyName,
           amount,
+          totalAmount: quote.totalAmount,
           fileUrl,
           fileName: file.name,
+          fileType: file.type,
           status: "pending",
           createdAt: quote.createdAt,
+          analysis: null,
         },
       });
     } catch (dbError) {
