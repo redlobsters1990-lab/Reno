@@ -12,7 +12,6 @@ export default function CookieCleanupPage() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    // Read current cookies
     const cookieList = document.cookie.split(';').map(cookie => {
       const [name, ...valueParts] = cookie.trim().split('=');
       return {
@@ -27,13 +26,10 @@ export default function CookieCleanupPage() {
   const clearAllCookies = () => {
     setLoading(true);
     
-    // Clear all cookies for this domain - MORE AGGRESSIVE VERSION
     const domain = window.location.hostname;
     const path = "/";
     
-    // List of all possible cookie names to clear
     const cookieNamesToClear = [
-      // Auth cookies
       "auth-token",
       "user-email",
       "next-auth.session-token",
@@ -44,10 +40,8 @@ export default function CookieCleanupPage() {
       "token",
       "access_token",
       "refresh_token",
-      // Next.js development cookies
       "__next_hmr_refresh_hash__",
       "__next_dev_",
-      // Other common cookies
       "NEXT_LOCALE",
       "NEXT_THEME",
       "_ga",
@@ -55,17 +49,14 @@ export default function CookieCleanupPage() {
       "_gat",
     ];
     
-    // First, clear all cookies we can find
     document.cookie.split(';').forEach(cookie => {
       const name = cookie.split('=')[0].trim();
-      // Clear cookie by setting expiration in the past
       document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=${path};`;
       if (domain !== 'localhost') {
         document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=${path}; domain=${domain};`;
       }
     });
     
-    // Second, explicitly clear known cookie names (in case they're not in document.cookie)
     cookieNamesToClear.forEach(cookieName => {
       document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=${path};`;
       if (domain !== 'localhost') {
@@ -73,11 +64,9 @@ export default function CookieCleanupPage() {
       }
     });
     
-    // Also clear localStorage items that might be related
     localStorage.clear();
     sessionStorage.clear();
     
-    // Try to clear service worker cache if available
     if ('caches' in window) {
       caches.keys().then(cacheNames => {
         cacheNames.forEach(cacheName => {
@@ -89,7 +78,6 @@ export default function CookieCleanupPage() {
     setTimeout(() => {
       setCleaned(true);
       setLoading(false);
-      // Refresh cookie list
       setCookies([]);
     }, 500);
   };
@@ -101,40 +89,40 @@ export default function CookieCleanupPage() {
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-900 to-slate-950 flex items-center justify-center p-6">
-      <div className="w-full max-w-2xl">
+    <div style={{ minHeight: "100vh", background: "linear-gradient(to bottom, #0b1020, #0f172a)", display: "flex", alignItems: "center", justifyContent: "center", padding: "24px" }}>
+      <div style={{ width: "100%", maxWidth: "600px" }}>
         {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold mb-2">Cookie Cleanup</h1>
-          <p className="text-slate-400">Clear invalid authentication cookies that may be causing issues</p>
+        <div style={{ textAlign: "center", marginBottom: "32px" }}>
+          <h1 style={{ fontSize: "28px", fontWeight: "bold", color: "white", marginBottom: "8px" }}>Cookie Cleanup</h1>
+          <p style={{ color: "#94a3b8" }}>Clear invalid authentication cookies that may be causing issues</p>
         </div>
 
         {/* Current Cookies */}
-        <div className="mb-8 p-6 rounded-2xl border border-white/10 bg-gradient-to-b from-white/2.5 to-transparent">
-          <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-            <AlertCircle className="h-5 w-5" />
+        <div style={{ marginBottom: "32px", padding: "24px", borderRadius: "16px", border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.02)" }}>
+          <h2 style={{ fontSize: "20px", fontWeight: 600, marginBottom: "16px", display: "flex", alignItems: "center", gap: "8px" }}>
+            <AlertCircle size={20} />
             Current Cookies
           </h2>
           
           {cookies.length === 0 ? (
-            <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
-              <div className="flex items-center gap-2 text-emerald-400">
-                <CheckCircle className="h-5 w-5" />
+            <div style={{ padding: "16px", borderRadius: "10px", background: "rgba(34,197,94,0.1)", border: "1px solid rgba(34,197,94,0.3)" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#4ade80" }}>
+                <CheckCircle size={20} />
                 <span>No cookies found</span>
               </div>
             </div>
           ) : (
-            <div className="space-y-3">
+            <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
               {cookies.map((cookie, index) => (
-                <div key={index} className="p-4 rounded-xl bg-slate-900/50 border border-white/10">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <div className="font-mono text-sm">{cookie.name}</div>
-                      <div className="text-xs text-slate-400 mt-1 truncate">
+                <div key={index} style={{ padding: "16px", borderRadius: "10px", background: "rgba(15,23,42,0.5)", border: "1px solid rgba(255,255,255,0.1)" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontFamily: "monospace", fontSize: "14px", color: "white" }}>{cookie.name}</div>
+                      <div style={{ fontSize: "12px", color: "#64748b", marginTop: "4px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                         {cookie.value.length > 50 ? `${cookie.value.substring(0, 50)}...` : cookie.value}
                       </div>
                     </div>
-                    <div className={`px-2 py-1 rounded text-xs ${cookie.name.includes('auth') ? 'bg-amber-500/20 text-amber-400' : 'bg-slate-800 text-slate-400'}`}>
+                    <div style={{ padding: "4px 8px", borderRadius: "4px", fontSize: "12px", marginLeft: "8px", background: cookie.name.includes('auth') ? "rgba(245,158,11,0.2)" : "rgba(15,23,42,0.5)", color: cookie.name.includes('auth') ? "#fbbf24" : "#94a3b8" }}>
                       {cookie.name.includes('auth') ? 'Auth' : 'Other'}
                     </div>
                   </div>
@@ -144,9 +132,9 @@ export default function CookieCleanupPage() {
           )}
           
           {hasAuthCookies && (
-            <div className="mt-4 p-4 rounded-xl bg-amber-500/10 border border-amber-500/20">
-              <div className="flex items-center gap-2 text-amber-400">
-                <AlertCircle className="h-5 w-5" />
+            <div style={{ marginTop: "16px", padding: "16px", borderRadius: "10px", background: "rgba(245,158,11,0.1)", border: "1px solid rgba(245,158,11,0.3)" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#fbbf24" }}>
+                <AlertCircle size={20} />
                 <span>Authentication cookies detected. These may be causing project creation issues.</span>
               </div>
             </div>
@@ -154,48 +142,60 @@ export default function CookieCleanupPage() {
         </div>
 
         {/* Cleanup Action */}
-        <div className="mb-8 p-6 rounded-2xl border border-white/10">
-          <h2 className="text-xl font-semibold mb-4">Cleanup Action</h2>
+        <div style={{ marginBottom: "32px", padding: "24px", borderRadius: "16px", border: "1px solid rgba(255,255,255,0.1)" }}>
+          <h2 style={{ fontSize: "20px", fontWeight: 600, marginBottom: "16px" }}>Cleanup Action</h2>
           
           {cleaned ? (
-            <div className="p-6 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-center">
-              <CheckCircle className="h-12 w-12 text-emerald-400 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold mb-2">Cookies Cleared!</h3>
-              <p className="text-slate-300 mb-6">
+            <div style={{ padding: "24px", borderRadius: "10px", background: "rgba(34,197,94,0.1)", border: "1px solid rgba(34,197,94,0.3)", textAlign: "center" }}>
+              <CheckCircle size={48} color="#4ade80" style={{ margin: "0 auto 16px" }} />
+              <h3 style={{ fontSize: "18px", fontWeight: 600, color: "white", marginBottom: "8px" }}>Cookies Cleared!</h3>
+              <p style={{ color: "#cbd5e1", marginBottom: "24px" }}>
                 All cookies have been cleared. You can now sign in again.
               </p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <div style={{ display: "flex", flexDirection: "column", gap: "12px", justifyContent: "center" }}>
                 <Link
                   href="/auth/signin"
-                  className="px-6 py-3 rounded-xl bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 transition flex items-center justify-center gap-2"
+                  style={{ padding: "12px 24px", background: "linear-gradient(135deg, #8b5cf6, #a855f7)", color: "white", borderRadius: "8px", textDecoration: "none", fontWeight: 500, display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}
                 >
-                  <LogIn className="h-4 w-4" />
+                  <LogIn size={16} />
                   Sign In Again
                 </Link>
                 <Link
                   href="/"
-                  className="px-6 py-3 rounded-xl border border-white/10 hover:border-white/20 transition flex items-center justify-center gap-2"
+                  style={{ padding: "12px 24px", border: "1px solid rgba(255,255,255,0.2)", color: "white", borderRadius: "8px", textDecoration: "none", fontWeight: 500, display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}
                 >
-                  <Home className="h-4 w-4" />
+                  <Home size={16} />
                   Back to Home
                 </Link>
               </div>
             </div>
           ) : (
-            <div className="text-center">
-              <p className="text-slate-300 mb-6">
+            <div style={{ textAlign: "center" }}>
+              <p style={{ color: "#cbd5e1", marginBottom: "24px" }}>
                 Clearing cookies can fix authentication issues when creating projects.
                 You will need to sign in again after cleanup.
               </p>
               <button
                 onClick={clearAllCookies}
                 disabled={loading || cookies.length === 0}
-                className="px-8 py-3 rounded-xl bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-500 hover:to-orange-500 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 mx-auto"
+                style={{
+                  padding: "14px 32px",
+                  background: loading || cookies.length === 0 ? "rgba(239,68,68,0.5)" : "linear-gradient(135deg, #ef4444, #f97316)",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "8px",
+                  fontSize: "16px",
+                  fontWeight: 600,
+                  cursor: loading || cookies.length === 0 ? "not-allowed" : "pointer",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "8px"
+                }}
               >
-                <Trash2 className="h-4 w-4" />
+                <Trash2 size={16} />
                 {loading ? "Clearing..." : "Clear All Cookies"}
               </button>
-              <p className="text-sm text-slate-400 mt-4">
+              <p style={{ fontSize: "14px", color: "#64748b", marginTop: "16px" }}>
                 This will sign you out of all services on this site.
               </p>
             </div>
@@ -203,30 +203,30 @@ export default function CookieCleanupPage() {
         </div>
 
         {/* Troubleshooting Info */}
-        <div className="p-6 rounded-2xl border border-white/10">
-          <h2 className="text-xl font-semibold mb-4">Why Clear Cookies?</h2>
-          <ul className="space-y-3 text-slate-300">
-            <li className="flex items-start gap-2">
-              <div className="h-5 w-5 rounded-full bg-red-500/20 border border-red-400/30 flex items-center justify-center mt-0.5">
-                <div className="h-2 w-2 rounded-full bg-red-400"></div>
+        <div style={{ padding: "24px", borderRadius: "16px", border: "1px solid rgba(255,255,255,0.1)" }}>
+          <h2 style={{ fontSize: "20px", fontWeight: 600, marginBottom: "16px" }}>Why Clear Cookies?</h2>
+          <ul style={{ display: "flex", flexDirection: "column", gap: "12px", color: "#cbd5e1", listStyle: "none", padding: 0 }}>
+            <li style={{ display: "flex", alignItems: "flex-start", gap: "12px" }}>
+              <div style={{ width: "20px", height: "20px", borderRadius: "50%", background: "rgba(239,68,68,0.2)", border: "1px solid rgba(239,68,68,0.3)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: "2px" }}>
+                <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#ef4444" }} />
               </div>
               <span><strong>Invalid authentication:</strong> Cookies may reference deleted or non-existent user accounts</span>
             </li>
-            <li className="flex items-start gap-2">
-              <div className="h-5 w-5 rounded-full bg-amber-500/20 border border-amber-400/30 flex items-center justify-center mt-0.5">
-                <div className="h-2 w-2 rounded-full bg-amber-400"></div>
+            <li style={{ display: "flex", alignItems: "flex-start", gap: "12px" }}>
+              <div style={{ width: "20px", height: "20px", borderRadius: "50%", background: "rgba(245,158,11,0.2)", border: "1px solid rgba(245,158,11,0.3)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: "2px" }}>
+                <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#fbbf24" }} />
               </div>
               <span><strong>Expired sessions:</strong> Authentication tokens can expire, causing "Failed to create project" errors</span>
             </li>
-            <li className="flex items-start gap-2">
-              <div className="h-5 w-5 rounded-full bg-blue-500/20 border border-blue-400/30 flex items-center justify-center mt-0.5">
-                <div className="h-2 w-2 rounded-full bg-blue-400"></div>
+            <li style={{ display: "flex", alignItems: "flex-start", gap: "12px" }}>
+              <div style={{ width: "20px", height: "20px", borderRadius: "50%", background: "rgba(59,130,246,0.2)", border: "1px solid rgba(59,130,246,0.3)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: "2px" }}>
+                <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#60a5fa" }} />
               </div>
               <span><strong>Database changes:</strong> If the database was reset, old cookies won't match new user IDs</span>
             </li>
-            <li className="flex items-start gap-2">
-              <div className="h-5 w-5 rounded-full bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center mt-0.5">
-                <div className="h-2 w-2 rounded-full bg-emerald-400"></div>
+            <li style={{ display: "flex", alignItems: "flex-start", gap: "12px" }}>
+              <div style={{ width: "20px", height: "20px", borderRadius: "50%", background: "rgba(34,197,94,0.2)", border: "1px solid rgba(34,197,94,0.3)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: "2px" }}>
+                <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#4ade80" }} />
               </div>
               <span><strong>Solution:</strong> Clear cookies → Sign in again → Project creation should work</span>
             </li>
@@ -234,19 +234,13 @@ export default function CookieCleanupPage() {
         </div>
 
         {/* Navigation */}
-        <div className="mt-6 flex flex-col sm:flex-row gap-4 justify-center">
+        <div style={{ marginTop: "24px", display: "flex", flexDirection: "column", gap: "12px", justifyContent: "center" }}>
           <Link
             href="/"
-            className="px-6 py-3 rounded-xl border border-white/10 hover:border-white/20 transition flex items-center justify-center gap-2"
+            style={{ padding: "12px 24px", border: "1px solid rgba(255,255,255,0.2)", color: "white", borderRadius: "8px", textDecoration: "none", fontWeight: 500, display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}
           >
-            <Home className="h-4 w-4" />
+            <Home size={16} />
             Back to Home
-          </Link>
-          <Link
-            href="/test-project-create.html"
-            className="px-6 py-3 rounded-xl border border-white/10 hover:border-white/20 transition flex items-center justify-center gap-2"
-          >
-            Test Project Creation
           </Link>
         </div>
       </div>

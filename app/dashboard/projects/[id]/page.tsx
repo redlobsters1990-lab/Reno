@@ -38,20 +38,16 @@ function capitalise(s: string | null | undefined): string {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
-/** Pull property size in sqft from the stored notes prefix */
 function parsePropertySize(notes: string | null): number | null {
   const m = notes?.match(/Property size: (\d+)/);
   return m ? parseInt(m[1]) : null;
 }
 
-/** Strip internal metadata prefix from user-visible notes */
 function stripInternalPrefix(notes: string | null): string {
   if (!notes) return "";
-  // Remove "Property size: NNN sqft, Rooms: NN." prefix
   return notes.replace(/^Property size: \d+ sqft, Rooms: [^.]*\.\s*/, "").trim();
 }
 
-/** AI cost estimate based on property type × sqft */
 function generateEstimate(project: Project): { low: string; typical: string; high: string } | null {
   const sqft = parsePropertySize(project.notes);
   if (!sqft) return null;
@@ -100,27 +96,24 @@ export default function ProjectDetailPage() {
     }
   };
 
-  /* ─── Loading ────────────────────────────────────────────── */
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-slate-900 to-slate-950 flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-violet-400 mr-3" />
-        <span className="text-slate-400">Loading project…</span>
+      <div style={{ minHeight: "100vh", background: "linear-gradient(to bottom, #0b1020, #0f172a)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <Loader2 size={32} color="#a78bfa" style={{ animation: "spin 1s linear infinite", marginRight: "12px" }} />
+        <span style={{ color: "#94a3b8" }}>Loading project...</span>
       </div>
     );
   }
 
-  /* ─── Error ──────────────────────────────────────────────── */
   if (error || !project) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-slate-900 to-slate-950 p-6">
-        <div className="max-w-xl mx-auto pt-24 text-center">
-          <AlertCircle className="h-12 w-12 text-red-400 mx-auto mb-4" />
-          <h2 className="text-xl font-semibold mb-2">Project not found</h2>
-          <p className="text-slate-400 mb-6">{error || "Something went wrong."}</p>
-          <Link href="/dashboard"
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 transition">
-            <ArrowLeft className="h-4 w-4" /> Back to Dashboard
+      <div style={{ minHeight: "100vh", background: "linear-gradient(to bottom, #0b1020, #0f172a)", padding: "24px" }}>
+        <div style={{ maxWidth: "500px", margin: "0 auto", paddingTop: "96px", textAlign: "center" }}>
+          <AlertCircle size={48} color="#ef4444" style={{ margin: "0 auto 16px" }} />
+          <h2 style={{ fontSize: "20px", fontWeight: 600, marginBottom: "8px", color: "white" }}>Project not found</h2>
+          <p style={{ color: "#94a3b8", marginBottom: "24px" }}>{error || "Something went wrong."}</p>
+          <Link href="/dashboard" style={{ display: "inline-flex", alignItems: "center", gap: "8px", padding: "12px 24px", background: "linear-gradient(135deg, #8b5cf6, #a855f7)", color: "white", borderRadius: "8px", textDecoration: "none" }}>
+            <ArrowLeft size={16} /> Back to Dashboard
           </Link>
         </div>
       </div>
@@ -132,174 +125,173 @@ export default function ProjectDetailPage() {
   const userNotes    = stripInternalPrefix(project.notes);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-900 to-slate-950 p-6">
-      <div className="max-w-5xl mx-auto">
+    <div style={{ minHeight: "100vh", background: "linear-gradient(to bottom, #0b1020, #0f172a)", color: "white", padding: "24px" }}>
+      <div style={{ maxWidth: "1000px", margin: "0 auto" }}>
 
-        {/* ── Header ── */}
-        <div className="flex items-center gap-3 mb-8">
-          <Link href="/dashboard"
-            className="h-10 w-10 rounded-xl border border-white/10 hover:border-white/20 transition flex items-center justify-center flex-shrink-0">
-            <ArrowLeft className="h-5 w-5" />
+        {/* Header */}
+        <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "32px" }}>
+          <Link href="/dashboard" style={{ width: "40px", height: "40px", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "10px", display: "flex", alignItems: "center", justifyContent: "center", color: "white", textDecoration: "none" }}>
+            <ArrowLeft size={20} />
           </Link>
           <div>
-            <h1 className="text-2xl font-bold">{project.title}</h1>
-            <p className="text-sm text-slate-400 flex items-center gap-1.5 mt-0.5">
-              <Calendar className="h-3.5 w-3.5" />
+            <h1 style={{ fontSize: "24px", fontWeight: "bold", color: "white" }}>{project.title}</h1>
+            <p style={{ fontSize: "14px", color: "#94a3b8", display: "flex", alignItems: "center", gap: "6px", marginTop: "2px" }}>
+              <Calendar size={14} />
               Created {formatDate(project.createdAt)}
             </p>
           </div>
         </div>
 
-        {/* ── Project Summary ── */}
-        <div className="mb-6 p-6 rounded-2xl border border-white/10 bg-gradient-to-b from-white/2.5 to-transparent">
-          <h2 className="text-lg font-semibold mb-5">Project Summary</h2>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Project Summary */}
+        <div style={{ marginBottom: "24px", padding: "24px", borderRadius: "16px", border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.02)" }}>
+          <h2 style={{ fontSize: "18px", fontWeight: 600, marginBottom: "20px" }}>Project Summary</h2>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "16px" }}>
 
-            <div className="p-4 rounded-xl border border-white/10">
-              <div className="flex items-center gap-2 mb-1">
-                <Building className="h-4 w-4 text-blue-300" />
-                <span className="text-xs text-slate-400">Property Type</span>
+            <div style={{ padding: "16px", borderRadius: "10px", border: "1px solid rgba(255,255,255,0.1)" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
+                <Building size={16} color="#60a5fa" />
+                <span style={{ fontSize: "12px", color: "#94a3b8" }}>Property Type</span>
               </div>
-              <div className="font-medium">{project.propertyType}</div>
+              <div style={{ fontWeight: 500 }}>{project.propertyType}</div>
             </div>
 
-            <div className="p-4 rounded-xl border border-white/10">
-              <div className="flex items-center gap-2 mb-1">
-                <Ruler className="h-4 w-4 text-emerald-300" />
-                <span className="text-xs text-slate-400">Property Size</span>
+            <div style={{ padding: "16px", borderRadius: "10px", border: "1px solid rgba(255,255,255,0.1)" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
+                <Ruler size={16} color="#4ade80" />
+                <span style={{ fontSize: "12px", color: "#94a3b8" }}>Property Size</span>
               </div>
-              <div className="font-medium">{sqft ? `${sqft.toLocaleString()} sqft` : "Not specified"}</div>
+              <div style={{ fontWeight: 500 }}>{sqft ? `${sqft.toLocaleString()} sqft` : "Not specified"}</div>
             </div>
 
-            <div className="p-4 rounded-xl border border-white/10">
-              <div className="flex items-center gap-2 mb-1">
-                <Home className="h-4 w-4 text-amber-300" />
-                <span className="text-xs text-slate-400">Rooms</span>
+            <div style={{ padding: "16px", borderRadius: "10px", border: "1px solid rgba(255,255,255,0.1)" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
+                <Home size={16} color="#fbbf24" />
+                <span style={{ fontSize: "12px", color: "#94a3b8" }}>Rooms</span>
               </div>
-              <div className="font-medium">
+              <div style={{ fontWeight: 500 }}>
                 {project.roomCount ? `${project.roomCount} room${project.roomCount !== 1 ? "s" : ""}` : "Not specified"}
               </div>
             </div>
 
-            <div className="p-4 rounded-xl border border-white/10">
-              <div className="flex items-center gap-2 mb-1">
-                <Palette className="h-4 w-4 text-violet-300" />
-                <span className="text-xs text-slate-400">Style</span>
+            <div style={{ padding: "16px", borderRadius: "10px", border: "1px solid rgba(255,255,255,0.1)" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
+                <Palette size={16} color="#a78bfa" />
+                <span style={{ fontSize: "12px", color: "#94a3b8" }}>Style</span>
               </div>
-              <div className="font-medium">{capitalise(project.stylePreference)}</div>
+              <div style={{ fontWeight: 500 }}>{capitalise(project.stylePreference)}</div>
             </div>
 
           </div>
 
           {project.budget && (
-            <div className="mt-4 p-3 rounded-xl border border-emerald-500/20 bg-emerald-500/5">
-              <span className="text-xs text-slate-400">Your Budget: </span>
-              <span className="font-semibold text-emerald-400">
+            <div style={{ marginTop: "16px", padding: "12px", borderRadius: "10px", border: "1px solid rgba(34,197,94,0.2)", background: "rgba(34,197,94,0.05)" }}>
+              <span style={{ fontSize: "12px", color: "#94a3b8" }}>Your Budget: </span>
+              <span style={{ fontWeight: 600, color: "#4ade80" }}>
                 ${project.budget.toLocaleString("en-SG")} SGD
               </span>
             </div>
           )}
 
           {userNotes && (
-            <div className="mt-5 pt-5 border-t border-white/10">
-              <h3 className="text-sm font-medium text-slate-300 mb-2 flex items-center gap-2">
-                <FileText className="h-4 w-4" /> Your Notes
+            <div style={{ marginTop: "20px", paddingTop: "20px", borderTop: "1px solid rgba(255,255,255,0.1)" }}>
+              <h3 style={{ fontSize: "14px", fontWeight: 500, color: "#cbd5e1", marginBottom: "8px", display: "flex", alignItems: "center", gap: "8px" }}>
+                <FileText size={16} /> Your Notes
               </h3>
-              <p className="text-slate-400 text-sm leading-relaxed">{userNotes}</p>
+              <p style={{ color: "#94a3b8", fontSize: "14px", lineHeight: 1.6 }}>{userNotes}</p>
             </div>
           )}
         </div>
 
-        {/* ── Estimated Budget ── */}
-        <div className="mb-6 p-6 rounded-2xl border border-white/10 bg-gradient-to-b from-white/2.5 to-transparent">
-          <h2 className="text-lg font-semibold mb-1 flex items-center gap-2">
-            <DollarSign className="h-5 w-5 text-emerald-400" />
+        {/* Estimated Budget */}
+        <div style={{ marginBottom: "24px", padding: "24px", borderRadius: "16px", border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.02)" }}>
+          <h2 style={{ fontSize: "18px", fontWeight: 600, marginBottom: "4px", display: "flex", alignItems: "center", gap: "8px" }}>
+            <DollarSign size={20} color="#4ade80" />
             Estimated Renovation Cost
           </h2>
-          <p className="text-xs text-slate-500 mb-5">AI estimate based on property type and size</p>
+          <p style={{ fontSize: "12px", color: "#64748b", marginBottom: "20px" }}>AI estimate based on property type and size</p>
 
           {estimate ? (
             <>
-              <div className="grid sm:grid-cols-3 gap-4 mb-4">
-                <div className="p-5 rounded-xl border border-white/10 text-center">
-                  <div className="text-2xl font-bold text-emerald-400 mb-1">{estimate.low}</div>
-                  <div className="text-sm text-slate-400">Low Range</div>
-                  <div className="text-xs text-slate-500 mt-1">Basic finishes, standard fixtures</div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "16px", marginBottom: "16px" }}>
+                <div style={{ padding: "20px", borderRadius: "10px", border: "1px solid rgba(255,255,255,0.1)", textAlign: "center" }}>
+                  <div style={{ fontSize: "24px", fontWeight: "bold", color: "#4ade80", marginBottom: "4px" }}>{estimate.low}</div>
+                  <div style={{ fontSize: "14px", color: "#94a3b8" }}>Low Range</div>
+                  <div style={{ fontSize: "12px", color: "#64748b", marginTop: "4px" }}>Basic finishes, standard fixtures</div>
                 </div>
-                <div className="p-5 rounded-xl border border-violet-500/30 bg-violet-500/5 text-center ring-1 ring-violet-500/20">
-                  <div className="text-3xl font-bold text-white mb-1">{estimate.typical}</div>
-                  <div className="text-sm text-violet-300 font-medium">Typical Range</div>
-                  <div className="text-xs text-slate-400 mt-1">Recommended for most renovations</div>
+                <div style={{ padding: "20px", borderRadius: "10px", border: "1px solid rgba(139,92,246,0.3)", background: "rgba(139,92,246,0.05)", textAlign: "center" }}>
+                  <div style={{ fontSize: "28px", fontWeight: "bold", color: "white", marginBottom: "4px" }}>{estimate.typical}</div>
+                  <div style={{ fontSize: "14px", color: "#a78bfa", fontWeight: 500 }}>Typical Range</div>
+                  <div style={{ fontSize: "12px", color: "#94a3b8", marginTop: "4px" }}>Recommended for most renovations</div>
                 </div>
-                <div className="p-5 rounded-xl border border-white/10 text-center">
-                  <div className="text-2xl font-bold text-amber-400 mb-1">{estimate.high}</div>
-                  <div className="text-sm text-slate-400">High Range</div>
-                  <div className="text-xs text-slate-500 mt-1">Premium materials, custom features</div>
+                <div style={{ padding: "20px", borderRadius: "10px", border: "1px solid rgba(255,255,255,0.1)", textAlign: "center" }}>
+                  <div style={{ fontSize: "24px", fontWeight: "bold", color: "#fbbf24", marginBottom: "4px" }}>{estimate.high}</div>
+                  <div style={{ fontSize: "14px", color: "#94a3b8" }}>High Range</div>
+                  <div style={{ fontSize: "12px", color: "#64748b", marginTop: "4px" }}>Premium materials, custom features</div>
                 </div>
               </div>
-              <p className="text-xs text-slate-500 text-center">
+              <p style={{ fontSize: "12px", color: "#64748b", textAlign: "center" }}>
                 Ranges based on {sqft?.toLocaleString()} sqft {project.propertyType}. Upload contractor quotes for a precise figure.
               </p>
             </>
           ) : (
-            <div className="p-6 rounded-xl bg-slate-900/50 border border-white/10 text-center">
-              <Sparkles className="h-8 w-8 text-slate-500 mx-auto mb-2" />
-              <p className="text-slate-300 font-medium mb-1">No estimate available yet</p>
-              <p className="text-slate-500 text-sm">
+            <div style={{ padding: "24px", borderRadius: "10px", background: "rgba(15,23,42,0.5)", border: "1px solid rgba(255,255,255,0.1)", textAlign: "center" }}>
+              <Sparkles size={32} color="#64748b" style={{ margin: "0 auto 8px" }} />
+              <p style={{ color: "#cbd5e1", fontWeight: 500, marginBottom: "4px" }}>No estimate available yet</p>
+              <p style={{ color: "#64748b", fontSize: "14px" }}>
                 Add your property size when creating a project, or upload contractor quotes to get a cost estimate.
               </p>
             </div>
           )}
         </div>
 
-        {/* ── Next Steps ── */}
-        <div className="mb-6 p-6 rounded-2xl border border-white/10 bg-gradient-to-b from-white/2.5 to-transparent">
-          <h2 className="text-lg font-semibold mb-5">Next Steps</h2>
-          <div className="grid sm:grid-cols-2 gap-4">
+        {/* Next Steps */}
+        <div style={{ marginBottom: "24px", padding: "24px", borderRadius: "16px", border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.02)" }}>
+          <h2 style={{ fontSize: "18px", fontWeight: 600, marginBottom: "20px" }}>Next Steps</h2>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "16px" }}>
 
-            <div className="p-5 rounded-xl border border-white/10 hover:border-violet-400/30 transition">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="h-10 w-10 rounded-xl bg-violet-500/10 border border-violet-400/20 flex items-center justify-center">
-                  <Upload className="h-5 w-5 text-violet-300" />
+            <div style={{ padding: "20px", borderRadius: "10px", border: "1px solid rgba(255,255,255,0.1)" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "12px" }}>
+                <div style={{ width: "40px", height: "40px", background: "rgba(139,92,246,0.1)", border: "1px solid rgba(139,92,246,0.3)", borderRadius: "10px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <Upload size={20} color="#a78bfa" />
                 </div>
                 <div>
-                  <div className="font-medium">Upload Contractor Quotes</div>
-                  <div className="text-xs text-slate-400">Analyse pricing, compare contractors</div>
+                  <div style={{ fontWeight: 500 }}>Upload Contractor Quotes</div>
+                  <div style={{ fontSize: "12px", color: "#94a3b8" }}>Analyse pricing, compare contractors</div>
                 </div>
               </div>
-              <p className="text-xs text-slate-500 mb-3">
+              <p style={{ fontSize: "12px", color: "#64748b", marginBottom: "12px" }}>
                 Upload PDF or image quotes to get an AI-powered fairness assessment and side-by-side comparison.
               </p>
-              <span className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-slate-800 border border-white/10 text-slate-400">
-                <Clock className="h-3 w-3" /> Coming soon
+              <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "12px", padding: "6px 12px", borderRadius: "6px", background: "rgba(15,23,42,0.5)", border: "1px solid rgba(255,255,255,0.1)", color: "#94a3b8" }}>
+                <Clock size={12} /> Coming soon
               </span>
             </div>
 
-            <div className="p-5 rounded-xl border border-white/10 hover:border-blue-400/30 transition">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="h-10 w-10 rounded-xl bg-blue-500/10 border border-blue-400/20 flex items-center justify-center">
-                  <MessageSquare className="h-5 w-5 text-blue-300" />
+            <div style={{ padding: "20px", borderRadius: "10px", border: "1px solid rgba(255,255,255,0.1)" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "12px" }}>
+                <div style={{ width: "40px", height: "40px", background: "rgba(59,130,246,0.1)", border: "1px solid rgba(59,130,246,0.3)", borderRadius: "10px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <MessageSquare size={20} color="#60a5fa" />
                 </div>
                 <div>
-                  <div className="font-medium">Chat with AI Advisor</div>
-                  <div className="text-xs text-slate-400">Personalised renovation guidance</div>
+                  <div style={{ fontWeight: 500 }}>Chat with AI Advisor</div>
+                  <div style={{ fontSize: "12px", color: "#94a3b8" }}>Personalised renovation guidance</div>
                 </div>
               </div>
-              <p className="text-xs text-slate-500 mb-3">
+              <p style={{ fontSize: "12px", color: "#64748b", marginBottom: "12px" }}>
                 Ask about design choices, materials, timelines, and contractor selection for your specific project.
               </p>
-              <span className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-slate-800 border border-white/10 text-slate-400">
-                <Clock className="h-3 w-3" /> Coming soon
+              <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "12px", padding: "6px 12px", borderRadius: "6px", background: "rgba(15,23,42,0.5)", border: "1px solid rgba(255,255,255,0.1)", color: "#94a3b8" }}>
+                <Clock size={12} /> Coming soon
               </span>
             </div>
 
           </div>
         </div>
 
-        {/* ── Project Status ── */}
-        <div className="p-6 rounded-2xl border border-white/10">
-          <h2 className="text-lg font-semibold mb-4">Project Progress</h2>
-          <div className="space-y-3">
+        {/* Project Status */}
+        <div style={{ padding: "24px", borderRadius: "16px", border: "1px solid rgba(255,255,255,0.1)" }}>
+          <h2 style={{ fontSize: "18px", fontWeight: 600, marginBottom: "16px" }}>Project Progress</h2>
+          <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
             {[
               { label: "Project created",                done: true  },
               { label: "Add property size & style",      done: !!sqft },
@@ -308,11 +300,11 @@ export default function ProjectDetailPage() {
               { label: "Select contractor & finalise",   done: false },
               { label: "Begin renovation",               done: false },
             ].map((step, i) => (
-              <div key={i} className="flex items-center gap-3">
+              <div key={i} style={{ display: "flex", alignItems: "center", gap: "12px" }}>
                 {step.done
-                  ? <CheckCircle className="h-5 w-5 text-emerald-400 flex-shrink-0" />
-                  : <Circle      className="h-5 w-5 text-slate-600  flex-shrink-0" />}
-                <span className={step.done ? "text-slate-300" : "text-slate-500"}>
+                  ? <CheckCircle size={20} color="#4ade80" />
+                  : <Circle size={20} color="#475569" />}
+                <span style={{ color: step.done ? "#cbd5e1" : "#64748b" }}>
                   {step.label}
                 </span>
               </div>
