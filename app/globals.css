@@ -40,29 +40,7 @@ textarea {
 
 /* ===== DESIGN SYSTEM UTILITIES ===== */
 
-/* Container - Explicit centering to fix alignment issues */
-.container {
-  width: 100%;
-  max-width: 1200px;
-  margin-left: auto;
-  margin-right: auto;
-  padding-left: 1rem;
-  padding-right: 1rem;
-}
-
-@media (min-width: 640px) {
-  .container {
-    padding-left: 1.5rem;
-    padding-right: 1.5rem;
-  }
-}
-
-@media (min-width: 1024px) {
-  .container {
-    padding-left: 2rem;
-    padding-right: 2rem;
-  }
-}
+/* Container centering is handled by Tailwind config (center: true) */
 
 /* Ensure all sections are centered */
 section {
