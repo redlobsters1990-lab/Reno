@@ -2,21 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/server/db";
 import { extractQuoteDocument } from "@/server/services/quote-parser";
 
-const MARKET_RATE_TABLE: Record<string, { low: number; avg: number; high: number }> = {
-  "HDB Resale":  { low: 40,  avg: 60,  high: 90  },
-  "HDB BTO":     { low: 35,  avg: 50,  high: 75  },
-  "Condo":       { low: 60,  avg: 90,  high: 130 },
-  "Landed":      { low: 80,  avg: 120, high: 180 },
-  "Commercial":  { low: 50,  avg: 75,  high: 110 },
-};
-const MARKET_RATE_DEFAULT = { low: 50, avg: 75, high: 110 };
-const DEFAULT_PROPERTY_SIZE_SQFT = 1000;
-const PRICE_BAND_VERY_LOW  = 0.80;
-const PRICE_BAND_PREMIUM   = 1.20;
-const SEVERE_ISSUES_HIGH_RISK    = 3;
-const MAX_EXCLUSIONS_FOR_LOW_RISK = 1;
-const MIN_LINE_ITEMS_FOR_SCOPE   = 3;
-
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string; quoteId: string }> | { id: string; quoteId: string } }
