@@ -13,11 +13,6 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
   
-  // Disable ESLint during build for now
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
-  
   // Add headers for CORS and security
   async headers() {
     return [
@@ -31,6 +26,11 @@ const nextConfig = {
         ],
       },
     ];
+  },
+  
+  // Turbopack configuration - set workspace root
+  turbopack: {
+    root: '/Users/chozengone/.openclaw/workspace',
   },
 };
 
