@@ -19,7 +19,6 @@ export default function SignUpPage() {
     e.preventDefault();
     setError("");
 
-    // Basic validation
     if (!name.trim()) {
       setError("Please enter your name");
       return;
@@ -60,10 +59,8 @@ export default function SignUpPage() {
         throw new Error(data.error || "Sign up failed");
       }
 
-      // Show success message
       setSuccess(true);
       
-      // Auto-login after successful signup
       setTimeout(async () => {
         try {
           const loginResponse = await fetch("/api/direct-login", {
@@ -75,13 +72,11 @@ export default function SignUpPage() {
           const loginData = await loginResponse.json();
 
           if (loginResponse.ok) {
-            // Set cookies and redirect
             document.cookie = `auth-token=user-${loginData.user.id}; path=/; max-age=2592000; SameSite=Lax`;
             document.cookie = `user-email=${encodeURIComponent(loginData.user.email)}; path=/; max-age=2592000; SameSite=Lax`;
             router.push("/dashboard");
             router.refresh();
           } else {
-            // If auto-login fails, redirect to signin
             router.push("/auth/signin");
           }
         } catch {
@@ -92,7 +87,6 @@ export default function SignUpPage() {
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Sign up failed";
       
-      // Improve error messages
       if (errorMessage.includes("already exists") || errorMessage.includes("already registered")) {
         setError("An account with this email already exists. Please sign in instead.");
       } else if (errorMessage.includes("Invalid email") || errorMessage.includes("valid email")) {
@@ -110,165 +104,194 @@ export default function SignUpPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-slate-950 flex items-center justify-center p-6">
-      {/* Skip to content */}
-      <a href="#main-content" className="skip-to-content">
-        Skip to main content
-      </a>
-
+    <div style={{ minHeight: "100vh", background: "linear-gradient(to bottom, #0b1020, #0f172a)", display: "flex", alignItems: "center", justifyContent: "center", padding: "24px", position: "relative" }}>
       {/* Background effects */}
-      <div className="absolute inset-0 -z-10 overflow-hidden">
-        <div className="absolute -top-40 -right-40 h-80 w-80 rounded-full bg-primary-500/10 blur-3xl" />
-        <div className="absolute -bottom-40 -left-40 h-80 w-80 rounded-full bg-secondary-500/10 blur-3xl" />
+      <div style={{ position: "absolute", inset: 0, overflow: "hidden", zIndex: 0 }}>
+        <div style={{ position: "absolute", top: "-160px", right: "-160px", width: "320px", height: "320px", background: "rgba(139,92,246,0.1)", borderRadius: "50%", filter: "blur(60px)" }} />
+        <div style={{ position: "absolute", bottom: "-160px", left: "-160px", width: "320px", height: "320px", background: "rgba(168,85,247,0.1)", borderRadius: "50%", filter: "blur(60px)" }} />
       </div>
       
-      <div className="w-full max-w-md">
+      <div style={{ width: "100%", maxWidth: "420px", position: "relative", zIndex: 1 }}>
         {/* Header */}
-        <div className="text-center mb-10">
-          <div className="h-16 w-16 rounded-xl bg-gradient-to-br from-primary-500/30 to-secondary-500/30 border border-primary-400/40 flex items-center justify-center mx-auto mb-6 shadow-glow-sm">
-            <Home className="h-8 w-8 text-primary-300" />
+        <div style={{ textAlign: "center", marginBottom: "40px" }}>
+          <div style={{ width: "64px", height: "64px", background: "linear-gradient(135deg, rgba(139,92,246,0.3), rgba(168,85,247,0.3))", border: "1px solid rgba(139,92,246,0.4)", borderRadius: "12px", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 24px" }}>
+            <Home size={32} color="#a78bfa" />
           </div>
-          <h1 className="text-h1 font-bold mb-4">Create Your Account</h1>
-          <p className="text-body text-text-secondary">Start planning your dream renovation with AI guidance</p>
+          <h1 style={{ fontSize: "32px", fontWeight: "bold", color: "white", marginBottom: "8px" }}>Create Your Account</h1>
+          <p style={{ fontSize: "16px", color: "#94a3b8" }}>Start planning your dream renovation with AI guidance</p>
         </div>
 
         {/* Success Message */}
         {success && (
-          <div className="alert-success mb-8 animate-fade-in">
-            <div className="flex items-center gap-3">
-              <CheckCircle className="h-5 w-5 flex-shrink-0" />
-              <div>
-                <span className="font-medium">Account created successfully!</span>
-                <p className="text-small mt-1">Redirecting you to the dashboard...</p>
-              </div>
+          <div style={{ padding: "16px", background: "rgba(34,197,94,0.1)", border: "1px solid rgba(34,197,94,0.3)", borderRadius: "8px", marginBottom: "24px", display: "flex", alignItems: "center", gap: "12px" }}>
+            <CheckCircle size={20} color="#22c55e" />
+            <div>
+              <span style={{ color: "#22c55e", fontWeight: 500 }}>Account created successfully!</span>
+              <p style={{ fontSize: "14px", color: "#4ade80", marginTop: "4px" }}>Redirecting you to the dashboard...</p>
             </div>
           </div>
         )}
 
         {/* Error Display */}
         {error && !success && (
-          <div className="alert-error mb-8 animate-fade-in">
-            <div className="flex items-center gap-3">
-              <AlertCircle className="h-5 w-5 flex-shrink-0" />
-              <span className="font-medium">{error}</span>
-            </div>
+          <div style={{ padding: "16px", background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)", borderRadius: "8px", marginBottom: "24px", display: "flex", alignItems: "center", gap: "12px" }}>
+            <AlertCircle size={20} color="#ef4444" />
+            <span style={{ color: "#ef4444", fontWeight: 500 }}>{error}</span>
           </div>
         )}
 
         {/* Sign Up Form */}
-        <div className="card p-8">
-          <form onSubmit={handleSubmit} className="space-y-6">
+        <div style={{ padding: "32px", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "12px" }}>
+          <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
             {/* Name Field */}
             <div>
-              <label htmlFor="name" className="input-label">
+              <label htmlFor="name" style={{ display: "block", fontSize: "14px", fontWeight: 500, color: "white", marginBottom: "8px" }}>
                 Full Name
               </label>
-              <div className="relative">
-                <User className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-text-tertiary" />
+              <div style={{ position: "relative" }}>
+                <User style={{ position: "absolute", left: "16px", top: "50%", transform: "translateY(-50%)", color: "#64748b" }} size={20} />
                 <input
                   id="name"
                   type="text"
-                  className="input pl-12"
                   placeholder="John Doe"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   required
                   disabled={loading || success}
-                  aria-describedby="name-description"
+                  style={{
+                    width: "100%",
+                    padding: "12px 16px 12px 48px",
+                    background: "rgba(255,255,255,0.05)",
+                    border: "1px solid rgba(255,255,255,0.1)",
+                    borderRadius: "8px",
+                    color: "white",
+                    fontSize: "16px",
+                    outline: "none",
+                    boxSizing: "border-box"
+                  }}
                 />
               </div>
-              <p id="name-description" className="sr-only">
-                Enter your full name
-              </p>
             </div>
 
             {/* Email Field */}
             <div>
-              <label htmlFor="email" className="input-label">
+              <label htmlFor="email" style={{ display: "block", fontSize: "14px", fontWeight: 500, color: "white", marginBottom: "8px" }}>
                 Email Address
               </label>
-              <div className="relative">
-                <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-text-tertiary" />
+              <div style={{ position: "relative" }}>
+                <Mail style={{ position: "absolute", left: "16px", top: "50%", transform: "translateY(-50%)", color: "#64748b" }} size={20} />
                 <input
                   id="email"
                   type="email"
-                  className="input pl-12"
                   placeholder="you@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
                   disabled={loading || success}
-                  aria-describedby="email-description"
+                  style={{
+                    width: "100%",
+                    padding: "12px 16px 12px 48px",
+                    background: "rgba(255,255,255,0.05)",
+                    border: "1px solid rgba(255,255,255,0.1)",
+                    borderRadius: "8px",
+                    color: "white",
+                    fontSize: "16px",
+                    outline: "none",
+                    boxSizing: "border-box"
+                  }}
                 />
               </div>
-              <p id="email-description" className="sr-only">
-                Enter your email address
-              </p>
             </div>
 
             {/* Password Field */}
             <div>
-              <label htmlFor="password" className="input-label">
+              <label htmlFor="password" style={{ display: "block", fontSize: "14px", fontWeight: 500, color: "white", marginBottom: "8px" }}>
                 Password
               </label>
-              <div className="relative">
-                <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-text-tertiary" />
+              <div style={{ position: "relative" }}>
+                <Lock style={{ position: "absolute", left: "16px", top: "50%", transform: "translateY(-50%)", color: "#64748b" }} size={20} />
                 <input
                   id="password"
                   type="password"
-                  className="input pl-12"
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   disabled={loading || success}
-                  aria-describedby="password-description"
+                  style={{
+                    width: "100%",
+                    padding: "12px 16px 12px 48px",
+                    background: "rgba(255,255,255,0.05)",
+                    border: "1px solid rgba(255,255,255,0.1)",
+                    borderRadius: "8px",
+                    color: "white",
+                    fontSize: "16px",
+                    outline: "none",
+                    boxSizing: "border-box"
+                  }}
                 />
               </div>
-              <p id="password-description" className="text-small text-text-tertiary mt-2">
-                Must be at least 8 characters long
-              </p>
+              <p style={{ fontSize: "12px", color: "#64748b", marginTop: "4px" }}>Must be at least 8 characters long</p>
             </div>
 
             {/* Confirm Password Field */}
             <div>
-              <label htmlFor="confirmPassword" className="input-label">
+              <label htmlFor="confirmPassword" style={{ display: "block", fontSize: "14px", fontWeight: 500, color: "white", marginBottom: "8px" }}>
                 Confirm Password
               </label>
-              <div className="relative">
-                <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-text-tertiary" />
+              <div style={{ position: "relative" }}>
+                <Lock style={{ position: "absolute", left: "16px", top: "50%", transform: "translateY(-50%)", color: "#64748b" }} size={20} />
                 <input
                   id="confirmPassword"
                   type="password"
-                  className="input pl-12"
                   placeholder="••••••••"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   required
                   disabled={loading || success}
-                  aria-describedby="confirm-password-description"
+                  style={{
+                    width: "100%",
+                    padding: "12px 16px 12px 48px",
+                    background: "rgba(255,255,255,0.05)",
+                    border: "1px solid rgba(255,255,255,0.1)",
+                    borderRadius: "8px",
+                    color: "white",
+                    fontSize: "16px",
+                    outline: "none",
+                    boxSizing: "border-box"
+                  }}
                 />
               </div>
-              <p id="confirm-password-description" className="sr-only">
-                Re-enter your password to confirm
-              </p>
             </div>
 
             {/* Submit Button */}
             <button
               type="submit"
               disabled={loading || success}
-              className="btn-primary w-full py-4 text-lg focus-ring"
-              aria-busy={loading}
+              style={{
+                width: "100%",
+                padding: "14px",
+                background: loading || success ? "rgba(139,92,246,0.5)" : "linear-gradient(135deg, #8b5cf6, #a855f7)",
+                color: "white",
+                border: "none",
+                borderRadius: "8px",
+                fontSize: "16px",
+                fontWeight: 600,
+                cursor: loading || success ? "not-allowed" : "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "8px"
+              }}
             >
               {loading ? (
                 <>
-                  <Loader2 className="h-5 w-5 animate-spin mr-2" />
+                  <Loader2 size={20} style={{ animation: "spin 1s linear infinite" }} />
                   Creating Account...
                 </>
               ) : success ? (
                 <>
-                  <CheckCircle className="h-5 w-5 mr-2" />
+                  <CheckCircle size={20} />
                   Account Created!
                 </>
               ) : (
@@ -278,37 +301,27 @@ export default function SignUpPage() {
           </form>
 
           {/* Terms */}
-          <div className="mt-8 pt-8 border-t border-white/10">
-            <p className="text-small text-text-tertiary text-center">
+          <div style={{ marginTop: "24px", paddingTop: "24px", borderTop: "1px solid rgba(255,255,255,0.1)" }}>
+            <p style={{ fontSize: "12px", color: "#64748b", textAlign: "center", lineHeight: 1.5 }}>
               By creating an account, you agree to our{" "}
-              <Link href="#" className="text-primary-400 hover:text-primary-300 font-medium focus-ring rounded">
-                Terms of Service
-              </Link>{" "}
-              and{" "}
-              <Link href="#" className="text-primary-400 hover:text-primary-300 font-medium focus-ring rounded">
-                Privacy Policy
-              </Link>
+              <Link href="#" style={{ color: "#a78bfa", textDecoration: "none" }}>Terms of Service</Link>
+              {" "}and{" "}
+              <Link href="#" style={{ color: "#a78bfa", textDecoration: "none" }}>Privacy Policy</Link>
             </p>
           </div>
         </div>
 
         {/* Links */}
-        <div className="mt-8 space-y-4 text-center">
-          <p className="text-body text-text-secondary">
+        <div style={{ marginTop: "24px", textAlign: "center" }}>
+          <p style={{ fontSize: "16px", color: "#94a3b8", marginBottom: "16px" }}>
             Already have an account?{" "}
-            <Link
-              href="/auth/signin"
-              className="text-primary-400 hover:text-primary-300 font-medium transition-colors focus-ring rounded"
-            >
+            <Link href="/auth/signin" style={{ color: "#a78bfa", textDecoration: "none", fontWeight: 500 }}>
               Sign in
             </Link>
           </p>
           
-          <Link
-            href="/"
-            className="btn-ghost inline-flex items-center gap-2"
-          >
-            <ArrowLeft className="h-4 w-4" />
+          <Link href="/" style={{ display: "inline-flex", alignItems: "center", gap: "8px", color: "#94a3b8", textDecoration: "none", fontSize: "14px" }}>
+            <ArrowLeft size={16} />
             Back to Home
           </Link>
         </div>
