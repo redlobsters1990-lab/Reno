@@ -29,6 +29,7 @@ interface QuoteData {
     strengths?: string[];
     redFlags: string[];
     recommendations: string[];
+    missingInformation?: string[];
     decision?: {
       recommendation: string;
       riskLevel: "low" | "medium" | "high";
@@ -540,6 +541,30 @@ export function QuoteUpload({ projectId, onUploadComplete }: QuoteUploadProps) {
                   {(quote.analysis.strengths ?? []).length > 0 && <div style={{ marginBottom: "12px" }}><p style={{ fontSize: "12px", fontWeight: 600, color: "#4ade80", marginBottom: "8px" }}>Strengths:</p><ul style={{ margin: 0, paddingLeft: "16px", color: "#94a3b8", fontSize: "14px" }}>{(quote.analysis.strengths ?? []).map((item, i) => <li key={i}>{item}</li>)}</ul></div>}
                   {quote.analysis.redFlags?.length > 0 && <div style={{ marginBottom: "12px" }}><p style={{ fontSize: "12px", fontWeight: 600, color: "#ef4444", marginBottom: "8px" }}>Red Flags:</p><ul style={{ margin: 0, paddingLeft: "16px", color: "#94a3b8", fontSize: "14px" }}>{quote.analysis.redFlags.map((flag, i) => <li key={i}>{flag}</li>)}</ul></div>}
                   {quote.analysis.recommendations?.length > 0 && <div><p style={{ fontSize: "12px", fontWeight: 600, color: "#4ade80", marginBottom: "8px" }}>Recommendations:</p><ul style={{ margin: 0, paddingLeft: "16px", color: "#94a3b8", fontSize: "14px" }}>{quote.analysis.recommendations.map((rec, i) => <li key={i}>{rec}</li>)}</ul></div>}
+                  
+                  {quote.analysis.missingInformation?.length > 0 && (
+                    <div style={{ marginBottom: "12px" }}>
+                      <p style={{ fontSize: "12px", fontWeight: 600, color: "#f59e0b", marginBottom: "8px" }}>Missing Information:</p>
+                      <ul style={{ margin: 0, paddingLeft: "16px", color: "#94a3b8", fontSize: "14px" }}>
+                        {quote.analysis.missingInformation.map((item, i) => <li key={i}>{item}</li>)}
+                      </ul>
+                    </div>
+                  )}
+                  
+                  {/* Disclaimer - must be visible for legal and trust reasons */}
+                  <div style={{ marginTop: "16px", padding: "12px", borderRadius: "8px", background: "rgba(59,130,246,0.05)", border: "1px solid rgba(59,130,246,0.3)", fontSize: "12px", color: "#94a3b8" }}>
+                    <div style={{ display: "flex", alignItems: "flex-start", gap: "8px", marginBottom: "8px" }}>
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M12 16h.01" />
+                        <path d="M12 8v4" />
+                        <path d="M12 21c-4.418 0-8-3.582-8-8s3.582-8 8-8 8 3.582 8 8-3.582 8-8 8z" />
+                      </svg>
+                      <span style={{ fontWeight: 600, color: "#3b82f6" }}>Important Disclaimer</span>
+                    </div>
+                    <p style={{ margin: 0, lineHeight: 1.5 }}>
+                      This analysis is based on public market references, project assumptions, and automated document parsing. Actual renovation prices may vary based on material brand, workmanship standard, site condition, and contractor scope. Some line items could not be accurately benchmarked because the quotation lacks sufficient detail. This assessment is for decision support only and should be validated with contractors before commitment.
+                    </p>
+                  </div>
                 </div>
               )}
             </div>

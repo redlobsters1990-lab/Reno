@@ -1,5 +1,9 @@
 import { prisma } from "@/server/db";
 
+// Static market price database for Singapore renovation categories.
+// Sourced from Design Authority 2026, Renotalk 2025, Qanvast 2025, BCA 2024, fixfirst.sg, Industry Average.
+// This is a static snapshot; live price validation via Brave API is planned for future release.
+
 export type MarketPrice = {
   category: string;
   material: string;

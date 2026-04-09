@@ -197,6 +197,41 @@ function analyzeQuoteDocument({ quoteAmount, marketRates, parsedDoc, propertyTyp
   if (!parsedDoc.warrantyTerms.length) recommendations.push("Ask the contractor to add workmanship and material warranty terms.");
   if (!parsedDoc.materialsMentions.length) recommendations.push("Request more material detail if finishes or brands are not clearly specified.");
 
+  // Detect missing critical scope information
+  const missingInformation: string[] = [];
+  const text = parsedDoc.text.toLowerCase();
+  const lineItemsText = parsedDoc.lineItems.map((li: any) => li.description).join(' ').toLowerCase();
+  const allText = text + ' ' + lineItemsText;
+  
+  // Critical scope items that should be mentioned in any renovation quote
+  const criticalItems = [
+    { keyword: 'waterproof', message: 'Waterproofing scope not clearly specified (critical for wet areas).' },
+    { keyword: 'electrical point', message: 'Electrical point count and type not detailed.' },
+    { keyword: 'rewiring', message: 'Rewiring scope not mentioned (important for older properties).' },
+    { keyword: 'carpentry height', message: 'Carpentry dimensions (height, depth) not specified.' },
+    { keyword: 'countertop thickness', message: 'Countertop thickness not specified (affects pricing).' },
+    { keyword: 'tile', message: 'Tile type and size not detailed (material, finish, size).' },
+    { keyword: 'paint', message: 'Paint brand and finish not specified.' },
+    { keyword: 'lighting point', message: 'Lighting point count and type not detailed.' },
+    { keyword: 'aircon', message: 'Air‑conditioning installation scope not mentioned.' },
+    { keyword: 'sanitary', message: 'Sanitary ware specification not detailed.' },
+  ];
+  
+  for (const item of criticalItems) {
+    if (!allText.includes(item.keyword)) {
+      missingInformation.push(item.message);
+    }
+  }
+  
+  // If no line items at all, flag as major missing
+  if (parsedDoc.lineItems.length === 0) {
+    missingInformation.push('No line‑item breakdown provided; scope is too vague for proper validation.');
+  }
+  
+  if (missingInformation.length > 0) {
+    recommendations.push("The quote may be missing critical scope details. See missing information below.");
+  }
+
   const decision = buildDecision({ isFair, quoteAmount, marketRates, parsedDoc, redFlags, recommendations });
 
   return {
@@ -222,6 +257,8 @@ function analyzeQuoteDocument({ quoteAmount, marketRates, parsedDoc, propertyTyp
       marketAverage: marketRates.average,
       marketHigh: marketRates.high,
     },
+    missingInformation,
+    disclaimer: "This analysis is based on public market references and total amount comparison. It does not validate individual line-item prices against current market rates. Actual renovation prices may vary based on material brand, workmanship, site condition, and contractor scope. Validate with contractors before commitment.",
   };
 }
 

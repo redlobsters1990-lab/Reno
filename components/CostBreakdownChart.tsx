@@ -136,6 +136,12 @@ export function CostBreakdownChart({ components }: { components: Component[] }) 
           </div>
         ))}
       </div>
+      
+      {/* Disclaimer */}
+      <div style={{ marginTop: "24px", padding: "12px", borderRadius: "8px", background: "rgba(59,130,246,0.05)", border: "1px solid rgba(59,130,246,0.2)", fontSize: "12px", color: "#94a3b8" }}>
+        <strong style={{ color: "#3b82f6", display: "block", marginBottom: "4px" }}>Important:</strong>
+        This breakdown is based on market reference pricing for Singapore. Actual costs may vary based on material brand, workmanship, site conditions, and contractor scope. Validate with contractors before commitment.
+      </div>
     </div>
   );
 }

@@ -588,6 +588,11 @@ export function EstimateWizard({ projectId, onComplete }: { projectId: string; o
               <p style={{ fontSize: "13px", color: "#94a3b8", marginTop: "12px" }}>
                 Confidence: <span style={{ color: "#10b981" }}>High</span> (based on {totalComponents} detailed items)
               </p>
+              {/* Disclaimer */}
+              <div style={{ marginTop: "16px", padding: "12px", borderRadius: "6px", background: "rgba(59,130,246,0.05)", border: "1px solid rgba(59,130,246,0.2)", fontSize: "12px", color: "#94a3b8", textAlign: "left" }}>
+                <strong style={{ color: "#3b82f6", display: "block", marginBottom: "4px" }}>Note:</strong>
+                This estimate is based on Singapore market references and project assumptions, not a binding quotation. Actual prices may vary based on material brand, workmanship, site condition, and contractor scope.
+              </div>
             </div>
           </div>
         </div>
