@@ -1,7 +1,11 @@
 import { NextResponse, NextRequest } from "next/server";
-import { securityMiddleware } from "./middleware.security";
+import { securityMiddleware } from "./proxy.security";
+
+console.log("Middleware module loaded");
 
 export default async function middleware(request: NextRequest) {
+  console.log(`Proxy: ${request.method} ${request.nextUrl.pathname} called`);
+  
   // Apply security middleware to all requests
   const securityResponse = securityMiddleware(request);
   if (securityResponse.status !== 200) {
@@ -25,19 +29,17 @@ export default async function middleware(request: NextRequest) {
     
     // Simple auth check - look for any auth cookie
     const cookies = Array.from(request.cookies.getAll());
-    console.log(`Middleware: Checking ${pathname}, cookies:`, cookies.map(c => c.name));
+    console.log(`Middleware: ${request.method} ${pathname}, cookies:`, cookies.map(c => c.name));
     const hasAuthCookie = cookies.some(
       cookie => cookie.name.includes("authjs") || cookie.name === "auth-token"
     );
     
     if (!hasAuthCookie) {
       console.log(`Middleware: No auth cookie for ${pathname}`);
-      // For API routes, return 401 JSON instead of redirect
+      // For API routes, let the API handle authentication (they have better error messages)
       if (pathname.startsWith("/api/")) {
-        return NextResponse.json(
-          { error: "Unauthorized", message: "Missing authentication" },
-          { status: 401 }
-        );
+        console.log(`Middleware: API route ${pathname} - skipping auth check, letting API handle`);
+        return NextResponse.next();
       }
       // Redirect to signin page for page routes
       const signInUrl = new URL("/auth/signin", request.url);

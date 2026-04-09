@@ -31,12 +31,12 @@ export const STATIC_PRICES: MarketPrice[] = [
   
   // Kitchen Cabinetry (per linear ft) - includes top and bottom cabinets
   // Source: Design Authority 2026 - standard laminate kitchen cabinet run ~$120 per foot
-  { category: "Kitchen Cabinetry", material: "Laminate", unit: "ft", lowPrice: 100, highPrice: 180, source: "Design Authority 2026 (laminate cabinet run)", updatedAt: new Date() },
-  { category: "Kitchen Cabinetry", material: "Solid Wood", unit: "ft", lowPrice: 200, highPrice: 350, source: "Renotalk 2025 (solid wood cabinets)", updatedAt: new Date() },
-  { category: "Kitchen Cabinetry", material: "Plywood", unit: "ft", lowPrice: 80, highPrice: 150, source: "Renotalk 2025 (plywood carcass with laminate)", updatedAt: new Date() },
-  { category: "Kitchen Cabinetry", material: "Engineered Wood", unit: "ft", lowPrice: 120, highPrice: 220, source: "Industry Average (engineered wood cabinets)", updatedAt: new Date() },
-  { category: "Kitchen Cabinetry", material: "Glass", unit: "ft", lowPrice: 150, highPrice: 300, source: "Industry Average (glass-front cabinets)", updatedAt: new Date() },
-  { category: "Kitchen Cabinetry", material: "Acrylic", unit: "ft", lowPrice: 130, highPrice: 250, source: "Industry Average (acrylic finish cabinets)", updatedAt: new Date() },
+  { category: "Kitchen Cabinetry", material: "Laminate", unit: "ft", lowPrice: 120, highPrice: 220, source: "Design Authority 2026 (laminate cabinet run, SGD 120–220 per linear ft)", updatedAt: new Date() },
+  { category: "Kitchen Cabinetry", material: "Solid Wood", unit: "ft", lowPrice: 240, highPrice: 420, source: "Renotalk 2025 (solid wood cabinets, SGD 240–420 per linear ft)", updatedAt: new Date() },
+  { category: "Kitchen Cabinetry", material: "Plywood", unit: "ft", lowPrice: 96, highPrice: 180, source: "Renotalk 2025 (plywood carcass with laminate, SGD 96–180 per linear ft)", updatedAt: new Date() },
+  { category: "Kitchen Cabinetry", material: "Engineered Wood", unit: "ft", lowPrice: 144, highPrice: 264, source: "Industry Average (engineered wood cabinets, SGD 144–264 per linear ft)", updatedAt: new Date() },
+  { category: "Kitchen Cabinetry", material: "Glass", unit: "ft", lowPrice: 180, highPrice: 360, source: "Industry Average (glass-front cabinets, SGD 180–360 per linear ft)", updatedAt: new Date() },
+  { category: "Kitchen Cabinetry", material: "Acrylic", unit: "ft", lowPrice: 156, highPrice: 300, source: "Industry Average (acrylic finish cabinets, SGD 156–300 per linear ft)", updatedAt: new Date() },
   
   // Kitchen Sink & Tap (per set)
   // Sources: Qanvast 2025 + local retail price checks (Ikea, HomeFix, Mega Discount Store)
@@ -58,9 +58,9 @@ export const STATIC_PRICES: MarketPrice[] = [
   // ===== BATHROOM =====
   // Bathroom Vanity (per unit) - includes countertop and cabinet
   // Sources: Renotalk 2025 + Design Authority 2026
-  { category: "Bathroom Vanity", material: "Laminate", unit: "unit", lowPrice: 600, highPrice: 1500, source: "Renotalk 2025 (basic laminate vanity 600–800mm width)", updatedAt: new Date() },
-  { category: "Bathroom Vanity", material: "Solid Wood", unit: "unit", lowPrice: 1200, highPrice: 3000, source: "Renotalk 2025 (solid wood vanity, custom size)", updatedAt: new Date() },
-  { category: "Bathroom Vanity", material: "Acrylic", unit: "unit", lowPrice: 800, highPrice: 2000, source: "Industry Average (acrylic finish vanity)", updatedAt: new Date() },
+  { category: "Bathroom Vanity", material: "Laminate", unit: "unit", lowPrice: 800, highPrice: 2000, source: "Renotalk 2025 (basic laminate vanity 800–2000mm width, SGD 800–2000)", updatedAt: new Date() },
+  { category: "Bathroom Vanity", material: "Solid Wood", unit: "unit", lowPrice: 1600, highPrice: 4000, source: "Renotalk 2025 (solid wood vanity, custom size, SGD 1600–4000)", updatedAt: new Date() },
+  { category: "Bathroom Vanity", material: "Acrylic", unit: "unit", lowPrice: 1067, highPrice: 2667, source: "Industry Average (acrylic finish vanity, SGD 1067–2667)", updatedAt: new Date() },
   
   // Bathroom Tiling (per sq ft)
   // Sources: Renotalk 2025, Design Authority 2026
@@ -82,7 +82,7 @@ export const STATIC_PRICES: MarketPrice[] = [
   // ===== FLOORING =====
   // Flooring (per sq ft)
   // Sources: Qanvast 2025, BCA 2024, Design Authority 2026
-  { category: "Flooring", material: "Vinyl", unit: "sq ft", lowPrice: 3, highPrice: 7, source: "Qanvast 2025 (vinyl plank/ sheet, SGD 3–7 per sq ft)", updatedAt: new Date() },
+  { category: "Flooring", material: "Vinyl", unit: "sq ft", lowPrice: 4, highPrice: 9, source: "Qanvast 2025 (vinyl plank/ sheet, SGD 4–9 per sq ft)", updatedAt: new Date() },
   { category: "Flooring", material: "Laminate", unit: "sq ft", lowPrice: 4, highPrice: 9, source: "Qanvast 2025 (laminate flooring, SGD 4–9 per sq ft)", updatedAt: new Date() },
   { category: "Flooring", material: "Engineered Wood", unit: "sq ft", lowPrice: 6, highPrice: 12, source: "BCA 2024 (engineered wood flooring, SGD 6–12 per sq ft)", updatedAt: new Date() },
   { category: "Flooring", material: "Ceramic Tile", unit: "sq ft", lowPrice: 5, highPrice: 10, source: "Renotalk 2025 (ceramic floor tiles)", updatedAt: new Date() },
@@ -100,23 +100,23 @@ export const STATIC_PRICES: MarketPrice[] = [
   // Carpentry (per linear ft) - built-in wardrobes, TV consoles, etc.
   // Height: full-height assumed (floor-to-ceiling). Half-height ~60-70% of price.
   // Sources: Design Authority 2026, Renotalk 2025
-  { category: "Carpentry", material: "Plywood", unit: "ft", height: "full", lowPrice: 80, highPrice: 160, source: "Design Authority 2026 (plywood built-in carpentry, SGD 80–160 per linear ft)", updatedAt: new Date() },
-  { category: "Carpentry", material: "Solid Wood", unit: "ft", height: "full", lowPrice: 150, highPrice: 300, source: "Design Authority 2026 (solid wood built-in, SGD 150–300 per linear ft)", updatedAt: new Date() },
-  { category: "Carpentry", material: "Engineered Wood", unit: "ft", height: "full", lowPrice: 100, highPrice: 200, source: "Industry Average (engineered wood carpentry)", updatedAt: new Date() },
-  { category: "Carpentry", material: "Melamine", unit: "ft", height: "full", lowPrice: 70, highPrice: 140, source: "Industry Average (melamine finish)", updatedAt: new Date() },
-  { category: "Carpentry", material: "MDF", unit: "ft", height: "full", lowPrice: 60, highPrice: 130, source: "Industry Average (MDF built-in)", updatedAt: new Date() },
+  { category: "Carpentry", material: "Plywood", unit: "ft", height: "full", lowPrice: 100, highPrice: 180, source: "Design Authority 2026 (plywood built-in carpentry, SGD 100–180 per linear ft)", updatedAt: new Date() },
+  { category: "Carpentry", material: "Solid Wood", unit: "ft", height: "full", lowPrice: 180, highPrice: 360, source: "Design Authority 2026 (solid wood built-in, SGD 180–360 per linear ft)", updatedAt: new Date() },
+  { category: "Carpentry", material: "Engineered Wood", unit: "ft", height: "full", lowPrice: 120, highPrice: 240, source: "Industry Average (engineered wood carpentry, SGD 120–240 per linear ft)", updatedAt: new Date() },
+  { category: "Carpentry", material: "Melamine", unit: "ft", height: "full", lowPrice: 84, highPrice: 168, source: "Industry Average (melamine finish, SGD 84–168 per linear ft)", updatedAt: new Date() },
+  { category: "Carpentry", material: "MDF", unit: "ft", height: "full", lowPrice: 72, highPrice: 156, source: "Industry Average (MDF built-in, SGD 72–156 per linear ft)", updatedAt: new Date() },
   
   // ===== ELECTRICAL =====
   // Electrical Points (per piece)
   // Sources: BCA 2024, fixfirst.sg ($80–150 per power point)
-  { category: "Electrical Points", material: "Power Point", unit: "piece", lowPrice: 80, highPrice: 150, source: "fixfirst.sg 2026 (13A power point, SGD 80–150)", updatedAt: new Date() },
-  { category: "Electrical Points", material: "Lighting Point", unit: "piece", lowPrice: 50, highPrice: 100, source: "BCA 2024 (lighting point)", updatedAt: new Date() },
-  { category: "Electrical Points", material: "Water Heater Point", unit: "piece", lowPrice: 120, highPrice: 200, source: "fixfirst.sg 2026 (water heater with isolator)", updatedAt: new Date() },
+  { category: "Electrical Points", material: "Power Point", unit: "piece", lowPrice: 60, highPrice: 130, source: "YongJin Electrical 2025 (13A power point, SGD 60–130)", updatedAt: new Date() },
+  { category: "Electrical Points", material: "Lighting Point", unit: "piece", lowPrice: 40, highPrice: 80, source: "BCA 2024 (lighting point, SGD 40–80)", updatedAt: new Date() },
+  { category: "Electrical Points", material: "Water Heater Point", unit: "piece", lowPrice: 100, highPrice: 180, source: "fixfirst.sg 2026 (water heater with isolator, SGD 100–180)", updatedAt: new Date() },
   
   // ===== PAINTING =====
   // Painting (per sq ft)
   // Sources: BCA 2024, Design Authority 2026
-  { category: "Painting", material: "Paint", unit: "sq ft", lowPrice: 1.5, highPrice: 3, source: "BCA 2024 (emulsion paint, 2 coats, SGD 1.5–3 per sq ft)", updatedAt: new Date() },
+  { category: "Painting", material: "Paint", unit: "sq ft", lowPrice: 2, highPrice: 4, source: "Gumi E&C 2025 (emulsion paint, 2 coats, SGD 2–4 per sq ft)", updatedAt: new Date() },
   { category: "Painting", material: "Wallpaper", unit: "sq ft", lowPrice: 4, highPrice: 10, source: "Qanvast 2025 (wallpaper installation, SGD 4–10 per sq ft)", updatedAt: new Date() },
   
   // ===== PLUMBING =====
@@ -219,22 +219,22 @@ export class MarketPriceService {
       // Kitchen
       "Kitchen": 20000,
       "Kitchen Countertop": 300,   // midpoint SGD 200–400 per linear ft
-      "Kitchen Cabinetry": 140,    // midpoint SGD 100–180 per linear ft
+      "Kitchen Cabinetry": 170,    // midpoint SGD 120–220 per linear ft
       "Kitchen Sink & Tap": 425,   // midpoint SGD 250–600 (stainless steel)
       "Kitchen Hob & Hood": 1600,  // midpoint SGD 600–1500 (standard)
       "Kitchen Appliances": 1250,  // midpoint SGD 500–2000 (oven)
       // Bathroom
       "Bathroom": 8000,
-      "Bathroom Vanity": 1050,     // midpoint SGD 600–1500 (laminate)
+      "Bathroom Vanity": 1400,     // midpoint SGD 800–2000 (laminate)
       "Bathroom Tiling": 10,       // midpoint SGD 5–15 (ceramic–porcelain)
       "Bathroom Fixtures": 525,    // midpoint SGD 250–800 (toilet)
       "Bathroom Shower Screen": 800, // midpoint SGD 600–1500 (frameless)
       // General
-      "Flooring": 7,              // midpoint SGD 3–12 (vinyl–engineered wood)
+      "Flooring": 6.5,              // midpoint SGD 4–9 (vinyl)
       "Lighting": 140,            // midpoint SGD 80–300 (LED)
-      "Carpentry": 120,           // midpoint SGD 80–160 per linear ft (plywood)
-      "Electrical Points": 115,    // midpoint SGD 80–150 (power point)
-      "Painting": 2.25,           // midpoint SGD 1.5–3 per sq ft
+      "Carpentry": 140,           // midpoint SGD 100–180 per linear ft (plywood)
+      "Electrical Points": 95,    // midpoint SGD 60–130 (power point)
+      "Painting": 3,           // midpoint SGD 2–4 per sq ft
       "Plumbing": 185,            // midpoint SGD 120–250 (water point)
       "Windows & Doors": 1000,    // midpoint SGD 600–2000 (window)
       "HVAC": 2000,               // midpoint SGD 1500–4000 (air‑con unit)

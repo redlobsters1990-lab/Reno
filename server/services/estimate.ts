@@ -45,6 +45,37 @@ const RULES: EstimateRule[] = [
     electricalMultipliers: { basic: 1.3, moderate: 1.7, full: 2.2 },
     paintingMultiplier: 1.5,
   },
+  // HDB Resale - higher base cost for hacking, rewiring, waterproofing
+  {
+    propertyType: "HDB Resale",
+    styleTier: "budget",
+    basePerSqm: 540,  // +20% vs HDB BTO budget for hacking premium
+    kitchenMultiplier: 1.4,
+    bathroomPerUnit: 10000,
+    carpentryMultipliers: { low: 1.1, medium: 1.5, high: 2.0 },
+    electricalMultipliers: { basic: 1.1, moderate: 1.5, full: 2.0 },
+    paintingMultiplier: 1.1,
+  },
+  {
+    propertyType: "HDB Resale",
+    styleTier: "standard",
+    basePerSqm: 780,  // +20% vs HDB BTO standard
+    kitchenMultiplier: 1.8,
+    bathroomPerUnit: 14000,
+    carpentryMultipliers: { low: 1.4, medium: 1.9, high: 2.5 },
+    electricalMultipliers: { basic: 1.3, moderate: 1.7, full: 2.2 },
+    paintingMultiplier: 1.4,
+  },
+  {
+    propertyType: "HDB Resale",
+    styleTier: "premium",
+    basePerSqm: 1080, // +20% vs HDB BTO premium
+    kitchenMultiplier: 2.4,
+    bathroomPerUnit: 22000,
+    carpentryMultipliers: { low: 1.7, medium: 2.3, high: 3.3 },
+    electricalMultipliers: { basic: 1.5, moderate: 2.0, full: 2.6 },
+    paintingMultiplier: 1.7,
+  },
   {
     propertyType: "Condo",
     styleTier: "standard",
@@ -223,7 +254,17 @@ export class EstimateService {
       // Enrich each component with unitCost (looked up if needed) and total
       for (const comp of validated.components) {
         console.log('Component:', comp);
-        const unitCost = comp.unitCost || await this.lookupMarketPrice(comp.category, comp.material, comp.unit);
+        let unitCost = comp.unitCost;
+        if (!unitCost) {
+          try {
+            unitCost = await this.lookupMarketPrice(comp.category, comp.material, comp.unit);
+            console.log('Looked up unit cost:', unitCost, 'for', comp.category, comp.material, comp.unit);
+          } catch (lookupError) {
+            console.error('Market price lookup failed:', lookupError);
+            // Fallback to a safe default (e.g., 0) to avoid breaking the estimate
+            unitCost = 0;
+          }
+        }
         const total = unitCost * comp.quantity;
         enrichedComponents.push({
           category: comp.category,
@@ -244,17 +285,31 @@ export class EstimateService {
       const rule = findRule(validated.propertyType, validated.styleTier);
       baseCost = rule.basePerSqm * DEFAULT_AREA_SQM;
       
+      let adjustments = 0;
+      
       if (validated.kitchenRedo) {
-        baseCost *= rule.kitchenMultiplier;
+        // Kitchen redo adds percentage of base cost
+        adjustments += baseCost * (rule.kitchenMultiplier - 1);
       }
       
-      baseCost += validated.bathroomCount * rule.bathroomPerUnit;
-      baseCost *= rule.carpentryMultipliers[validated.carpentryLevel];
-      baseCost *= rule.electricalMultipliers[validated.electricalScope];
+      // Bathrooms add fixed amount per unit
+      adjustments += validated.bathroomCount * rule.bathroomPerUnit;
+      
+      // Carpentry: assume 30% of base cost is carpentry-related
+      const carpentryBase = baseCost * 0.3;
+      adjustments += carpentryBase * (rule.carpentryMultipliers[validated.carpentryLevel] - 1);
+      
+      // Electrical: assume 10% of base cost is electrical
+      const electricalBase = baseCost * 0.1;
+      adjustments += electricalBase * (rule.electricalMultipliers[validated.electricalScope] - 1);
       
       if (validated.painting) {
-        baseCost *= rule.paintingMultiplier;
+        // Painting: assume 15% of base cost is painting
+        const paintingBase = baseCost * 0.15;
+        adjustments += paintingBase * (rule.paintingMultiplier - 1);
       }
+      
+      baseCost += adjustments;
       
       if (validated.budget && baseCost > validated.budget) {
         baseCost = validated.budget * 0.9;
