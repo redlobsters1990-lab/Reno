@@ -5,12 +5,15 @@ import { EstimateService } from "@/server/services/estimate";
 export async function POST(request: NextRequest) {
   try {
     console.log("Enhanced estimate API: checking auth");
+    const cookies = request.cookies.getAll();
+    console.log("Request cookies:", cookies.map(c => ({ name: c.name, value: c.value.substring(0, 10) + '...' })));
+    
     const session = await auth();
     console.log("Session:", session);
     
     if (!session?.user?.id) {
       console.log("Unauthorized: no session.user.id");
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized", details: "No valid session" }, { status: 401 });
     }
     
     const body = await request.json();

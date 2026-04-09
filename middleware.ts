@@ -24,11 +24,14 @@ export default async function middleware(request: NextRequest) {
       pathname.startsWith("/api/uploads")) {
     
     // Simple auth check - look for any auth cookie
-    const hasAuthCookie = Array.from(request.cookies.getAll()).some(
+    const cookies = Array.from(request.cookies.getAll());
+    console.log(`Middleware: Checking ${pathname}, cookies:`, cookies.map(c => c.name));
+    const hasAuthCookie = cookies.some(
       cookie => cookie.name.includes("next-auth") || cookie.name === "auth-token"
     );
     
     if (!hasAuthCookie) {
+      console.log(`Middleware: No auth cookie for ${pathname}`);
       // For API routes, return 401 JSON instead of redirect
       if (pathname.startsWith("/api/")) {
         return NextResponse.json(
@@ -41,6 +44,7 @@ export default async function middleware(request: NextRequest) {
       signInUrl.searchParams.set("callbackUrl", encodeURI(request.url));
       return NextResponse.redirect(signInUrl);
     }
+    console.log(`Middleware: Auth cookie found for ${pathname}`);
   }
   
   return NextResponse.next();
