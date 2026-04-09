@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/server/auth";
+import { verifyUserAuth } from "@/lib/auth-utils";
+import { prisma } from "@/server/db";
 import { EstimateService } from "@/server/services/estimate";
 
 export async function GET(
@@ -7,14 +8,13 @@ export async function GET(
   { params }: { params: Promise<{ projectId: string }> },
 ) {
   try {
-    const session = await auth();
-    
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const { userId, response: authResponse } = await verifyUserAuth(request, prisma);
+    if (authResponse) {
+      return authResponse;
     }
     
     const { projectId } = await params;
-    const estimates = await EstimateService.listEstimates(projectId, session.user.id);
+    const estimates = await EstimateService.listEstimates(projectId, userId);
     
     return NextResponse.json({ estimates });
   } catch (error) {
