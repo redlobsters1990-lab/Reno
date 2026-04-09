@@ -188,10 +188,10 @@ const categoryMaterialMapBase = {
   "Smart Home": ["Smart Switch", "Sensor", "Smart Lock"] as const,
 } as const;
 
-export const categoryMaterialMap = {
+export const categoryMaterialMap = (() => ({
   ...categoryMaterialMapBase,
   "Other": materialOptions,
-} as const;
+} as const))();
 
 export const categoryDefaultUnitMap = {
   "Kitchen Countertop": "ft",
@@ -240,10 +240,10 @@ const categoryUnitMapBase = {
   "Smart Home": ["piece", "each"] as const,
 } as const;
 
-export const categoryUnitMap = {
+export const categoryUnitMap = (() => ({
   ...categoryUnitMapBase,
   "Other": unitOptions,
-} as const;
+} as const))();
 
 export const fileTypes = ["floor_plan", "quote", "inspiration", "other"] as const;
 
