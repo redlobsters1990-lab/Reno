@@ -22,6 +22,7 @@ const STATIC_PRICES: MarketPrice[] = [
   { category: "Kitchen Countertop", material: "Glass", unit: "ft", lowPrice: 800, highPrice: 1500, source: "Industry Average", updatedAt: new Date() },
   { category: "Kitchen Countertop", material: "Acrylic", unit: "ft", lowPrice: 300, highPrice: 600, source: "Industry Average", updatedAt: new Date() },
   { category: "Kitchen Countertop", material: "Stone", unit: "ft", lowPrice: 600, highPrice: 1200, source: "Industry Average", updatedAt: new Date() },
+  { category: "Kitchen Countertop", material: "Sintered Stone", unit: "ft", lowPrice: 400, highPrice: 800, source: "Industry Average", updatedAt: new Date() },
   
   // Kitchen Cabinetry (per ft)
   { category: "Kitchen Cabinetry", material: "Laminate", unit: "ft", lowPrice: 400, highPrice: 800, source: "Renotalk 2025", updatedAt: new Date() },

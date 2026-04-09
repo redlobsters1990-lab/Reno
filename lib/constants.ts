@@ -52,6 +52,7 @@ export const materialOptions = [
   "Glass",
   "Acrylic",
   "Stone",
+  "Sintered Stone",
   // Flooring
   "Vinyl",
   "Bamboo",
@@ -159,7 +160,7 @@ export const unitOptions = [
 ] as const;
 
 const categoryMaterialMapBase = {
-  "Kitchen Countertop": ["Laminate", "Quartz", "Marble", "Granite", "Solid Wood", "Engineered Wood", "Concrete", "Glass", "Acrylic", "Stone"] as const,
+  "Kitchen Countertop": ["Laminate", "Quartz", "Marble", "Granite", "Solid Wood", "Engineered Wood", "Concrete", "Glass", "Acrylic", "Stone", "Sintered Stone"] as const,
   "Kitchen Cabinetry": ["Laminate", "Solid Wood", "Plywood", "Engineered Wood", "Glass", "Acrylic"] as const,
   "Kitchen Sink & Tap": ["Stainless Steel", "Ceramic", "Granite", "Stone"] as const,
   "Kitchen Hob & Hood": ["Standard", "Premium", "Stainless Steel", "Glass"] as const,
