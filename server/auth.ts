@@ -15,7 +15,7 @@ const authOptions = {
   // CSRF configuration
   cookies: {
     sessionToken: {
-      name: `next-auth.session-token`,
+      name: `authjs.session-token`,
       options: {
         httpOnly: true,
         sameSite: "lax",
@@ -24,7 +24,7 @@ const authOptions = {
       },
     },
     csrfToken: {
-      name: `next-auth.csrf-token`,
+      name: `authjs.csrf-token`,
       options: {
         httpOnly: true,
         sameSite: "lax",

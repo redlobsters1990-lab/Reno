@@ -27,7 +27,7 @@ export default async function middleware(request: NextRequest) {
     const cookies = Array.from(request.cookies.getAll());
     console.log(`Middleware: Checking ${pathname}, cookies:`, cookies.map(c => c.name));
     const hasAuthCookie = cookies.some(
-      cookie => cookie.name.includes("next-auth") || cookie.name === "auth-token"
+      cookie => cookie.name.includes("authjs") || cookie.name === "auth-token"
     );
     
     if (!hasAuthCookie) {
