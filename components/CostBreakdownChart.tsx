@@ -69,7 +69,7 @@ export function CostBreakdownChart({ components }: { components: Component[] }) 
         <PieChart style={{ marginRight: "10px", color: "#a78bfa" }} />
         <h3 style={{ fontSize: "18px", fontWeight: 600 }}>Cost Breakdown</h3>
         <div style={{ marginLeft: "auto", fontSize: "14px", color: "#94a3b8" }}>
-          Total: <span style={{ color: "white", fontWeight: 500 }}>${total.toLocaleString("en‑SG")}</span>
+          Total: <span style={{ color: "white", fontWeight: 500 }}>${total.toLocaleString("en-SG")}</span>
         </div>
       </div>
 
@@ -87,7 +87,7 @@ export function CostBreakdownChart({ components }: { components: Component[] }) 
                 <span style={{ fontSize: "14px", fontWeight: 500 }}>{item.category}</span>
               </div>
               <div style={{ fontSize: "14px", color: "white", fontWeight: 500 }}>
-                ${item.value.toLocaleString("en‑SG")}
+                ${item.value.toLocaleString("en-SG")}
                 <span style={{ fontSize: "12px", color: "#94a3b8", marginLeft: "8px" }}>
                   ({item.percentage.toFixed(1)}%)
                 </span>
@@ -128,7 +128,7 @@ export function CostBreakdownChart({ components }: { components: Component[] }) 
           }}>
             <div style={{ fontSize: "12px", color: "#94a3b8", marginBottom: "4px" }}>{item.category}</div>
             <div style={{ fontSize: "16px", fontWeight: 600, color: "white" }}>
-              ${item.value.toLocaleString("en‑SG")}
+              ${item.value.toLocaleString("en-SG")}
             </div>
             <div style={{ fontSize: "11px", color: "#94a3b8", marginTop: "4px" }}>
               {item.percentage.toFixed(1)}% of total
