@@ -216,7 +216,7 @@ export class EstimateService {
     
     // Calculate base cost from components if provided, otherwise fallback to rule-based
     let baseCost = 0;
-    let enrichedComponents: Array<{category: string; material: string; quantity: number; unit: string; unitCost: number; total: number; notes?: string}> = [];
+    let enrichedComponents: Array<{category: string; material: string; quantity: number; unit: string; unitCost: number; total: number; notes?: string; height?: string}> = [];
     if (validated.components && validated.components.length > 0) {
       // Enrich each component with unitCost (looked up if needed) and total
       for (const comp of validated.components) {
@@ -229,6 +229,7 @@ export class EstimateService {
           unit: comp.unit,
           unitCost,
           total,
+          height: comp.height,
           notes: comp.notes,
         });
         baseCost += total;
@@ -329,6 +330,7 @@ export class EstimateService {
         unit: comp.unit,
         unitCost: comp.unitCost,
         totalCost: comp.total,
+        height: comp.height || null,
         notes: comp.notes || null,
       }));
       

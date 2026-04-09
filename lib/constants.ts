@@ -165,6 +165,16 @@ export const unitOptions = [
   "roll", "sheet", "panel", "length", "unit",
 ] as const;
 
+export const heightOptions = ["full", "half", "pantry", "tvconsole", "custom"] as const;
+
+export const heightMultipliers: Record<(typeof heightOptions)[number], number> = {
+  full: 1.0,
+  half: 0.65,
+  pantry: 0.85,
+  tvconsole: 0.4,
+  custom: 1.0, // user must adjust unit cost manually
+};
+
 const categoryMaterialMapBase = {
   "Kitchen Countertop": ["Laminate", "Quartz", "Marble", "Granite", "Solid Wood", "Engineered Wood", "Concrete", "Glass", "Acrylic", "Stone", "Sintered Stone"] as const,
   "Kitchen Cabinetry": ["Laminate", "Solid Wood", "Plywood", "Engineered Wood", "Glass", "Acrylic"] as const,
@@ -181,7 +191,7 @@ const categoryMaterialMapBase = {
   "Electrical Points": ["Power Point", "Lighting Point", "Water Heater Point"] as const,
   "Painting": ["Paint", "Wallpaper"] as const,
   "Plumbing": ["Water Point", "Sanitary Point", "Drain Point"] as const,
-  "Windows & Doors": ["Window", "Door", "Sliding Door"] as const,
+  "Windows & Doors": ["Window", "Door", "Sliding Door", "Grille"] as const,
   "HVAC": ["Air‑Con Unit", "Fan Coil", "Condenser"] as const,
   "Wall Finishes": ["Feature Wall", "Cladding", "Wall Panel"] as const,
   "Built‑In Furniture": ["Wardrobe", "TV Console", "Shoe Cabinet"] as const,

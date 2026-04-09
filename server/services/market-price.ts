@@ -131,6 +131,7 @@ export const STATIC_PRICES: MarketPrice[] = [
   { category: "Windows & Doors", material: "Window", unit: "piece", lowPrice: 600, highPrice: 2000, source: "Industry Average (aluminum window, SGD 600–2000 per piece)", updatedAt: new Date() },
   { category: "Windows & Doors", material: "Door", unit: "piece", lowPrice: 400, highPrice: 1500, source: "Industry Average (solid core door, SGD 400–1500)", updatedAt: new Date() },
   { category: "Windows & Doors", material: "Sliding Door", unit: "piece", lowPrice: 800, highPrice: 3000, source: "Industry Average (glass sliding door)", updatedAt: new Date() },
+  { category: "Windows & Doors", material: "Grille", unit: "piece", lowPrice: 150, highPrice: 400, source: "Industry Average (window security grille)", updatedAt: new Date() },
   
   // ===== HVAC =====
   // HVAC (per unit)

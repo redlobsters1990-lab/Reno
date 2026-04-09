@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { propertyTypes, stylePreferences, estimateCategories, materialOptions, unitOptions } from "@/lib/constants";
+import { propertyTypes, stylePreferences, estimateCategories, materialOptions, unitOptions, heightOptions } from "@/lib/constants";
 
 export const signUpSchema = z.object({
   name: z.string()
@@ -81,6 +81,7 @@ export const estimateComponentSchema = z.object({
   quantity: z.coerce.number().positive(),
   unit: z.enum(unitOptions),
   unitCost: z.coerce.number().min(0).optional(),
+  height: z.enum(heightOptions).optional().default("full"),
   notes: z.string().max(500).optional().nullable(),
 });
 
