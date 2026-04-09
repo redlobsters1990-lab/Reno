@@ -489,3 +489,19 @@ model Quote {
 
   @@index([projectId])
 }
+
+// Cached market rates from Brave API searches
+model MarketRateCache {
+  id           String   @id @default(cuid())
+  propertyType String   @unique
+  low          Float
+  average      Float
+  high         Float
+  sources      Json     // Array of BraveSearchResult
+  confidence   Float    // 0-1 confidence score
+  retrievedAt  DateTime
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([propertyType, retrievedAt])
+}

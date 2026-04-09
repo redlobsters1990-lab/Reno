@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/server/db";
 import { extractQuoteDocument } from "@/server/services/quote-parser";
+import { getCachedMarketRates, isBraveApiAvailable } from "@/server/services/brave-api";
+import { validateAllLineItems } from "@/server/services/line-item-validator";
 
 export async function POST(
   request: NextRequest,
@@ -27,8 +29,8 @@ export async function POST(
     const effectiveAmount = parsedDoc.totalAmount || quote.totalAmount;
     // Use dedicated propertySize field first, then fall back to notes regex for backwards compat
     const sqft = parsePropertySizeField(quote.project) ?? parsePropertySizeFromNotes(quote.project.notes);
-    const marketRates = getMarketRates(quote.project.propertyType, sqft);
-    const analysis = analyzeQuoteDocument({ quoteAmount: effectiveAmount, marketRates, parsedDoc, propertyType: quote.project.propertyType });
+    const marketRates = await getMarketRates(quote.project.propertyType, sqft);
+    const analysis = await analyzeQuoteDocument({ quoteAmount: effectiveAmount, marketRates, parsedDoc, propertyType: quote.project.propertyType });
 
     await prisma.contractorQuote.update({
       where: { id: quoteId },
@@ -90,16 +92,63 @@ const SEVERE_ISSUES_HIGH_RISK     = 3; // ≥ this many severe issues → high r
 const MAX_EXCLUSIONS_FOR_LOW_RISK = 1; // ≤ this many exclusions allowed for low risk
 const MIN_LINE_ITEMS_FOR_SCOPE    = 3; // < this many items → scope too vague
 
-function getMarketRates(propertyType: string, sqft: number | null) {
-  const rate = MARKET_RATE_TABLE[propertyType] ?? MARKET_RATE_DEFAULT;
-  const size = sqft ?? DEFAULT_PROPERTY_SIZE_SQFT;
-  return { low: Math.round(rate.low * size), average: Math.round(rate.avg * size), high: Math.round(rate.high * size) };
+async function getMarketRates(propertyType: string, sqft: number | null) {
+  // Try to get live market rates from Brave API (cached)
+  try {
+    const braveRates = await getCachedMarketRates(propertyType);
+    const size = sqft ?? DEFAULT_PROPERTY_SIZE_SQFT;
+    return { 
+      low: Math.round(braveRates.low * size), 
+      average: Math.round(braveRates.average * size), 
+      high: Math.round(braveRates.high * size),
+      source: "brave",
+      confidence: braveRates.confidence,
+      sources: braveRates.sources
+    };
+  } catch (error) {
+    // Fall back to static table
+    console.warn("Brave API unavailable, using static market rates:", error);
+    const rate = MARKET_RATE_TABLE[propertyType] ?? MARKET_RATE_DEFAULT;
+    const size = sqft ?? DEFAULT_PROPERTY_SIZE_SQFT;
+    return { 
+      low: Math.round(rate.low * size), 
+      average: Math.round(rate.avg * size), 
+      high: Math.round(rate.high * size),
+      source: "static",
+      confidence: 0.5,
+      sources: []
+    };
+  }
 }
 
-function analyzeQuoteDocument({ quoteAmount, marketRates, parsedDoc, propertyType }: any) {
+async function analyzeQuoteDocument({ quoteAmount, marketRates, parsedDoc, propertyType }: any) {
   const redFlags: string[] = [...parsedDoc.warnings];
   const recommendations: string[] = [];
   const strengths: string[] = [];
+  
+  // Line‑item validation against market‑price database
+  let lineItemValidation = null;
+  if (parsedDoc.lineItems.length > 0) {
+    try {
+      lineItemValidation = await validateAllLineItems(parsedDoc.lineItems);
+      
+      // Add validation insights to recommendations and red flags
+      if (lineItemValidation.redFlags.length > 0) {
+        redFlags.push(...lineItemValidation.redFlags);
+      }
+      if (lineItemValidation.recommendations.length > 0) {
+        recommendations.push(...lineItemValidation.recommendations);
+      }
+      
+      // Add strength if most items are fair
+      if (lineItemValidation.fairItems > 0 && lineItemValidation.overpricedItems === 0) {
+        strengths.push(`${lineItemValidation.fairItems} line item(s) validated as fairly priced against market rates.`);
+      }
+    } catch (error) {
+      console.warn("Line‑item validation failed:", error);
+      // Continue without validation results
+    }
+  }
 
   if (parsedDoc.documentQuality.hasItemization) strengths.push(`Quote includes ${parsedDoc.lineItems.length} identifiable line items.`);
   if (parsedDoc.documentQuality.hasPaymentTerms) strengths.push("Payment terms were detected in the document.");
@@ -256,9 +305,13 @@ function analyzeQuoteDocument({ quoteAmount, marketRates, parsedDoc, propertyTyp
       marketLow: marketRates.low,
       marketAverage: marketRates.average,
       marketHigh: marketRates.high,
+      source: marketRates.source || "static",
+      confidence: marketRates.confidence || 0.5,
+      sources: marketRates.sources || [],
     },
     missingInformation,
-    disclaimer: "This analysis is based on public market references and total amount comparison. It does not validate individual line-item prices against current market rates. Actual renovation prices may vary based on material brand, workmanship, site condition, and contractor scope. Validate with contractors before commitment.",
+    lineItemValidation,
+    disclaimer: "This analysis validates total amount against market ranges and attempts to validate individual line items against Singapore 2025‑2026 renovation rates. Line‑item validation is based on keyword inference and may have limited accuracy. Actual prices may vary based on material brand, workmanship, site condition, and contractor scope. Validate with contractors before commitment.",
   };
 }
 

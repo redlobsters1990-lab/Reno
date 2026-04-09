@@ -30,6 +30,34 @@ interface QuoteData {
     redFlags: string[];
     recommendations: string[];
     missingInformation?: string[];
+    lineItemValidation?: {
+      validatedItems?: Array<{
+        originalDescription: string;
+        quotedAmount: number | null;
+        inferredCategory?: string;
+        inferredMaterial?: string;
+        inferredQuantity?: number;
+        inferredUnit?: string;
+        marketPricePerUnit?: number;
+        expectedAmount?: number;
+        priceDifference?: number;
+        priceRatio?: number;
+        assessment: "fair" | "overpriced" | "underpriced" | "unknown" | "invalid";
+        confidence: number;
+        explanation: string;
+        matchedKeywords: string[];
+      }>;
+      totalQuoted?: number;
+      totalExpected?: number;
+      overallDifference?: number;
+      averagePriceRatio?: number;
+      overpricedItems?: number;
+      underpricedItems?: number;
+      fairItems?: number;
+      unknownItems?: number;
+      recommendations?: string[];
+      redFlags?: string[];
+    };
     decision?: {
       recommendation: string;
       riskLevel: "low" | "medium" | "high";
@@ -548,6 +576,102 @@ export function QuoteUpload({ projectId, onUploadComplete }: QuoteUploadProps) {
                       <ul style={{ margin: 0, paddingLeft: "16px", color: "#94a3b8", fontSize: "14px" }}>
                         {quote.analysis.missingInformation.map((item, i) => <li key={i}>{item}</li>)}
                       </ul>
+                    </div>
+                  )}
+                  
+                  {/* Line‑item validation results */}
+                  {quote.analysis.lineItemValidation && (
+                    <div style={{ marginBottom: "12px" }}>
+                      <p style={{ fontSize: "12px", fontWeight: 600, color: "#8b5cf6", marginBottom: "8px" }}>Line‑Item Price Validation</p>
+                      
+                      {/* Summary metrics */}
+                      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "8px", marginBottom: "12px" }}>
+                        <div style={{ padding: "8px", borderRadius: "8px", background: "rgba(34,197,94,0.1)", border: "1px solid rgba(34,197,94,0.2)" }}>
+                          <div style={{ fontSize: "20px", fontWeight: 700, color: "#4ade80", textAlign: "center" }}>
+                            {quote.analysis.lineItemValidation.fairItems || 0}
+                          </div>
+                          <div style={{ fontSize: "11px", color: "#94a3b8", textAlign: "center" }}>Fair</div>
+                        </div>
+                        <div style={{ padding: "8px", borderRadius: "8px", background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.2)" }}>
+                          <div style={{ fontSize: "20px", fontWeight: 700, color: "#f87171", textAlign: "center" }}>
+                            {quote.analysis.lineItemValidation.overpricedItems || 0}
+                          </div>
+                          <div style={{ fontSize: "11px", color: "#94a3b8", textAlign: "center" }}>Overpriced</div>
+                        </div>
+                        <div style={{ padding: "8px", borderRadius: "8px", background: "rgba(245,158,11,0.1)", border: "1px solid rgba(245,158,11,0.2)" }}>
+                          <div style={{ fontSize: "20px", fontWeight: 700, color: "#fbbf24", textAlign: "center" }}>
+                            {quote.analysis.lineItemValidation.underpricedItems || 0}
+                          </div>
+                          <div style={{ fontSize: "11px", color: "#94a3b8", textAlign: "center" }}>Underpriced</div>
+                        </div>
+                        <div style={{ padding: "8px", borderRadius: "8px", background: "rgba(148,163,184,0.1)", border: "1px solid rgba(148,163,184,0.2)" }}>
+                          <div style={{ fontSize: "20px", fontWeight: 700, color: "#94a3b8", textAlign: "center" }}>
+                            {quote.analysis.lineItemValidation.unknownItems || 0}
+                          </div>
+                          <div style={{ fontSize: "11px", color: "#94a3b8", textAlign: "center" }}>Unknown</div>
+                        </div>
+                      </div>
+                      
+                      {/* Overall summary */}
+                      {quote.analysis.lineItemValidation.totalQuoted && quote.analysis.lineItemValidation.totalExpected && (
+                        <div style={{ marginBottom: "12px", padding: "10px", borderRadius: "8px", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
+                            <span style={{ fontSize: "13px", color: "#cbd5e1" }}>Total quoted:</span>
+                            <span style={{ fontSize: "13px", fontWeight: 600, color: "white" }}>SGD {quote.analysis.lineItemValidation.totalQuoted.toLocaleString("en-SG")}</span>
+                          </div>
+                          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
+                            <span style={{ fontSize: "13px", color: "#cbd5e1" }}>Expected market total:</span>
+                            <span style={{ fontSize: "13px", fontWeight: 600, color: "white" }}>SGD {quote.analysis.lineItemValidation.totalExpected.toLocaleString("en-SG")}</span>
+                          </div>
+                          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
+                            <span style={{ fontSize: "13px", color: "#cbd5e1" }}>Difference:</span>
+                            <span style={{ fontSize: "13px", fontWeight: 600, color: quote.analysis.lineItemValidation.overallDifference && quote.analysis.lineItemValidation.overallDifference > 0 ? "#f87171" : "#4ade80" }}>
+                              {quote.analysis.lineItemValidation.overallDifference && quote.analysis.lineItemValidation.overallDifference > 0 ? "+" : ""}
+                              SGD {quote.analysis.lineItemValidation.overallDifference ? Math.abs(quote.analysis.lineItemValidation.overallDifference).toLocaleString("en-SG") : "0"}
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* Detailed items (collapsible) */}
+                      {quote.analysis.lineItemValidation.validatedItems && quote.analysis.lineItemValidation.validatedItems.length > 0 && (
+                        <details style={{ marginBottom: "12px" }}>
+                          <summary style={{ fontSize: "13px", fontWeight: 600, color: "#8b5cf6", cursor: "pointer", padding: "8px", borderRadius: "6px", background: "rgba(139,92,246,0.05)", border: "1px solid rgba(139,92,246,0.2)" }}>
+                            View validated line items ({quote.analysis.lineItemValidation.validatedItems.length})
+                          </summary>
+                          <div style={{ marginTop: "8px", maxHeight: "300px", overflowY: "auto" }}>
+                            {quote.analysis.lineItemValidation.validatedItems.map((item, i) => (
+                              <div key={i} style={{ padding: "10px", borderRadius: "8px", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.04)", marginBottom: "8px" }}>
+                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "6px" }}>
+                                  <div style={{ fontSize: "13px", fontWeight: 600, color: "white", flex: 1 }}>{item.originalDescription}</div>
+                                  <div style={{ fontSize: "12px", fontWeight: 700, padding: "4px 8px", borderRadius: "999px", 
+                                    background: item.assessment === "fair" ? "rgba(34,197,94,0.15)" : 
+                                    item.assessment === "overpriced" ? "rgba(239,68,68,0.15)" : 
+                                    item.assessment === "underpriced" ? "rgba(245,158,11,0.15)" : 
+                                    "rgba(148,163,184,0.15)",
+                                    color: item.assessment === "fair" ? "#4ade80" : 
+                                    item.assessment === "overpriced" ? "#f87171" : 
+                                    item.assessment === "underpriced" ? "#fbbf24" : 
+                                    "#94a3b8"
+                                  }}>
+                                    {item.assessment.toUpperCase()}
+                                  </div>
+                                </div>
+                                <div style={{ fontSize: "12px", color: "#94a3b8", marginBottom: "4px" }}>{item.explanation}</div>
+                                {item.inferredCategory && (
+                                  <div style={{ fontSize: "11px", color: "#64748b" }}>
+                                    Inferred: {item.inferredCategory} • {item.inferredMaterial} • {item.inferredQuantity} {item.inferredUnit}
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </details>
+                      )}
+                      
+                      <div style={{ fontSize: "11px", color: "#64748b", marginTop: "8px", padding: "8px", borderRadius: "6px", background: "rgba(255,255,255,0.02)" }}>
+                        <strong>Note:</strong> Line‑item validation uses keyword inference to match descriptions to market categories. Accuracy depends on how clearly items are described in the quote.
+                      </div>
                     </div>
                   )}
                   
