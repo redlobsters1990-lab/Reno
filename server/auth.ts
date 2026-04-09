@@ -7,7 +7,7 @@ import { prisma } from "@/server/db";
 import { signInSchema, signUpSchema } from "@/lib/schemas";
 import { normalizeEmail, isValidEmail } from "@/lib/email-utils";
 
-export const { handlers, auth, signIn, signOut } = NextAuth({
+const authOptions = {
   debug: true,
   adapter: PrismaAdapter(prisma),
   secret: process.env.NEXTAUTH_SECRET,
@@ -111,7 +111,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       },
     }),
   ],
-});
+};
+export const { handlers, auth, signIn, signOut } = NextAuth(authOptions);
+export { authOptions };
 
 // Keep the signUpUser function for API routes
 export async function signUpUser(data: { name: string; email: string; password: string }) {
