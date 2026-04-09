@@ -18,7 +18,7 @@ import {
   ChefHat,
   Sofa,
 } from "lucide-react";
-import { estimateCategories, materialOptions, unitOptions } from "@/lib/constants";
+import { estimateCategories, materialOptions, unitOptions, categoryMaterialMap, categoryDefaultUnitMap, categoryUnitMap } from "@/lib/constants";
 
 type Component = {
   category: (typeof estimateCategories)[number];
@@ -59,12 +59,16 @@ export function EstimateWizard({ projectId, onComplete }: { projectId: string; o
   const [error, setError] = useState("");
 
   const addComponent = (roomIndex: number) => {
+    const defaultCategory = estimateCategories[0]; // Kitchen Countertop
+    const defaultMaterial = categoryMaterialMap[defaultCategory]?.[0] ?? materialOptions[0];
+    const defaultUnit = categoryDefaultUnitMap[defaultCategory] ?? unitOptions[0];
+    
     const updatedRooms = [...data.rooms];
     updatedRooms[roomIndex].components.push({
-      category: estimateCategories[0],
-      material: materialOptions[0],
+      category: defaultCategory,
+      material: defaultMaterial,
       quantity: 1,
-      unit: unitOptions[0],
+      unit: defaultUnit,
       unitCost: undefined,
       notes: "",
     });
@@ -79,10 +83,28 @@ export function EstimateWizard({ projectId, onComplete }: { projectId: string; o
 
   const updateComponent = (roomIndex: number, compIndex: number, field: keyof Component, value: any) => {
     const updatedRooms = [...data.rooms];
-    updatedRooms[roomIndex].components[compIndex] = {
-      ...updatedRooms[roomIndex].components[compIndex],
-      [field]: value,
-    };
+    const component = updatedRooms[roomIndex].components[compIndex];
+    
+    if (field === "category") {
+      // Get allowed materials for the new category
+      const allowedMaterials = categoryMaterialMap[value as keyof typeof categoryMaterialMap] ?? materialOptions;
+      // Keep current material if it's allowed, otherwise pick first allowed
+      const newMaterial = allowedMaterials.includes(component.material) ? component.material : allowedMaterials[0];
+      // Get default unit for this category
+      const defaultUnit = categoryDefaultUnitMap[value as keyof typeof categoryDefaultUnitMap] ?? unitOptions[0];
+      
+      updatedRooms[roomIndex].components[compIndex] = {
+        ...component,
+        category: value,
+        material: newMaterial,
+        unit: defaultUnit,
+      };
+    } else {
+      updatedRooms[roomIndex].components[compIndex] = {
+        ...component,
+        [field]: value,
+      };
+    }
     setData({ ...data, rooms: updatedRooms });
   };
 
@@ -380,7 +402,7 @@ export function EstimateWizard({ projectId, onComplete }: { projectId: string; o
                               fontSize: "13px",
                             }}
                           >
-                            {materialOptions.map(mat => <option key={mat} value={mat}>{mat}</option>)}
+                            {categoryMaterialMap[comp.category]?.map(mat => <option key={mat} value={mat}>{mat}</option>) ?? materialOptions.map(mat => <option key={mat} value={mat}>{mat}</option>)}
                           </select>
                           <input
                             type="number"
@@ -408,7 +430,7 @@ export function EstimateWizard({ projectId, onComplete }: { projectId: string; o
                               fontSize: "13px",
                             }}
                           >
-                            {unitOptions.map(u => <option key={u} value={u}>{u}</option>)}
+                            {categoryUnitMap[comp.category]?.map(u => <option key={u} value={u}>{u}</option>) ?? unitOptions.map(u => <option key={u} value={u}>{u}</option>)}
                           </select>
                           <input
                             type="number"
