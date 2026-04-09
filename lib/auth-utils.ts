@@ -64,17 +64,6 @@ export async function verifyUserAuth(request: NextRequest, prismaInstance?: any)
   userId: string;
   response?: NextResponse; // Only set if auth is invalid
 }> {
-  const userId = await getUserIdFromRequest(request);
-  
-  if (!userId) {
-    const response = NextResponse.json(
-      { error: "Authentication required" },
-      { status: 401 }
-    );
-    clearAllAuthCookies(response);
-    return { userId: "", response };
-  }
-  
   // Use provided prisma instance or import it
   let prisma;
   if (prismaInstance) {
@@ -85,19 +74,46 @@ export async function verifyUserAuth(request: NextRequest, prismaInstance?: any)
     prisma = importedPrisma;
   }
   
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { id: true },
-  });
+  // Try possible user IDs in order of preference
+  const possibleUserIds: string[] = [];
   
-  if (!user) {
-    const response = NextResponse.json(
-      { error: "Invalid authentication. Please sign in again." },
-      { status: 401 }
-    );
-    clearAllAuthCookies(response);
-    return { userId: "", response };
+  // 1. NextAuth session
+  try {
+    const session = await auth();
+    if (session?.user?.id) {
+      possibleUserIds.push(session.user.id);
+      console.log('Auth: trying session user ID:', session.user.id);
+    }
+  } catch (error) {
+    console.warn('Failed to get session from auth():', error);
   }
   
-  return { userId, response: undefined };
+  // 2. Legacy auth-token cookie
+  const cookieUserId = getUserIdFromCookie(request);
+  if (cookieUserId) {
+    possibleUserIds.push(cookieUserId);
+    console.log('Auth: trying cookie user ID:', cookieUserId);
+  }
+  
+  // Try each ID until we find a valid user
+  for (const candidateId of possibleUserIds) {
+    const user = await prisma.user.findUnique({
+      where: { id: candidateId },
+      select: { id: true },
+    });
+    if (user) {
+      console.log('Auth: validated user ID:', candidateId);
+      return { userId: candidateId, response: undefined };
+    } else {
+      console.log('Auth: user ID not found in database:', candidateId);
+    }
+  }
+  
+  // No valid user found
+  const response = NextResponse.json(
+    { error: "Authentication required" },
+    { status: 401 }
+  );
+  clearAllAuthCookies(response);
+  return { userId: "", response };
 }
