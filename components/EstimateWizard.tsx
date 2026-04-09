@@ -123,6 +123,12 @@ export function EstimateWizard({ projectId, onComplete }: { projectId: string; o
         projectId,
         propertyType: data.propertyType,
         styleTier: data.styleTier,
+        kitchenRedo: false,
+        bathroomCount: 0,
+        carpentryLevel: "low",
+        electricalScope: "basic",
+        painting: false,
+        budget: null,
         components,
         rooms: data.rooms,
       };

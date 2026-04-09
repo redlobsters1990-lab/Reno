@@ -84,7 +84,15 @@ export const estimateComponentSchema = z.object({
   notes: z.string().max(500).optional().nullable(),
 });
 
-export const enhancedEstimateInputSchema = estimateInputSchema.extend({
+export const enhancedEstimateInputSchema = z.object({
+  propertyType: z.string().min(1),
+  styleTier: z.enum(["budget", "standard", "premium"]),
+  kitchenRedo: z.boolean().optional().default(false),
+  bathroomCount: z.coerce.number().int().min(0).max(10).optional().default(0),
+  carpentryLevel: z.enum(["low", "medium", "high"]).optional().default("low"),
+  electricalScope: z.enum(["basic", "moderate", "full"]).optional().default("basic"),
+  painting: z.boolean().optional().default(false),
+  budget: z.coerce.number().min(0).optional().nullable().default(null),
   components: z.array(estimateComponentSchema).optional().default([]),
   rooms: z.array(z.object({
     name: z.string(),
