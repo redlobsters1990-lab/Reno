@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/server/auth";
+import { verifyUserAuth } from "@/lib/auth-utils";
+import { prisma } from "@/server/db";
 import { EstimateService } from "@/server/services/estimate";
 
 export async function POST(request: NextRequest) {
@@ -8,13 +9,12 @@ export async function POST(request: NextRequest) {
     const cookies = request.cookies.getAll();
     console.log("Request cookies:", cookies.map(c => ({ name: c.name, value: c.value.substring(0, 10) + '...' })));
     
-    const session = await auth();
-    console.log("Session:", session);
-    
-    if (!session?.user?.id) {
-      console.log("Unauthorized: no session.user.id");
-      return NextResponse.json({ error: "Unauthorized", details: "No valid session" }, { status: 401 });
+    const { userId, response: authResponse } = await verifyUserAuth(request, prisma);
+    if (authResponse) {
+      console.log("Unauthorized: verifyUserAuth returned response");
+      return authResponse;
     }
+    console.log("Authenticated user ID:", userId);
     
     const body = await request.json();
     console.log('Enhanced estimate request body:', JSON.stringify(body, null, 2).substring(0, 500));
@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
     }
     
     const estimate = await EstimateService.createEnhancedEstimate(
-      session.user.id,
+      userId,
       body.projectId,
       body,
     );

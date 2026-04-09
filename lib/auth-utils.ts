@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { auth } from "@/server/auth";
 
 // Helper to get user ID from auth cookie
 export function getUserIdFromCookie(request: NextRequest): string | null {
@@ -8,6 +9,25 @@ export function getUserIdFromCookie(request: NextRequest): string | null {
   // Extract user ID from cookie value "user-{id}"
   const match = authCookie.value.match(/^user-(.+)$/);
   return match ? match[1] : null;
+}
+
+// Try to get user ID from NextAuth session first, fallback to cookie
+export async function getUserIdFromRequest(request: NextRequest): Promise<string | null> {
+  try {
+    const session = await auth();
+    if (session?.user?.id) {
+      console.log('Auth: got user ID from NextAuth session:', session.user.id);
+      return session.user.id;
+    }
+  } catch (error) {
+    console.warn('Failed to get session from auth():', error);
+  }
+  // Fallback to legacy cookie
+  const cookieUserId = getUserIdFromCookie(request);
+  if (cookieUserId) {
+    console.log('Auth: got user ID from legacy auth-token cookie:', cookieUserId);
+  }
+  return cookieUserId;
 }
 
 // Helper function to clear all auth cookies
@@ -44,7 +64,7 @@ export async function verifyUserAuth(request: NextRequest, prismaInstance?: any)
   userId: string;
   response?: NextResponse; // Only set if auth is invalid
 }> {
-  const userId = getUserIdFromCookie(request);
+  const userId = await getUserIdFromRequest(request);
   
   if (!userId) {
     const response = NextResponse.json(
