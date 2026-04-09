@@ -17,6 +17,7 @@ export async function POST(request: NextRequest) {
     }
     
     const body = await request.json();
+    console.log('Enhanced estimate request body:', JSON.stringify(body, null, 2).substring(0, 500));
     
     if (!body.projectId) {
       return NextResponse.json({ error: "projectId is required" }, { status: 400 });

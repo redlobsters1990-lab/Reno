@@ -81,7 +81,7 @@ export const estimateComponentSchema = z.object({
   quantity: z.coerce.number().positive(),
   unit: z.enum(unitOptions),
   unitCost: z.coerce.number().min(0).optional(),
-  height: z.enum(heightOptions).optional(),
+  height: z.enum(heightOptions).optional().nullable(),
   notes: z.string().max(500).optional().nullable(),
 });
 

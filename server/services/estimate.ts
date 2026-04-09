@@ -1,7 +1,7 @@
 import { prisma } from "@/server/db";
 import { estimateInputSchema, enhancedEstimateInputSchema } from "@/lib/schemas";
 import { MarketPriceService } from "./market-price";
-import type { EstimateConfidence } from "@prisma/client";
+import type { EstimateConfidence, HeightOption } from "@prisma/client";
 
 interface EstimateRule {
   propertyType: string;
@@ -204,6 +204,7 @@ export class EstimateService {
     data: unknown,
   ) {
     const validated = enhancedEstimateInputSchema.parse(data);
+    console.log('Enhanced estimate input:', validated);
     
     // Verify project belongs to user
     const project = await prisma.project.findFirst({
@@ -218,8 +219,10 @@ export class EstimateService {
     let baseCost = 0;
     let enrichedComponents: Array<{category: string; material: string; quantity: number; unit: string; unitCost: number; total: number; notes?: string; height?: string}> = [];
     if (validated.components && validated.components.length > 0) {
+      console.log('Processing', validated.components.length, 'components');
       // Enrich each component with unitCost (looked up if needed) and total
       for (const comp of validated.components) {
+        console.log('Component:', comp);
         const unitCost = comp.unitCost || await this.lookupMarketPrice(comp.category, comp.material, comp.unit);
         const total = unitCost * comp.quantity;
         enrichedComponents.push({
@@ -333,6 +336,8 @@ export class EstimateService {
         height: comp.height || null,
         notes: comp.notes || null,
       }));
+      
+      console.log("Creating component data:", componentData);
       
       await prisma.estimateComponent.createMany({
         data: componentData,
