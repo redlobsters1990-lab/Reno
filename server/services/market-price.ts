@@ -4,6 +4,8 @@ export type MarketPrice = {
   category: string;
   material: string;
   unit: string;
+  thickness?: string;  // "20mm", "30mm", "40mm" - for countertops, slabs
+  height?: string;     // "half", "full" - for carpentry
   lowPrice: number;
   highPrice: number;
   source: string;
@@ -11,18 +13,18 @@ export type MarketPrice = {
 };
 
 const STATIC_PRICES: MarketPrice[] = [
-  // Kitchen Countertop (per ft)
-  { category: "Kitchen Countertop", material: "Laminate", unit: "ft", lowPrice: 300, highPrice: 500, source: "Renotalk 2025", updatedAt: new Date() },
-  { category: "Kitchen Countertop", material: "Quartz", unit: "ft", lowPrice: 600, highPrice: 1000, source: "BCA 2024", updatedAt: new Date() },
-  { category: "Kitchen Countertop", material: "Marble", unit: "ft", lowPrice: 800, highPrice: 1500, source: "BCA 2024", updatedAt: new Date() },
-  { category: "Kitchen Countertop", material: "Solid Wood", unit: "ft", lowPrice: 700, highPrice: 1200, source: "Renotalk 2025", updatedAt: new Date() },
-  { category: "Kitchen Countertop", material: "Granite", unit: "ft", lowPrice: 500, highPrice: 900, source: "Industry Average", updatedAt: new Date() },
-  { category: "Kitchen Countertop", material: "Engineered Wood", unit: "ft", lowPrice: 600, highPrice: 1000, source: "Industry Average", updatedAt: new Date() },
-  { category: "Kitchen Countertop", material: "Concrete", unit: "ft", lowPrice: 400, highPrice: 800, source: "Industry Average", updatedAt: new Date() },
-  { category: "Kitchen Countertop", material: "Glass", unit: "ft", lowPrice: 800, highPrice: 1500, source: "Industry Average", updatedAt: new Date() },
-  { category: "Kitchen Countertop", material: "Acrylic", unit: "ft", lowPrice: 300, highPrice: 600, source: "Industry Average", updatedAt: new Date() },
-  { category: "Kitchen Countertop", material: "Stone", unit: "ft", lowPrice: 600, highPrice: 1200, source: "Industry Average", updatedAt: new Date() },
-  { category: "Kitchen Countertop", material: "Sintered Stone", unit: "ft", lowPrice: 400, highPrice: 800, source: "Industry Average", updatedAt: new Date() },
+  // Kitchen Countertop (per ft) - thickness assumptions noted in source
+  { category: "Kitchen Countertop", material: "Laminate", unit: "ft", thickness: "30mm", lowPrice: 300, highPrice: 500, source: "Renotalk 2025 (30mm laminate with particleboard core)", updatedAt: new Date() },
+  { category: "Kitchen Countertop", material: "Quartz", unit: "ft", thickness: "20mm", lowPrice: 600, highPrice: 1000, source: "BCA 2024 (20mm standard)", updatedAt: new Date() },
+  { category: "Kitchen Countertop", material: "Marble", unit: "ft", thickness: "20mm", lowPrice: 800, highPrice: 1500, source: "BCA 2024 (20mm standard)", updatedAt: new Date() },
+  { category: "Kitchen Countertop", material: "Solid Wood", unit: "ft", thickness: "40mm", lowPrice: 700, highPrice: 1200, source: "Renotalk 2025 (40mm butcher block)", updatedAt: new Date() },
+  { category: "Kitchen Countertop", material: "Granite", unit: "ft", thickness: "20mm", lowPrice: 500, highPrice: 900, source: "Industry Average (20mm standard)", updatedAt: new Date() },
+  { category: "Kitchen Countertop", material: "Engineered Wood", unit: "ft", thickness: "25mm", lowPrice: 600, highPrice: 1000, source: "Industry Average (25mm engineered)", updatedAt: new Date() },
+  { category: "Kitchen Countertop", material: "Concrete", unit: "ft", thickness: "30mm", lowPrice: 400, highPrice: 800, source: "Industry Average (30mm cast-in-place)", updatedAt: new Date() },
+  { category: "Kitchen Countertop", material: "Glass", unit: "ft", thickness: "19mm", lowPrice: 800, highPrice: 1500, source: "Industry Average (19mm tempered)", updatedAt: new Date() },
+  { category: "Kitchen Countertop", material: "Acrylic", unit: "ft", thickness: "30mm", lowPrice: 300, highPrice: 600, source: "Industry Average (30mm solid surface)", updatedAt: new Date() },
+  { category: "Kitchen Countertop", material: "Stone", unit: "ft", thickness: "20mm", lowPrice: 600, highPrice: 1200, source: "Industry Average (20mm natural stone)", updatedAt: new Date() },
+  { category: "Kitchen Countertop", material: "Sintered Stone", unit: "ft", thickness: "12mm", lowPrice: 400, highPrice: 800, source: "Industry Average (12mm sintered slab)", updatedAt: new Date() },
   
   // Kitchen Cabinetry (per ft)
   { category: "Kitchen Cabinetry", material: "Laminate", unit: "ft", lowPrice: 400, highPrice: 800, source: "Renotalk 2025", updatedAt: new Date() },
