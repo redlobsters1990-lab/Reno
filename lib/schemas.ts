@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { propertyTypes, stylePreferences } from "@/lib/constants";
+import { propertyTypes, stylePreferences, estimateCategories, materialOptions, unitOptions } from "@/lib/constants";
 
 export const signUpSchema = z.object({
   name: z.string()
@@ -74,3 +74,26 @@ export const quoteCreateSchema = z.object({
   totalAmount: z.coerce.number().min(0).optional().nullable(),
   notes: z.string().max(5000).optional().nullable(),
 });
+
+export const estimateComponentSchema = z.object({
+  category: z.enum(estimateCategories),
+  material: z.enum(materialOptions),
+  quantity: z.coerce.number().positive(),
+  unit: z.enum(unitOptions),
+  unitCost: z.coerce.number().min(0).optional(),
+  notes: z.string().max(500).optional().nullable(),
+});
+
+export const enhancedEstimateInputSchema = estimateInputSchema.extend({
+  components: z.array(estimateComponentSchema).optional().default([]),
+  rooms: z.array(z.object({
+    name: z.string(),
+    components: z.array(estimateComponentSchema),
+  })).optional().default([]),
+});
+
+export const naturalLanguageEstimateRequestSchema = z.object({
+  projectId: z.string().cuid(),
+  description: z.string().min(10).max(5000),
+});
+

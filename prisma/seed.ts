@@ -1,10 +1,12 @@
 import { PrismaClient } from "@prisma/client";
 import { hash } from "bcryptjs";
+import { MarketPriceService } from "@/server/services/market-price";
 
 const prisma = new PrismaClient();
 
 async function main() {
   console.log("🌱 Starting seed...");
+  await MarketPriceService.seedIfEmpty();
 
   // Create a test user
   const testUser = await prisma.user.upsert({

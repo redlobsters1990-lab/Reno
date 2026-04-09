@@ -6,9 +6,11 @@ import Link from "next/link";
 import {
   Home, ArrowLeft, Building, Ruler, Palette, Clock,
   Upload, MessageSquare, Loader2, AlertCircle, Calendar,
-  CheckCircle, Circle, FileText, DollarSign, Sparkles
+  CheckCircle, Circle, FileText, DollarSign, Sparkles, Calculator
 } from "lucide-react";
 import { QuoteUpload } from "@/components/quote-upload";
+import { EstimateWizard } from "@/components/EstimateWizard";
+import { CostBreakdownChart } from "@/components/CostBreakdownChart";
 
 interface Project {
   id: string;
@@ -70,6 +72,7 @@ export default function ProjectDetailPage() {
   const projectId = params?.id as string | undefined;
 
   const [project, setProject] = useState<Project | null>(null);
+  const [showWizard, setShowWizard] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error,   setError]   = useState("");
 
@@ -241,6 +244,63 @@ export default function ProjectDetailPage() {
               <p style={{ color: "#cbd5e1", fontWeight: 500, marginBottom: "4px" }}>No estimate available yet</p>
               <p style={{ color: "#64748b", fontSize: "14px" }}>
                 Add your property size when creating a project, or upload contractor quotes to get a cost estimate.
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* Detailed Cost Estimate */}
+        <div style={{ marginBottom: "24px", padding: "24px", borderRadius: "16px", border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.02)" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
+            <h2 style={{ fontSize: "18px", fontWeight: 600 }}>Detailed Cost Estimate</h2>
+            {!showWizard ? (
+              <button
+                onClick={() => setShowWizard(true)}
+                style={{
+                  padding: "10px 20px",
+                  background: "rgba(139,92,246,0.2)",
+                  border: "1px solid rgba(139,92,246,0.4)",
+                  borderRadius: "8px",
+                  color: "#a78bfa",
+                  fontSize: "14px",
+                  fontWeight: 500,
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                }}
+              >
+                <Sparkles size={16} />
+                Launch Estimate Wizard
+              </button>
+            ) : (
+              <button
+                onClick={() => setShowWizard(false)}
+                style={{
+                  padding: "10px 20px",
+                  background: "rgba(239,68,68,0.1)",
+                  border: "1px solid rgba(239,68,68,0.3)",
+                  borderRadius: "8px",
+                  color: "#f87171",
+                  fontSize: "14px",
+                  cursor: "pointer",
+                }}
+              >
+                Close Wizard
+              </button>
+            )}
+          </div>
+          
+          {showWizard ? (
+            <EstimateWizard projectId={projectId} onComplete={() => setShowWizard(false)} />
+          ) : (
+            <div style={{ textAlign: "center", padding: "40px 20px", color: "#94a3b8" }}>
+              <Calculator size={48} style={{ opacity: 0.5, marginBottom: "16px" }} />
+              <p style={{ fontSize: "14px", marginBottom: "20px" }}>
+                Get a detailed, room‑by‑room cost breakdown with material selection and market‑based pricing.
+              </p>
+              <p style={{ fontSize: "12px", color: "#64748b" }}>
+                The wizard will guide you through each room and component, producing a high‑confidence estimate.
               </p>
             </div>
           )}

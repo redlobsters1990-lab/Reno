@@ -35,6 +35,7 @@ model User {
   uploadedFiles    UploadedFile[]
   activities       UserActivity[]
   longTermMemories UserLongTermMemory[]
+  estimateComponents EstimateComponent[]
 
   @@index([email])
   @@index([status, createdAt])
@@ -103,6 +104,7 @@ model Project {
   projectMemories  ProjectShortTermMemory[]
   uploadedFiles    UploadedFile[]
   quotes           Quote[]
+  estimateComponents EstimateComponent[]
 
   @@index([userId, createdAt])
 }
@@ -225,9 +227,47 @@ model CostEstimate {
   userId          String
   project         Project            @relation(fields: [projectId], references: [id], onDelete: Cascade)
   user            User               @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  components      EstimateComponent[]
 
   @@index([projectId, createdAt])
   @@index([userId])
+}
+
+model EstimateComponent {
+  id            String      @id @default(cuid())
+  estimateId    String
+  userId        String
+  projectId     String
+  category      String      // "Kitchen", "Flooring", "Lighting"
+  material      String      // "Marble", "Vinyl", "LED"
+  quantity      Int
+  unit          String      // "sqft", "piece", "hour"
+  unitCost      Float
+  totalCost     Float
+  notes         String?
+  createdAt     DateTime    @default(now())
+  estimate      CostEstimate @relation(fields: [estimateId], references: [id], onDelete: Cascade)
+  user          User         @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  project       Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([estimateId, category])
+  @@index([userId])
+  @@index([projectId])
+}
+
+model MarketPrice {
+  id          String   @id @default(cuid())
+  category    String
+  material    String
+  unit        String   // "sqft", "piece", "hour"
+  lowPrice    Float
+  highPrice   Float
+  source      String   // "BCA", "Qanvast", "Renotalk"
+  updatedAt   DateTime @updatedAt
+  createdAt   DateTime @default(now())
+
+  @@unique([category, material, unit, source])
+  @@index([category, material])
 }
 
 model ContractorQuote {
