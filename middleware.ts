@@ -29,7 +29,14 @@ export default async function middleware(request: NextRequest) {
     );
     
     if (!hasAuthCookie) {
-      // Redirect to signin page
+      // For API routes, return 401 JSON instead of redirect
+      if (pathname.startsWith("/api/")) {
+        return NextResponse.json(
+          { error: "Unauthorized", message: "Missing authentication" },
+          { status: 401 }
+        );
+      }
+      // Redirect to signin page for page routes
       const signInUrl = new URL("/auth/signin", request.url);
       signInUrl.searchParams.set("callbackUrl", encodeURI(request.url));
       return NextResponse.redirect(signInUrl);

@@ -127,6 +127,7 @@ export function EstimateWizard({ projectId, onComplete }: { projectId: string; o
         rooms: data.rooms,
       };
 
+      console.log("Sending estimate payload:", payload);
       const res = await fetch("/api/estimates/enhanced", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -134,8 +135,16 @@ export function EstimateWizard({ projectId, onComplete }: { projectId: string; o
       });
 
       if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || "Failed to create estimate");
+        console.error("Estimate API error:", res.status, res.statusText);
+        let errorMsg = `HTTP ${res.status}: ${res.statusText}`;
+        try {
+          const err = await res.json();
+          errorMsg = err.error || err.message || errorMsg;
+          console.error("Error response:", err);
+        } catch (e) {
+          // ignore
+        }
+        throw new Error(errorMsg);
       }
 
       const result = await res.json();
