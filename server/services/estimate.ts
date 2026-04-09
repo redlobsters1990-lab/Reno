@@ -163,6 +163,7 @@ export class EstimateService {
     const estimate = await prisma.costEstimate.create({
       data: {
         projectId,
+        userId,
         leanMin,
         leanMax,
         realisticMin,
@@ -214,11 +215,21 @@ export class EstimateService {
     
     // Calculate base cost from components if provided, otherwise fallback to rule-based
     let baseCost = 0;
+    let enrichedComponents: Array<{category: string; material: string; quantity: number; unit: string; unitCost: number; total: number; notes?: string}> = [];
     if (validated.components && validated.components.length > 0) {
-      // Sum component total costs (unitCost * quantity)
+      // Enrich each component with unitCost (looked up if needed) and total
       for (const comp of validated.components) {
         const unitCost = comp.unitCost || await this.lookupMarketPrice(comp.category, comp.material, comp.unit);
         const total = unitCost * comp.quantity;
+        enrichedComponents.push({
+          category: comp.category,
+          material: comp.material,
+          quantity: comp.quantity,
+          unit: comp.unit,
+          unitCost,
+          total,
+          notes: comp.notes,
+        });
         baseCost += total;
       }
       // Add contingency (20%) for labor, overhead, etc.
@@ -306,8 +317,8 @@ export class EstimateService {
     });
     
     // Create component records if provided
-    if (validated.components && validated.components.length > 0) {
-      const componentData = validated.components.map(comp => ({
+    if (enrichedComponents.length > 0) {
+      const componentData = enrichedComponents.map(comp => ({
         estimateId: estimate.id,
         userId,
         projectId,
@@ -315,8 +326,8 @@ export class EstimateService {
         material: comp.material,
         quantity: comp.quantity,
         unit: comp.unit,
-        unitCost: comp.unitCost || 0, // placeholder – should be looked up
-        totalCost: (comp.unitCost || 0) * comp.quantity,
+        unitCost: comp.unitCost,
+        totalCost: comp.total,
         notes: comp.notes || null,
       }));
       
