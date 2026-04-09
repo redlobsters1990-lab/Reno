@@ -75,6 +75,8 @@ export default function ProjectDetailPage() {
   const [showWizard, setShowWizard] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error,   setError]   = useState("");
+  const [estimates, setEstimates] = useState<any[]>([]);
+  const [loadingEstimates, setLoadingEstimates] = useState(false);
 
   useEffect(() => {
     if (!projectId) return; // Wait for projectId to be available
@@ -92,12 +94,32 @@ export default function ProjectDetailPage() {
         return;
       }
       const data = await res.json();
-      if (data.success) setProject(data.project);
+      if (data.success) {
+        setProject(data.project);
+        // Fetch estimates after project is loaded
+        fetchEstimates();
+      }
       else setError(data.error || "Failed to load project. Please try again.");
     } catch {
       setError("Network error. Please check your connection and try again.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchEstimates = async () => {
+    if (!projectId) return;
+    setLoadingEstimates(true);
+    try {
+      const res = await fetch(`/api/estimates/${projectId}`);
+      if (res.ok) {
+        const data = await res.json();
+        setEstimates(data.estimates || []);
+      }
+    } catch (error) {
+      console.error("Failed to fetch estimates:", error);
+    } finally {
+      setLoadingEstimates(false);
     }
   };
 
@@ -126,6 +148,7 @@ export default function ProjectDetailPage() {
   }
 
   const estimate     = generateEstimate(project);
+  const latestEstimate = estimates.length > 0 ? estimates[0] : null;
   const sqft         = parsePropertySize(project.notes);
   const userNotes    = stripInternalPrefix(project.notes);
 
@@ -292,17 +315,72 @@ export default function ProjectDetailPage() {
           </div>
           
           {showWizard ? (
-            <EstimateWizard projectId={projectId} onComplete={() => setShowWizard(false)} />
+            <EstimateWizard projectId={projectId} onComplete={() => { setShowWizard(false); fetchEstimates(); }} />
           ) : (
-            <div style={{ textAlign: "center", padding: "40px 20px", color: "#94a3b8" }}>
-              <Calculator size={48} style={{ opacity: 0.5, marginBottom: "16px" }} />
-              <p style={{ fontSize: "14px", marginBottom: "20px" }}>
-                Get a detailed, room‑by‑room cost breakdown with material selection and market‑based pricing.
-              </p>
-              <p style={{ fontSize: "12px", color: "#64748b" }}>
-                The wizard will guide you through each room and component, producing a high‑confidence estimate.
-              </p>
-            </div>
+            estimates.length > 0 ? (
+  <div>
+    {/* Display latest enhanced estimate */}
+    <div style={{ marginBottom: "24px" }}>
+      <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "16px" }}>Latest Estimate</h3>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "16px", marginBottom: "24px" }}>
+        <div style={{ padding: "16px", borderRadius: "10px", border: "1px solid rgba(255,255,255,0.1)", textAlign: "center" }}>
+          <div style={{ fontSize: "20px", fontWeight: "bold", color: "#4ade80" }}>${latestEstimate.leanMin.toLocaleString("en-SG")}</div>
+          <div style={{ fontSize: "12px", color: "#94a3b8" }}>Lean Range</div>
+          <div style={{ fontSize: "11px", color: "#64748b" }}>${latestEstimate.leanMax.toLocaleString("en-SG")} max</div>
+        </div>
+        <div style={{ padding: "16px", borderRadius: "10px", border: "1px solid rgba(139,92,246,0.3)", background: "rgba(139,92,246,0.05)", textAlign: "center" }}>
+          <div style={{ fontSize: "22px", fontWeight: "bold", color: "white" }}>${latestEstimate.realisticMin.toLocaleString("en-SG")}</div>
+          <div style={{ fontSize: "12px", color: "#a78bfa", fontWeight: 500 }}>Typical Range</div>
+          <div style={{ fontSize: "11px", color: "#94a3b8" }}>${latestEstimate.realisticMax.toLocaleString("en-SG")} max</div>
+        </div>
+        <div style={{ padding: "16px", borderRadius: "10px", border: "1px solid rgba(255,255,255,0.1)", textAlign: "center" }}>
+          <div style={{ fontSize: "20px", fontWeight: "bold", color: "#fbbf24" }}>${latestEstimate.stretchMin.toLocaleString("en-SG")}</div>
+          <div style={{ fontSize: "12px", color: "#94a3b8" }}>Stretch Range</div>
+          <div style={{ fontSize: "11px", color: "#64748b" }}>${latestEstimate.stretchMax.toLocaleString("en-SG")} max</div>
+        </div>
+      </div>
+      <div style={{ fontSize: "12px", color: "#94a3b8", marginBottom: "16px" }}>
+        Confidence: <span style={{ color: latestEstimate.confidence === "high" ? "#4ade80" : latestEstimate.confidence === "medium" ? "#fbbf24" : "#f87171" }}>{latestEstimate.confidence}</span>
+        {latestEstimate.components && latestEstimate.components.length > 0 && (
+          <span> • {latestEstimate.components.length} components</span>
+        )}
+      </div>
+      {latestEstimate.components && latestEstimate.components.length > 0 && (
+        <CostBreakdownChart components={latestEstimate.components} />
+      )}
+    </div>
+    <button
+      onClick={() => setShowWizard(true)}
+      style={{
+        padding: "10px 20px",
+        background: "rgba(139,92,246,0.2)",
+        border: "1px solid rgba(139,92,246,0.4)",
+        borderRadius: "8px",
+        color: "#a78bfa",
+        fontSize: "14px",
+        fontWeight: 500,
+        cursor: "pointer",
+        display: "flex",
+        alignItems: "center",
+        gap: "8px",
+        margin: "0 auto",
+      }}
+    >
+      <Sparkles size={16} />
+      Generate New Estimate
+    </button>
+  </div>
+) : (
+  <div style={{ textAlign: "center", padding: "40px 20px", color: "#94a3b8" }}>
+    <Calculator size={48} style={{ opacity: 0.5, marginBottom: "16px" }} />
+    <p style={{ fontSize: "14px", marginBottom: "20px" }}>
+      Get a detailed, room‑by‑room cost breakdown with material selection and market‑based pricing.
+    </p>
+    <p style={{ fontSize: "12px", color: "#64748b" }}>
+      The wizard will guide you through each room and component, producing a high‑confidence estimate.
+    </p>
+  </div>
+)
           )}
         </div>
 

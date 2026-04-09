@@ -192,6 +192,7 @@ export class EstimateService {
     const estimates = await prisma.costEstimate.findMany({
       where: { projectId },
       orderBy: { createdAt: "desc" },
+      include: { components: true },
     });
     
     return estimates;
