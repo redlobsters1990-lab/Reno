@@ -16,11 +16,20 @@ const STATIC_PRICES: MarketPrice[] = [
   { category: "Kitchen Countertop", material: "Quartz", unit: "foot run", lowPrice: 600, highPrice: 1000, source: "BCA 2024", updatedAt: new Date() },
   { category: "Kitchen Countertop", material: "Marble", unit: "foot run", lowPrice: 800, highPrice: 1500, source: "BCA 2024", updatedAt: new Date() },
   { category: "Kitchen Countertop", material: "Solid Wood", unit: "foot run", lowPrice: 700, highPrice: 1200, source: "Renotalk 2025", updatedAt: new Date() },
+  { category: "Kitchen Countertop", material: "Granite", unit: "foot run", lowPrice: 500, highPrice: 900, source: "Industry Average", updatedAt: new Date() },
+  { category: "Kitchen Countertop", material: "Engineered Wood", unit: "foot run", lowPrice: 600, highPrice: 1000, source: "Industry Average", updatedAt: new Date() },
+  { category: "Kitchen Countertop", material: "Concrete", unit: "foot run", lowPrice: 400, highPrice: 800, source: "Industry Average", updatedAt: new Date() },
+  { category: "Kitchen Countertop", material: "Glass", unit: "foot run", lowPrice: 800, highPrice: 1500, source: "Industry Average", updatedAt: new Date() },
+  { category: "Kitchen Countertop", material: "Acrylic", unit: "foot run", lowPrice: 300, highPrice: 600, source: "Industry Average", updatedAt: new Date() },
+  { category: "Kitchen Countertop", material: "Stone", unit: "foot run", lowPrice: 600, highPrice: 1200, source: "Industry Average", updatedAt: new Date() },
   
   // Kitchen Cabinetry (per linear foot)
   { category: "Kitchen Cabinetry", material: "Laminate", unit: "linear foot", lowPrice: 400, highPrice: 800, source: "Renotalk 2025", updatedAt: new Date() },
   { category: "Kitchen Cabinetry", material: "Solid Wood", unit: "linear foot", lowPrice: 800, highPrice: 1500, source: "Renotalk 2025", updatedAt: new Date() },
   { category: "Kitchen Cabinetry", material: "Plywood", unit: "linear foot", lowPrice: 300, highPrice: 600, source: "Renotalk 2025", updatedAt: new Date() },
+  { category: "Kitchen Cabinetry", material: "Engineered Wood", unit: "linear foot", lowPrice: 400, highPrice: 800, source: "Industry Average", updatedAt: new Date() },
+  { category: "Kitchen Cabinetry", material: "Glass", unit: "linear foot", lowPrice: 600, highPrice: 1200, source: "Industry Average", updatedAt: new Date() },
+  { category: "Kitchen Cabinetry", material: "Acrylic", unit: "linear foot", lowPrice: 500, highPrice: 1000, source: "Industry Average", updatedAt: new Date() },
   
   // Kitchen Sink & Tap (per set)
   { category: "Kitchen Sink & Tap", material: "Stainless Steel", unit: "set", lowPrice: 300, highPrice: 800, source: "Qanvast 2025", updatedAt: new Date() },
@@ -158,29 +167,29 @@ export class MarketPriceService {
     const defaults: Record<string, number> = {
       // Kitchen
       "Kitchen": 15000,
-      "Kitchen Countertop": 8000,
-      "Kitchen Cabinetry": 12000,
-      "Kitchen Sink & Tap": 600,
-      "Kitchen Hob & Hood": 1500,
+      "Kitchen Countertop": 800,
+      "Kitchen Cabinetry": 700,
+      "Kitchen Sink & Tap": 700,
+      "Kitchen Hob & Hood": 2000,
       "Kitchen Appliances": 2500,
       // Bathroom
       "Bathroom": 12000,
       "Bathroom Vanity": 2000,
-      "Bathroom Tiling": 12,
+      "Bathroom Tiling": 15,
       "Bathroom Fixtures": 800,
       "Bathroom Shower Screen": 1200,
       // General
       "Flooring": 8,
       "Lighting": 200,
-      "Carpentry": 300,
+      "Carpentry": 450,
       "Electrical Points": 100,
-      "Painting": 3,
-      "Plumbing": 5000,
-      "Windows & Doors": 2000,
-      "HVAC": 8000,
-      "Wall Finishes": 5,
-      "Built‑In Furniture": 5000,
-      "Smart Home": 3000,
+      "Painting": 5,
+      "Plumbing": 300,
+      "Windows & Doors": 1500,
+      "HVAC": 2500,
+      "Wall Finishes": 30,
+      "Built‑In Furniture": 2200,
+      "Smart Home": 200,
       "Other": 1000,
     };
     
