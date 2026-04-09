@@ -40,6 +40,124 @@ export const estimateCategories = [
   "Other",
 ] as const;
 
+export const materialOptions = [
+  // Countertop & Surface
+  "Laminate",
+  "Quartz",
+  "Marble",
+  "Granite",
+  "Solid Wood",
+  "Engineered Wood",
+  "Concrete",
+  "Glass",
+  "Acrylic",
+  "Stone",
+  // Flooring
+  "Vinyl",
+  "Bamboo",
+  "Ceramic Tile",
+  "Porcelain Tile",
+  "Mosaic",
+  // Kitchen & Bathroom
+  "Stainless Steel",
+  "Ceramic",
+  "Standard",
+  "Premium",
+  "Frameless",
+  "Semi‑frameless",
+  // Fixtures
+  "Toilet",
+  "Basin",
+  "Shower Set",
+  "Sink & Tap",
+  "Hob & Hood",
+  "Bidet",
+  "Tap",
+  "Mixer",
+  // Building Materials
+  "Plywood",
+  "Metal",
+  "Fabric",
+  "Aluminium",
+  "Melamine",
+  "MDF",
+  // Finishes
+  "Paint",
+  "Wallpaper",
+  "Feature Wall",
+  "Cladding",
+  "Texture Coat",
+  "Panelling",
+  "Tile",
+  // Electrical & Smart
+  "LED",
+  "Downlight",
+  "Track Light",
+  "Pendant",
+  "Chandelier",
+  "Spotlight",
+  "Power Point",
+  "Lighting Point",
+  "Data Point",
+  "Switch",
+  "Socket",
+  "Dimmer",
+  "Water Point",
+  "Sanitary Point",
+  "Smart Switch",
+  "Sensor",
+  "Hub",
+  "Camera",
+  "Door Lock",
+  "Thermostat",
+  // Appliances
+  "Oven",
+  "Fridge",
+  "Air‑Con Unit",
+  "Fan Coil",
+  "Dishwasher",
+  "Microwave",
+  // Windows & Doors
+  "Window",
+  "Door",
+  "Sliding Door",
+  "Bi‑fold",
+  "French Door",
+  "Grille",
+  // Furniture
+  "Wardrobe",
+  "TV Console",
+  "Shoe Cabinet",
+  "Bookshelf",
+  "Study Desk",
+  "Kitchen Island",
+  // Plumbing
+  "Pipe",
+  "Drain",
+  "Valve",
+  // HVAC
+  "Condenser",
+  "Duct",
+  "Vent",
+  // Other
+  "Other",
+] as const;
+
+export const unitOptions = [
+  // Area
+  "sq ft", "sqm", "m²", "psf", "psm",
+  // Linear
+  "foot run", "linear meter", "lm", "m", "linear foot",
+  // Count
+  "each", "pc", "item", "set", "lot", "piece",
+  // Time
+  "man‑day", "day", "hour", "MD",
+  // Volume
+  "cubic meter", "m³",
+  // Other
+  "roll", "sheet", "panel", "length", "unit",
+] as const;
+
 export const categoryMaterialMap: Record<(typeof estimateCategories)[number], readonly (typeof materialOptions)[number][]> = {
   "Kitchen Countertop": ["Laminate", "Quartz", "Marble", "Granite", "Solid Wood", "Engineered Wood", "Concrete", "Glass", "Acrylic", "Stone"],
   "Kitchen Cabinetry": ["Laminate", "Solid Wood", "Plywood", "Engineered Wood", "Glass", "Acrylic"],
@@ -111,85 +229,6 @@ export const categoryUnitMap: Record<(typeof estimateCategories)[number], readon
   "Smart Home": ["piece", "each"],
   "Other": unitOptions,
 } as const;
-
-export const materialOptions = [
-  // Countertop & Surface
-  "Laminate",
-  "Quartz",
-  "Marble",
-  "Granite",
-  "Solid Wood",
-  "Engineered Wood",
-  "Concrete",
-  "Glass",
-  "Acrylic",
-  "Stone",
-  // Flooring
-  "Vinyl",
-  "Bamboo",
-  "Ceramic Tile",
-  "Porcelain Tile",
-  "Mosaic",
-  // Kitchen & Bathroom
-  "Stainless Steel",
-  "Ceramic",
-  "Standard",
-  "Premium",
-  "Frameless",
-  "Semi‑frameless",
-  // Fixtures
-  "Toilet",
-  "Basin",
-  "Shower Set",
-  "Sink & Tap",
-  "Hob & Hood",
-  // Building Materials
-  "Plywood",
-  "Metal",
-  "Fabric",
-  // Finishes
-  "Paint",
-  "Wallpaper",
-  "Feature Wall",
-  "Cladding",
-  // Electrical & Smart
-  "LED",
-  "Downlight",
-  "Power Point",
-  "Lighting Point",
-  "Water Point",
-  "Sanitary Point",
-  "Smart Switch",
-  "Sensor",
-  // Appliances
-  "Oven",
-  "Fridge",
-  "Air‑Con Unit",
-  "Fan Coil",
-  // Windows & Doors
-  "Window",
-  "Door",
-  // Furniture
-  "Wardrobe",
-  "TV Console",
-  // Other
-  "Other",
-] as const;
-
-export const unitOptions = [
-  // Area
-  "sq ft", "sqm", "m²", "psf", "psm",
-  // Linear
-  "foot run", "linear meter", "lm", "m", "linear foot",
-  // Count
-  "each", "pc", "item", "set", "lot", "piece",
-  // Time
-  "man‑day", "day", "hour", "MD",
-  // Volume
-  "cubic meter", "m³",
-  // Other
-  "roll", "sheet", "panel", "length", "unit",
-] as const;
 
 export const fileTypes = ["floor_plan", "quote", "inspiration", "other"] as const;
 
