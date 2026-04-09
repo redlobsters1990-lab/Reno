@@ -175,6 +175,13 @@ export const heightMultipliers: Record<(typeof heightOptions)[number], number> =
   custom: 1.0, // user must adjust unit cost manually
 };
 
+export const heightRelevantCategories = [
+  "Carpentry",
+  "Kitchen Cabinetry",
+  "Built‑In Furniture",
+  // "Windows & Doors", // maybe not
+] as const;
+
 const categoryMaterialMapBase = {
   "Kitchen Countertop": ["Laminate", "Quartz", "Marble", "Granite", "Solid Wood", "Engineered Wood", "Concrete", "Glass", "Acrylic", "Stone", "Sintered Stone"] as const,
   "Kitchen Cabinetry": ["Laminate", "Solid Wood", "Plywood", "Engineered Wood", "Glass", "Acrylic"] as const,

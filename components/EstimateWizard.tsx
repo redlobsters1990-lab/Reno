@@ -18,7 +18,7 @@ import {
   ChefHat,
   Sofa,
 } from "lucide-react";
-import { estimateCategories, materialOptions, unitOptions, categoryMaterialMap, categoryDefaultUnitMap, categoryUnitMap, heightOptions, heightMultipliers } from "@/lib/constants";
+import { estimateCategories, materialOptions, unitOptions, categoryMaterialMap, categoryDefaultUnitMap, categoryUnitMap, heightOptions, heightMultipliers, heightRelevantCategories } from "@/lib/constants";
 
 type Component = {
   category: (typeof estimateCategories)[number];
@@ -80,6 +80,7 @@ export function EstimateWizard({ projectId, onComplete }: { projectId: string; o
     const defaultMaterial = categoryMaterialMap[defaultCategory]?.[0] ?? materialOptions[0];
     const defaultUnit = categoryDefaultUnitMap[defaultCategory] ?? unitOptions[0];
     
+    const defaultHeight = heightRelevantCategories.includes(defaultCategory as any) ? "full" : undefined;
     const updatedRooms = [...data.rooms];
     updatedRooms[roomIndex].components.push({
       category: defaultCategory,
@@ -87,7 +88,7 @@ export function EstimateWizard({ projectId, onComplete }: { projectId: string; o
       quantity: 1,
       unit: defaultUnit,
       unitCost: undefined,
-      height: "full",
+      height: defaultHeight,
       notes: "",
     });
     setData({ ...data, rooms: updatedRooms });
@@ -110,12 +111,15 @@ export function EstimateWizard({ projectId, onComplete }: { projectId: string; o
       const newMaterial = allowedMaterials.includes(component.material as string) ? component.material : allowedMaterials[0];
       // Get default unit for this category
       const defaultUnit = categoryDefaultUnitMap[value as keyof typeof categoryDefaultUnitMap] ?? unitOptions[0];
+      // Set height only for relevant categories
+      const newHeight = heightRelevantCategories.includes(value as any) ? (component.height ?? "full") : undefined;
       
       updatedRooms[roomIndex].components[compIndex] = {
         ...component,
         category: value,
         material: newMaterial,
         unit: defaultUnit,
+        height: newHeight,
       };
     } else {
       updatedRooms[roomIndex].components[compIndex] = {
@@ -466,20 +470,31 @@ export function EstimateWizard({ projectId, onComplete }: { projectId: string; o
                               fontSize: "13px",
                             }}
                           />
-                          <select
-                            value={comp.height ?? "full"}
-                            onChange={(e) => updateComponent(roomIndex, compIndex, "height", e.target.value)}
-                            style={{
+                          {heightRelevantCategories.includes(comp.category) ? (
+                            <select
+                              value={comp.height ?? "full"}
+                              onChange={(e) => updateComponent(roomIndex, compIndex, "height", e.target.value)}
+                              style={{
+                                padding: "8px 10px",
+                                background: "rgba(255,255,255,0.05)",
+                                border: "1px solid rgba(255,255,255,0.1)",
+                                borderRadius: "6px",
+                                color: "white",
+                                fontSize: "13px",
+                              }}
+                            >
+                              {heightOptions.map(h => <option key={h} value={h}>{h}</option>)}
+                            </select>
+                          ) : (
+                            <div style={{
                               padding: "8px 10px",
-                              background: "rgba(255,255,255,0.05)",
-                              border: "1px solid rgba(255,255,255,0.1)",
-                              borderRadius: "6px",
-                              color: "white",
+                              color: "#94a3b8",
                               fontSize: "13px",
-                            }}
-                          >
-                            {heightOptions.map(h => <option key={h} value={h}>{h}</option>)}
-                          </select>
+                              textAlign: "center",
+                            }}>
+                              —
+                            </div>
+                          )}
                           <input
                             type="text"
                             placeholder="Specifications (optional)"
