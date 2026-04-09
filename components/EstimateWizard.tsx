@@ -368,7 +368,7 @@ export function EstimateWizard({ projectId, onComplete }: { projectId: string; o
                       {room.components.map((comp, compIndex) => (
                         <div key={compIndex} style={{
                           display: "grid",
-                          gridTemplateColumns: "2fr 1.5fr 1fr 1fr 1fr auto",
+                          gridTemplateColumns: "2fr 1.5fr 1fr 1fr 1fr 1.5fr auto",
                           gap: "10px",
                           alignItems: "center",
                           padding: "12px",
@@ -439,6 +439,20 @@ export function EstimateWizard({ projectId, onComplete }: { projectId: string; o
                             placeholder="Market"
                             value={comp.unitCost ?? ""}
                             onChange={(e) => updateComponent(roomIndex, compIndex, "unitCost", e.target.value ? parseFloat(e.target.value) : undefined)}
+                            style={{
+                              padding: "8px 10px",
+                              background: "rgba(255,255,255,0.05)",
+                              border: "1px solid rgba(255,255,255,0.1)",
+                              borderRadius: "6px",
+                              color: "white",
+                              fontSize: "13px",
+                            }}
+                          />
+                          <input
+                            type="text"
+                            placeholder="Specifications (optional)"
+                            value={comp.notes ?? ""}
+                            onChange={(e) => updateComponent(roomIndex, compIndex, "notes", e.target.value)}
                             style={{
                               padding: "8px 10px",
                               background: "rgba(255,255,255,0.05)",

@@ -11,25 +11,25 @@ export type MarketPrice = {
 };
 
 const STATIC_PRICES: MarketPrice[] = [
-  // Kitchen Countertop (per foot run)
-  { category: "Kitchen Countertop", material: "Laminate", unit: "foot run", lowPrice: 300, highPrice: 500, source: "Renotalk 2025", updatedAt: new Date() },
-  { category: "Kitchen Countertop", material: "Quartz", unit: "foot run", lowPrice: 600, highPrice: 1000, source: "BCA 2024", updatedAt: new Date() },
-  { category: "Kitchen Countertop", material: "Marble", unit: "foot run", lowPrice: 800, highPrice: 1500, source: "BCA 2024", updatedAt: new Date() },
-  { category: "Kitchen Countertop", material: "Solid Wood", unit: "foot run", lowPrice: 700, highPrice: 1200, source: "Renotalk 2025", updatedAt: new Date() },
-  { category: "Kitchen Countertop", material: "Granite", unit: "foot run", lowPrice: 500, highPrice: 900, source: "Industry Average", updatedAt: new Date() },
-  { category: "Kitchen Countertop", material: "Engineered Wood", unit: "foot run", lowPrice: 600, highPrice: 1000, source: "Industry Average", updatedAt: new Date() },
-  { category: "Kitchen Countertop", material: "Concrete", unit: "foot run", lowPrice: 400, highPrice: 800, source: "Industry Average", updatedAt: new Date() },
-  { category: "Kitchen Countertop", material: "Glass", unit: "foot run", lowPrice: 800, highPrice: 1500, source: "Industry Average", updatedAt: new Date() },
-  { category: "Kitchen Countertop", material: "Acrylic", unit: "foot run", lowPrice: 300, highPrice: 600, source: "Industry Average", updatedAt: new Date() },
-  { category: "Kitchen Countertop", material: "Stone", unit: "foot run", lowPrice: 600, highPrice: 1200, source: "Industry Average", updatedAt: new Date() },
+  // Kitchen Countertop (per ft)
+  { category: "Kitchen Countertop", material: "Laminate", unit: "ft", lowPrice: 300, highPrice: 500, source: "Renotalk 2025", updatedAt: new Date() },
+  { category: "Kitchen Countertop", material: "Quartz", unit: "ft", lowPrice: 600, highPrice: 1000, source: "BCA 2024", updatedAt: new Date() },
+  { category: "Kitchen Countertop", material: "Marble", unit: "ft", lowPrice: 800, highPrice: 1500, source: "BCA 2024", updatedAt: new Date() },
+  { category: "Kitchen Countertop", material: "Solid Wood", unit: "ft", lowPrice: 700, highPrice: 1200, source: "Renotalk 2025", updatedAt: new Date() },
+  { category: "Kitchen Countertop", material: "Granite", unit: "ft", lowPrice: 500, highPrice: 900, source: "Industry Average", updatedAt: new Date() },
+  { category: "Kitchen Countertop", material: "Engineered Wood", unit: "ft", lowPrice: 600, highPrice: 1000, source: "Industry Average", updatedAt: new Date() },
+  { category: "Kitchen Countertop", material: "Concrete", unit: "ft", lowPrice: 400, highPrice: 800, source: "Industry Average", updatedAt: new Date() },
+  { category: "Kitchen Countertop", material: "Glass", unit: "ft", lowPrice: 800, highPrice: 1500, source: "Industry Average", updatedAt: new Date() },
+  { category: "Kitchen Countertop", material: "Acrylic", unit: "ft", lowPrice: 300, highPrice: 600, source: "Industry Average", updatedAt: new Date() },
+  { category: "Kitchen Countertop", material: "Stone", unit: "ft", lowPrice: 600, highPrice: 1200, source: "Industry Average", updatedAt: new Date() },
   
-  // Kitchen Cabinetry (per linear foot)
-  { category: "Kitchen Cabinetry", material: "Laminate", unit: "linear foot", lowPrice: 400, highPrice: 800, source: "Renotalk 2025", updatedAt: new Date() },
-  { category: "Kitchen Cabinetry", material: "Solid Wood", unit: "linear foot", lowPrice: 800, highPrice: 1500, source: "Renotalk 2025", updatedAt: new Date() },
-  { category: "Kitchen Cabinetry", material: "Plywood", unit: "linear foot", lowPrice: 300, highPrice: 600, source: "Renotalk 2025", updatedAt: new Date() },
-  { category: "Kitchen Cabinetry", material: "Engineered Wood", unit: "linear foot", lowPrice: 400, highPrice: 800, source: "Industry Average", updatedAt: new Date() },
-  { category: "Kitchen Cabinetry", material: "Glass", unit: "linear foot", lowPrice: 600, highPrice: 1200, source: "Industry Average", updatedAt: new Date() },
-  { category: "Kitchen Cabinetry", material: "Acrylic", unit: "linear foot", lowPrice: 500, highPrice: 1000, source: "Industry Average", updatedAt: new Date() },
+  // Kitchen Cabinetry (per ft)
+  { category: "Kitchen Cabinetry", material: "Laminate", unit: "ft", lowPrice: 400, highPrice: 800, source: "Renotalk 2025", updatedAt: new Date() },
+  { category: "Kitchen Cabinetry", material: "Solid Wood", unit: "ft", lowPrice: 800, highPrice: 1500, source: "Renotalk 2025", updatedAt: new Date() },
+  { category: "Kitchen Cabinetry", material: "Plywood", unit: "ft", lowPrice: 300, highPrice: 600, source: "Renotalk 2025", updatedAt: new Date() },
+  { category: "Kitchen Cabinetry", material: "Engineered Wood", unit: "ft", lowPrice: 400, highPrice: 800, source: "Industry Average", updatedAt: new Date() },
+  { category: "Kitchen Cabinetry", material: "Glass", unit: "ft", lowPrice: 600, highPrice: 1200, source: "Industry Average", updatedAt: new Date() },
+  { category: "Kitchen Cabinetry", material: "Acrylic", unit: "ft", lowPrice: 500, highPrice: 1000, source: "Industry Average", updatedAt: new Date() },
   
   // Kitchen Sink & Tap (per set)
   { category: "Kitchen Sink & Tap", material: "Stainless Steel", unit: "set", lowPrice: 300, highPrice: 800, source: "Qanvast 2025", updatedAt: new Date() },
@@ -72,9 +72,9 @@ const STATIC_PRICES: MarketPrice[] = [
   { category: "Lighting", material: "LED", unit: "piece", lowPrice: 100, highPrice: 400, source: "Qanvast 2025", updatedAt: new Date() },
   { category: "Lighting", material: "Downlight", unit: "piece", lowPrice: 50, highPrice: 150, source: "Renotalk 2025", updatedAt: new Date() },
   
-  // Carpentry (per linear foot)
-  { category: "Carpentry", material: "Plywood", unit: "linear foot", lowPrice: 200, highPrice: 400, source: "Renotalk 2025", updatedAt: new Date() },
-  { category: "Carpentry", material: "Solid Wood", unit: "linear foot", lowPrice: 400, highPrice: 800, source: "Renotalk 2025", updatedAt: new Date() },
+  // Carpentry (per ft)
+  { category: "Carpentry", material: "Plywood", unit: "ft", lowPrice: 200, highPrice: 400, source: "Renotalk 2025", updatedAt: new Date() },
+  { category: "Carpentry", material: "Solid Wood", unit: "ft", lowPrice: 400, highPrice: 800, source: "Renotalk 2025", updatedAt: new Date() },
   
   // Electrical Points (per piece)
   { category: "Electrical Points", material: "Power Point", unit: "piece", lowPrice: 80, highPrice: 150, source: "BCA 2024", updatedAt: new Date() },
@@ -121,9 +121,11 @@ export class MarketPriceService {
     const unitAliases: Record<string, string> = {
       "sqft": "sq ft",
       "sqm": "m²",
-      "linear foot": "foot run",
-      "lm": "linear meter",
-      "m": "linear meter",
+      "linear foot": "ft",
+      "foot run": "ft",
+      "lm": "m",
+      "linear meter": "m",
+      "m": "m",
       "each": "piece",
       "pc": "piece",
       "item": "piece",

@@ -147,7 +147,7 @@ export const unitOptions = [
   // Area
   "sq ft", "sqm", "m²", "psf", "psm",
   // Linear
-  "foot run", "linear meter", "lm", "m", "linear foot",
+  "ft", "m",
   // Count
   "each", "pc", "item", "set", "lot", "piece",
   // Time
@@ -187,8 +187,8 @@ export const categoryMaterialMap = {
 } as const;
 
 export const categoryDefaultUnitMap = {
-  "Kitchen Countertop": "foot run",
-  "Kitchen Cabinetry": "linear foot",
+  "Kitchen Countertop": "ft",
+  "Kitchen Cabinetry": "ft",
   "Kitchen Sink & Tap": "set",
   "Kitchen Hob & Hood": "set",
   "Kitchen Appliances": "piece",
@@ -198,7 +198,7 @@ export const categoryDefaultUnitMap = {
   "Bathroom Shower Screen": "unit",
   "Flooring": "sq ft",
   "Lighting": "piece",
-  "Carpentry": "linear foot",
+  "Carpentry": "ft",
   "Electrical Points": "piece",
   "Painting": "sq ft",
   "Plumbing": "piece",
@@ -211,8 +211,8 @@ export const categoryDefaultUnitMap = {
 } as const;
 
 const categoryUnitMapBase = {
-  "Kitchen Countertop": ["foot run", "linear meter", "lm", "m", "linear foot"] as const,
-  "Kitchen Cabinetry": ["linear foot", "linear meter", "lm", "m"] as const,
+  "Kitchen Countertop": ["ft", "m"] as const,
+  "Kitchen Cabinetry": ["ft", "m"] as const,
   "Kitchen Sink & Tap": ["set", "piece", "each"] as const,
   "Kitchen Hob & Hood": ["set", "piece"] as const,
   "Kitchen Appliances": ["piece", "each"] as const,
@@ -222,7 +222,7 @@ const categoryUnitMapBase = {
   "Bathroom Shower Screen": ["unit", "piece"] as const,
   "Flooring": ["sq ft", "sqm", "m²"] as const,
   "Lighting": ["piece", "each"] as const,
-  "Carpentry": ["linear foot", "linear meter", "lm", "m", "piece"] as const,
+  "Carpentry": ["ft", "m", "piece"] as const,
   "Electrical Points": ["piece", "each"] as const,
   "Painting": ["sq ft", "sqm", "m²"] as const,
   "Plumbing": ["piece", "each"] as const,
