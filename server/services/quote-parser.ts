@@ -254,12 +254,59 @@ function detectTotalAmount(text: string): number | undefined {
 function detectLineItems(text: string): ParsedQuoteLineItem[] {
   const lines = text.split("\n").map(l => l.trim()).filter(Boolean);
   const items: ParsedQuoteLineItem[] = [];
+  
+  // Helper to check if an amount looks like a valid line item amount
+  function isValidLineItemAmount(amountStr: string, parsedValue: number): boolean {
+    // 1. Check if amount has currency symbol or is a reasonable line item amount
+    const hasCurrencySymbol = /[S$]/.test(amountStr);
+    const hasDecimal = /\.\d{2}/.test(amountStr);
+    
+    // 2. Exclude 6-digit numbers without currency symbols (likely postal codes)
+    const isSixDigits = /^\d{6}$/.test(amountStr.replace(/[,$]/g, ''));
+    if (isSixDigits && !hasCurrencySymbol && !hasDecimal) {
+      return false; // Likely postal code, not amount
+    }
+    
+    // 3. Amount must be within reasonable bounds for a line item
+    //    Too small: < $10 (could be quantity or unit price)
+    //    Too large: > $500,000 (unlikely for single line item in residential renovation)
+    if (parsedValue < 10 || parsedValue > 500000) {
+      return false;
+    }
+    
+    // 4. If no currency symbol and no decimal, require additional validation
+    if (!hasCurrencySymbol && !hasDecimal) {
+      // Amounts without $/SGD and without .XX need extra scrutiny
+      // Check if amount is followed by common price terms
+      const amountPattern = amountStr.replace(/[,$]/g, '');
+      const afterAmount = text.substring(text.indexOf(amountPattern) + amountPattern.length);
+      const hasPriceContext = /\s*(?:SGD|\$|dollars|only|\+gst|incl gst)/i.test(afterAmount);
+      if (!hasPriceContext) {
+        return false;
+      }
+    }
+    
+    return true;
+  }
+  
   for (const line of lines) {
     if (LINE_ITEM_HEADER_PATTERN.test(line)) continue;
-    const moneyMatch = line.match(/([$S]?\s?[\d,]+(?:\.\d{2})?)(?!.*[$S]?\s?[\d,]+(?:\.\d{2})?)/);
+    
+    // Improved regex: capture amount with better context
+    // Looks for: $1,234.56 or SGD 1,234.56 or 1,234.56 (with decimal) or $1,234 (no decimal but has $)
+    const moneyMatch = line.match(/(?:SGD\s*)?(?:\$\s*)?([\d,]+(?:\.\d{2})?)(?!.*(?:SGD\s*)?(?:\$\s*)?[\d,]+(?:\.\d{2})?)/i);
+    
     if (moneyMatch && /[A-Za-z]{3,}/.test(line)) {
-      const description = line.replace(moneyMatch[0], "").trim().replace(/^[-•\d.\s]+/, "");
-      if (description.length >= MIN_DESCRIPTION_LENGTH) items.push({ description, amount: parseCurrency(moneyMatch[0]) });
+      const fullMatch = moneyMatch[0]; // Includes currency symbol if present
+      const amountStr = moneyMatch[1]; // Just the numeric part
+      const parsedAmount = parseCurrency(fullMatch);
+      
+      if (parsedAmount && isValidLineItemAmount(fullMatch, parsedAmount)) {
+        const description = line.replace(fullMatch, "").trim().replace(/^[-•\d.\s]+/, "");
+        if (description.length >= MIN_DESCRIPTION_LENGTH) {
+          items.push({ description, amount: parsedAmount });
+        }
+      }
     }
   }
   return items.slice(0, MAX_LINE_ITEMS);

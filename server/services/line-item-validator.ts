@@ -302,6 +302,24 @@ function isPerJobItem(description: string): boolean {
 }
 
 /**
+ * Detect if a line item is a professional service (engineer, certification, permit, etc.)
+ * These should NOT be treated as labor work.
+ */
+function isProfessionalService(description: string): boolean {
+  const lowerDesc = description.toLowerCase();
+  const professionalKeywords = [
+    'engineer', 'professional', 'endorsement', 'certification', 'certify', 'certificate',
+    'permit', 'approval', 'licence', 'license', 'inspection', 'survey', 'report',
+    'drawing', 'plan', 'design', 'consultancy', 'consultant', 'architect', 'architectural',
+    'structural', 'me&p', 'm&e', 'mechanical & electrical', 'submission', 'authority',
+    'bca', 'ura', 'nea', 'pub', 'sp', 'professional fee', 'pe fee', 'pe endorsement',
+    'regulation', 'compliance', 'assessment', 'accreditation', 'registration'
+  ];
+  
+  return professionalKeywords.some(keyword => lowerDesc.includes(keyword));
+}
+
+/**
  * Estimate labor cost based on description and category.
  */
 function estimateLaborCost(description: string, category: string | null, quotedAmount: number | null): {
@@ -498,6 +516,7 @@ export async function validateLineItem(
   // Step 2: Handle special cases
   const isLabor = isLaborItem(description);
   const isPerJob = isPerJobItem(description);
+  const isProfessional = isProfessionalService(description);
   
   // Step 3: If we have enough info, look up market price
   let marketPricePerUnit: number | undefined;
@@ -507,8 +526,15 @@ export async function validateLineItem(
   let assessment: ValidatedLineItem["assessment"] = "unknown";
   let explanation = "";
   
-  // Handle labor items specially
-  if (isLabor && quotedAmount) {
+  // Handle professional services (engineer fees, certifications, permits)
+  if (isProfessional && quotedAmount) {
+    assessment = "per-job";
+    explanation = "Professional service fee (engineer, certification, permit, etc.). Market comparison not applicable.";
+    expectedAmount = undefined;
+    priceRatio = undefined;
+  }
+  // Handle labor items specially (skip if per‑job or unit="lot")
+  else if (isLabor && !isPerJob && inferredUnit !== "lot" && quotedAmount) {
     const laborEstimate = estimateLaborCost(description, inferredCategory, quotedAmount);
     expectedAmount = laborEstimate.estimatedTotal;
     priceDifference = quotedAmount - expectedAmount;
@@ -531,7 +557,16 @@ export async function validateLineItem(
   // Handle per-job/lump sum items (detected by keywords OR unit="lot")
   else if ((isPerJob || inferredUnit === "lot") && quotedAmount) {
     assessment = "per-job";
-    explanation = "This is a lump sum/per-job item. Validation requires detailed scope breakdown.";
+    
+    // More specific explanations based on item type
+    const lowerDesc = description.toLowerCase();
+    if (lowerDesc.includes('debris') || lowerDesc.includes('waste') || lowerDesc.includes('rubbish') || lowerDesc.includes('disposal')) {
+      explanation = "Debris/waste removal typically includes labor, transportation, and disposal fees. Request breakdown of volume/weight and disposal location.";
+    } else if (lowerDesc.includes('engineer') || lowerDesc.includes('professional') || lowerDesc.includes('certification') || lowerDesc.includes('endorsement') || lowerDesc.includes('permit')) {
+      explanation = "Professional service fee (engineer, certification, permit, etc.). Market comparison not applicable.";
+    } else {
+      explanation = "This is a lump sum/per‑job item. Validation requires detailed scope breakdown.";
+    }
     
     // For per-job items, we can't calculate expected amount without scope details
     // But we can still note it for the summary
