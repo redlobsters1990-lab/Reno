@@ -64,6 +64,17 @@ export interface LineItemValidationSummary {
   unknownItems: number;
   invalidItems: number;
   
+  // Breakdown by assessment type (with amounts)
+  breakdown: {
+    header: { count: number; amount: number };
+    perJob: { count: number; amount: number };
+    unknown: { count: number; amount: number };
+    invalid: { count: number; amount: number };
+    fair: { count: number; amount: number; expectedAmount: number };
+    overpriced: { count: number; amount: number; expectedAmount: number; overage: number };
+    underpriced: { count: number; amount: number; expectedAmount: number; underage: number };
+  };
+  
   // Metrics
   averagePriceRatio: number; // average of valid ratios
   validationCoverage: number; // comparableItems.length / pricedItems.length
@@ -669,6 +680,67 @@ export async function validateAllLineItems(
     recommendations.push(`Validated portion of quote appears ${Math.round((1 - comparableRatio) * 100)}% below market average - verify scope completeness`);
   }
   
+  // Calculate breakdown by assessment type
+  const breakdown = {
+    header: {
+      count: headerItems,
+      amount: validatedItems
+        .filter(item => item.assessment === "header" && item.quotedAmount !== null)
+        .reduce((sum, item) => sum + (item.quotedAmount || 0), 0)
+    },
+    perJob: {
+      count: perJobItems,
+      amount: pricedItems
+        .filter(item => item.assessment === "per-job" && item.quotedAmount !== null)
+        .reduce((sum, item) => sum + (item.quotedAmount || 0), 0)
+    },
+    unknown: {
+      count: unknownItems,
+      amount: pricedItems
+        .filter(item => item.assessment === "unknown" && item.quotedAmount !== null)
+        .reduce((sum, item) => sum + (item.quotedAmount || 0), 0)
+    },
+    invalid: {
+      count: invalidItems,
+      amount: pricedItems
+        .filter(item => item.assessment === "invalid" && item.quotedAmount !== null)
+        .reduce((sum, item) => sum + (item.quotedAmount || 0), 0)
+    },
+    fair: {
+      count: fairItems,
+      amount: pricedItems
+        .filter(item => item.assessment === "fair" && item.quotedAmount !== null)
+        .reduce((sum, item) => sum + (item.quotedAmount || 0), 0),
+      expectedAmount: pricedItems
+        .filter(item => item.assessment === "fair" && item.expectedAmount !== undefined)
+        .reduce((sum, item) => sum + (item.expectedAmount || 0), 0)
+    },
+    overpriced: {
+      count: overpricedItems,
+      amount: pricedItems
+        .filter(item => item.assessment === "overpriced" && item.quotedAmount !== null)
+        .reduce((sum, item) => sum + (item.quotedAmount || 0), 0),
+      expectedAmount: pricedItems
+        .filter(item => item.assessment === "overpriced" && item.expectedAmount !== undefined)
+        .reduce((sum, item) => sum + (item.expectedAmount || 0), 0),
+      overage: pricedItems
+        .filter(item => item.assessment === "overpriced" && item.priceDifference !== undefined && item.priceDifference > 0)
+        .reduce((sum, item) => sum + (item.priceDifference || 0), 0)
+    },
+    underpriced: {
+      count: underpricedItems,
+      amount: pricedItems
+        .filter(item => item.assessment === "underpriced" && item.quotedAmount !== null)
+        .reduce((sum, item) => sum + (item.quotedAmount || 0), 0),
+      expectedAmount: pricedItems
+        .filter(item => item.assessment === "underpriced" && item.expectedAmount !== undefined)
+        .reduce((sum, item) => sum + (item.expectedAmount || 0), 0),
+      underage: pricedItems
+        .filter(item => item.assessment === "underpriced" && item.priceDifference !== undefined && item.priceDifference < 0)
+        .reduce((sum, item) => sum + Math.abs(item.priceDifference || 0), 0)
+    }
+  };
+  
   return {
     validatedItems,
     
@@ -694,6 +766,9 @@ export async function validateAllLineItems(
     perJobItems,
     unknownItems,
     invalidItems,
+    
+    // Breakdown by assessment type
+    breakdown,
     
     // Metrics
     averagePriceRatio,

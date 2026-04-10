@@ -71,6 +71,17 @@ interface QuoteData {
       unknownItems?: number;
       invalidItems?: number;
       
+      // Breakdown by assessment type
+      breakdown?: {
+        header?: { count: number; amount: number };
+        perJob?: { count: number; amount: number };
+        unknown?: { count: number; amount: number };
+        invalid?: { count: number; amount: number };
+        fair?: { count: number; amount: number; expectedAmount: number };
+        overpriced?: { count: number; amount: number; expectedAmount: number; overage: number };
+        underpriced?: { count: number; amount: number; expectedAmount: number; underage: number };
+      };
+      
       // Metrics
       averagePriceRatio?: number;
       validationCoverage?: number;
@@ -693,6 +704,103 @@ export function QuoteUpload({ projectId, onUploadComplete }: QuoteUploadProps) {
                                 {Math.round(quote.analysis.lineItemValidation.validationCoverage * 100)}%
                               </span>
                             </div>
+                          )}
+                          
+                          {/* Breakdown by assessment type */}
+                          {quote.analysis.lineItemValidation.breakdown && (
+                            <details style={{ marginBottom: "8px" }}>
+                              <summary style={{ fontSize: "12px", fontWeight: 600, color: "#cbd5e1", cursor: "pointer", padding: "6px", borderRadius: "6px", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}>
+                                Show breakdown by item type
+                              </summary>
+                              <div style={{ marginTop: "8px", padding: "10px", borderRadius: "8px", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.04)" }}>
+                                {/* Headers */}
+                                {quote.analysis.lineItemValidation.breakdown.header && quote.analysis.lineItemValidation.breakdown.header.count > 0 && (
+                                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px", fontSize: "12px" }}>
+                                    <span style={{ color: "#60a5fa" }}>Headers:</span>
+                                    <span style={{ color: "#94a3b8" }}>{quote.analysis.lineItemValidation.breakdown.header.count} items</span>
+                                  </div>
+                                )}
+                                
+                                {/* Per-job items */}
+                                {quote.analysis.lineItemValidation.breakdown.perJob && quote.analysis.lineItemValidation.breakdown.perJob.count > 0 && (
+                                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px", fontSize: "12px" }}>
+                                    <span style={{ color: "#8b5cf6" }}>Per-job/lump sum:</span>
+                                    <span style={{ color: "#94a3b8" }}>
+                                      {quote.analysis.lineItemValidation.breakdown.perJob.count} items • 
+                                      SGD {quote.analysis.lineItemValidation.breakdown.perJob.amount.toLocaleString("en-SG")}
+                                    </span>
+                                  </div>
+                                )}
+                                
+                                {/* Unknown items */}
+                                {quote.analysis.lineItemValidation.breakdown.unknown && quote.analysis.lineItemValidation.breakdown.unknown.count > 0 && (
+                                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px", fontSize: "12px" }}>
+                                    <span style={{ color: "#94a3b8" }}>Unknown (cannot validate):</span>
+                                    <span style={{ color: "#94a3b8" }}>
+                                      {quote.analysis.lineItemValidation.breakdown.unknown.count} items • 
+                                      SGD {quote.analysis.lineItemValidation.breakdown.unknown.amount.toLocaleString("en-SG")}
+                                    </span>
+                                  </div>
+                                )}
+                                
+                                {/* Fair items */}
+                                {quote.analysis.lineItemValidation.breakdown.fair && quote.analysis.lineItemValidation.breakdown.fair.count > 0 && (
+                                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px", fontSize: "12px" }}>
+                                    <span style={{ color: "#4ade80" }}>Fair price:</span>
+                                    <span style={{ color: "#94a3b8" }}>
+                                      {quote.analysis.lineItemValidation.breakdown.fair.count} items • 
+                                      SGD {quote.analysis.lineItemValidation.breakdown.fair.amount.toLocaleString("en-SG")} quoted
+                                    </span>
+                                  </div>
+                                )}
+                                
+                                {/* Overpriced items */}
+                                {quote.analysis.lineItemValidation.breakdown.overpriced && quote.analysis.lineItemValidation.breakdown.overpriced.count > 0 && (
+                                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px", fontSize: "12px" }}>
+                                    <span style={{ color: "#f87171" }}>Overpriced:</span>
+                                    <span style={{ color: "#94a3b8" }}>
+                                      {quote.analysis.lineItemValidation.breakdown.overpriced.count} items • 
+                                      SGD {quote.analysis.lineItemValidation.breakdown.overpriced.amount.toLocaleString("en-SG")} quoted
+                                      {quote.analysis.lineItemValidation.breakdown.overpriced.overage && (
+                                        <span style={{ color: "#f87171", marginLeft: "6px" }}>
+                                          (+SGD {quote.analysis.lineItemValidation.breakdown.overpriced.overage.toLocaleString("en-SG")} overage)
+                                        </span>
+                                      )}
+                                    </span>
+                                  </div>
+                                )}
+                                
+                                {/* Underpriced items */}
+                                {quote.analysis.lineItemValidation.breakdown.underpriced && quote.analysis.lineItemValidation.breakdown.underpriced.count > 0 && (
+                                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px", fontSize: "12px" }}>
+                                    <span style={{ color: "#fbbf24" }}>Underpriced:</span>
+                                    <span style={{ color: "#94a3b8" }}>
+                                      {quote.analysis.lineItemValidation.breakdown.underpriced.count} items • 
+                                      SGD {quote.analysis.lineItemValidation.breakdown.underpriced.amount.toLocaleString("en-SG")} quoted
+                                      {quote.analysis.lineItemValidation.breakdown.underpriced.underage && (
+                                        <span style={{ color: "#fbbf24", marginLeft: "6px" }}>
+                                          (-SGD {quote.analysis.lineItemValidation.breakdown.underpriced.underage.toLocaleString("en-SG")} underage)
+                                        </span>
+                                      )}
+                                    </span>
+                                  </div>
+                                )}
+                                
+                                {/* Invalid items */}
+                                {quote.analysis.lineItemValidation.breakdown.invalid && quote.analysis.lineItemValidation.breakdown.invalid.count > 0 && (
+                                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px", fontSize: "12px" }}>
+                                    <span style={{ color: "#64748b" }}>Invalid (no amount):</span>
+                                    <span style={{ color: "#94a3b8" }}>
+                                      {quote.analysis.lineItemValidation.breakdown.invalid.count} items
+                                    </span>
+                                  </div>
+                                )}
+                                
+                                <div style={{ fontSize: "11px", color: "#64748b", marginTop: "8px", paddingTop: "8px", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+                                  This breakdown shows where each dollar of the total quoted amount falls.
+                                </div>
+                              </div>
+                            </details>
                           )}
                           
                           {/* Note about comparison */}
