@@ -241,10 +241,110 @@ async function analyzeQuoteDocument({ quoteAmount, marketRates, parsedDoc, prope
     redFlags.push("Detected total is well above expected market range.");
   }
 
-  if (parsedDoc.exclusions.length > 0) recommendations.push("Review all exclusions carefully to avoid hidden costs later.");
-  if (parsedDoc.paymentTerms.length === 0) recommendations.push("Request a milestone-based payment schedule before signing.");
-  if (!parsedDoc.warrantyTerms.length) recommendations.push("Ask the contractor to add workmanship and material warranty terms.");
-  if (!parsedDoc.materialsMentions.length) recommendations.push("Request more material detail if finishes or brands are not clearly specified.");
+  // Generate comprehensive recommendations across multiple dimensions
+  const recommendationCategories = {
+    priceFairness: [],
+    documentCompleteness: [],
+    scopeClarity: [],
+    professionalism: [],
+    riskManagement: [],
+    negotiationStrategy: [],
+  };
+
+  // Price fairness recommendations
+  if (quoteAmount < marketRates.low * PRICE_BAND_VERY_LOW) {
+    recommendationCategories.priceFairness.push("The quote is significantly below market range. Verify materials quality, workmanship standards, and check for hidden exclusions that might inflate final cost.");
+    recommendationCategories.riskManagement.push("Consider requesting contractor references or portfolio to validate quality at this price point.");
+  } else if (quoteAmount < marketRates.low) {
+    recommendationCategories.priceFairness.push("Price is below typical market range. Confirm all scope items are included and materials meet expected standards.");
+    recommendationCategories.negotiationStrategy.push("You may have limited negotiation room but can focus on ensuring scope completeness.");
+  } else if (quoteAmount <= marketRates.high) {
+    recommendationCategories.priceFairness.push("Price is within fair market range. Focus negotiation on scope clarity and payment terms rather than price reduction.");
+  } else if (quoteAmount <= marketRates.high * PRICE_BAND_PREMIUM) {
+    recommendationCategories.priceFairness.push("Price is above market average. Request detailed justification for the premium including material brands, workmanship standards, or specialized services.");
+    recommendationCategories.negotiationStrategy.push("Ask for itemized breakdown of premium costs to identify potential areas for adjustment.");
+  } else {
+    recommendationCategories.priceFairness.push("Price is significantly above market range. Require comprehensive justification before considering this quote.");
+    recommendationCategories.riskManagement.push("Consider obtaining 2-3 additional quotes to establish a competitive benchmark.");
+  }
+
+  // Document completeness recommendations
+  if (parsedDoc.exclusions.length > 0) {
+    recommendationCategories.documentCompleteness.push(`Review ${parsedDoc.exclusions.length} exclusion(s) carefully. Request contractor to price likely add-ons now to avoid variation orders later.`);
+    recommendationCategories.riskManagement.push("Create a contingency budget for excluded items that are likely to be required.");
+  }
+  
+  if (parsedDoc.paymentTerms.length === 0) {
+    recommendationCategories.documentCompleteness.push("No payment schedule detected. Request milestone-based payments (e.g., 10% deposit, 40% after demolition, 40% after carpentry, 10% upon completion).");
+    recommendationCategories.riskManagement.push("Avoid upfront payments exceeding 20% of total contract value.");
+  } else {
+    recommendationCategories.professionalism.push("Payment terms are specified, which indicates structured business practices.");
+    // Check if payment schedule is reasonable
+    const hasFrontHeavyPayment = parsedDoc.paymentTerms.some((term: string) => 
+      term.toLowerCase().includes("50%") || term.toLowerCase().includes("60%") || term.toLowerCase().includes("70%")
+    );
+    if (hasFrontHeavyPayment) {
+      recommendationCategories.riskManagement.push("Payment schedule appears front-heavy. Negotiate for more balanced milestone-based payments.");
+    }
+  }
+  
+  if (!parsedDoc.warrantyTerms.length) {
+    recommendationCategories.documentCompleteness.push("No warranty terms specified. Request minimum 12-month workmanship warranty and material warranties from suppliers.");
+    recommendationCategories.riskManagement.push("Ensure warranty terms are documented in the contract before signing.");
+  } else {
+    recommendationCategories.professionalism.push("Warranty terms are included, providing post-completion protection.");
+  }
+
+  // Scope clarity recommendations
+  if (!parsedDoc.materialsMentions.length) {
+    recommendationCategories.scopeClarity.push("Material specifications are vague. Request detailed material list including brands, models, colors, and finishes.");
+    recommendationCategories.negotiationStrategy.push("Use material specification as a negotiation point to either upgrade materials or adjust price.");
+  } else {
+    recommendationCategories.scopeClarity.push(`Material mentions (${parsedDoc.materialsMentions.length}) provide some scope clarity. Consider requesting even more specific brand/model information.`);
+  }
+  
+  if (parsedDoc.timelineMentions.length === 0) {
+    recommendationCategories.scopeClarity.push("No project timeline specified. Request estimated start date, key milestones, and completion date.");
+  } else {
+    recommendationCategories.professionalism.push("Timeline information provided, indicating project planning.");
+  }
+  
+  if (parsedDoc.lineItems.length < MIN_LINE_ITEMS_FOR_SCOPE) {
+    recommendationCategories.scopeClarity.push(`Only ${parsedDoc.lineItems.length} line items detected. Request more detailed breakdown to prevent scope ambiguity and variation claims.`);
+    recommendationCategories.riskManagement.push("Vague scope increases risk of disputes and additional charges.");
+  } else if (parsedDoc.lineItems.length >= 10) {
+    recommendationCategories.scopeClarity.push("Detailed line-item breakdown provides good scope transparency for validation.");
+  }
+
+  // Professionalism indicators
+  if (parsedDoc.contractorName) {
+    recommendationCategories.professionalism.push("Contractor name is clearly identified, which aids verification and accountability.");
+  } else {
+    recommendationCategories.riskManagement.push("Contractor name not detected. Verify business registration and physical address before proceeding.");
+  }
+  
+  if (parsedDoc.documentQuality.hasItemization) {
+    recommendationCategories.professionalism.push("Itemized quote format demonstrates organized business practices.");
+  }
+
+  // Line-item validation insights
+  if (lineItemValidation) {
+    if (lineItemValidation.overpricedItems > 0) {
+      recommendationCategories.negotiationStrategy.push(`Use the ${lineItemValidation.overpricedItems} overpriced line items as specific negotiation points to reduce overall cost.`);
+    }
+    if (lineItemValidation.underpricedItems > 0) {
+      recommendationCategories.riskManagement.push(`${lineItemValidation.underpricedItems} items appear underpriced. Verify these items include all required materials and labor.`);
+    }
+    if (lineItemValidation.unknownItems > 0) {
+      recommendationCategories.scopeClarity.push(`${lineItemValidation.unknownItems} items could not be validated. Request more detailed descriptions for these line items.`);
+    }
+    if (lineItemValidation.fairItems >= parsedDoc.lineItems.length * 0.7) {
+      recommendationCategories.priceFairness.push("Most line items appear fairly priced against market rates, supporting overall quote credibility.");
+    }
+  }
+
+  // Flatten recommendations for backward compatibility
+  recommendations.push(...Object.values(recommendationCategories).flat());
 
   // Detect missing critical scope information
   const missingInformation: string[] = [];
@@ -253,22 +353,70 @@ async function analyzeQuoteDocument({ quoteAmount, marketRates, parsedDoc, prope
   const allText = text + ' ' + lineItemsText;
   
   // Critical scope items that should be mentioned in any renovation quote
-  const criticalItems = [
-    { keyword: 'waterproof', message: 'Waterproofing scope not clearly specified (critical for wet areas).' },
-    { keyword: 'electrical point', message: 'Electrical point count and type not detailed.' },
-    { keyword: 'rewiring', message: 'Rewiring scope not mentioned (important for older properties).' },
-    { keyword: 'carpentry height', message: 'Carpentry dimensions (height, depth) not specified.' },
-    { keyword: 'countertop thickness', message: 'Countertop thickness not specified (affects pricing).' },
-    { keyword: 'tile', message: 'Tile type and size not detailed (material, finish, size).' },
-    { keyword: 'paint', message: 'Paint brand and finish not specified.' },
-    { keyword: 'lighting point', message: 'Lighting point count and type not detailed.' },
-    { keyword: 'aircon', message: 'Air‑conditioning installation scope not mentioned.' },
-    { keyword: 'sanitary', message: 'Sanitary ware specification not detailed.' },
+  // Each group contains related keywords - if NONE of them appear, flag as missing
+  const criticalItemGroups = [
+    {
+      keywords: ['waterproof', 'waterproofing', 'water proof', 'water-proof'],
+      message: 'Waterproofing scope not clearly specified (critical for wet areas).'
+    },
+    {
+      keywords: ['electrical', 'point', 'socket', 'power point', 'light point', 'switch', 'outlet', 'db board', 'distribution board'],
+      message: 'Electrical point count and type not detailed.'
+    },
+    {
+      keywords: ['rewiring', 'rewire', 'wire', 'wiring', 'cable', 'conduit'],
+      message: 'Rewiring scope not mentioned (important for older properties).'
+    },
+    {
+      keywords: ['height', 'dimension', 'measurement', 'size', 'h x w x d'],
+      message: 'Carpentry/cabinet dimensions not specified.'
+    },
+    {
+      keywords: ['thickness', 'thick', 'mm', 'millimeter'],
+      message: 'Countertop/material thickness not specified (affects pricing).'
+    },
+    {
+      keywords: ['tile', 'tiling', 'ceramic', 'porcelain', 'homogeneous', 'mosaic'],
+      message: 'Tile type and size not detailed (material, finish, size).'
+    },
+    {
+      keywords: ['paint', 'painting', 'emulsion', 'sealer', 'primer', 'undercoat'],
+      message: 'Paint brand and finish not specified.'
+    },
+    {
+      keywords: ['lighting', 'light', 'light point', 'downlight', 'spotlight', 'pendant', 'lamp'],
+      message: 'Lighting point count and type not detailed.'
+    },
+    {
+      keywords: ['aircon', 'air conditioning', 'air‑con', 'split unit', 'condenser', 'fan coil'],
+      message: 'Air‑conditioning installation scope not mentioned.'
+    },
+    {
+      keywords: ['sanitary', 'toilet', 'basin', 'shower', 'bidet', 'water closet', 'wc', 'vanity'],
+      message: 'Sanitary ware specification not detailed.'
+    },
+    {
+      keywords: ['plumbing', 'pipe', 'drain', 'water pipe', 'sanitary pipe', 'sewer', 'drainage'],
+      message: 'Plumbing scope not clearly specified.'
+    },
+    {
+      keywords: ['warranty', 'guarantee', 'warrant', 'guaranty'],
+      message: 'Warranty terms not clearly stated.'
+    },
+    {
+      keywords: ['payment', 'payment term', 'payment schedule', 'milestone', 'deposit', 'progress payment'],
+      message: 'Payment terms not clearly specified.'
+    },
+    {
+      keywords: ['timeline', 'duration', 'schedule', 'start date', 'completion', 'finish date', 'handover'],
+      message: 'Project timeline not specified.'
+    },
   ];
   
-  for (const item of criticalItems) {
-    if (!allText.includes(item.keyword)) {
-      missingInformation.push(item.message);
+  for (const group of criticalItemGroups) {
+    const hasAnyKeyword = group.keywords.some(keyword => allText.includes(keyword));
+    if (!hasAnyKeyword) {
+      missingInformation.push(group.message);
     }
   }
   
@@ -281,7 +429,16 @@ async function analyzeQuoteDocument({ quoteAmount, marketRates, parsedDoc, prope
     recommendations.push("The quote may be missing critical scope details. See missing information below.");
   }
 
-  const decision = buildDecision({ isFair, quoteAmount, marketRates, parsedDoc, redFlags, recommendations });
+  const decision = buildDecision({ 
+    isFair, 
+    quoteAmount, 
+    marketRates, 
+    parsedDoc, 
+    redFlags, 
+    recommendations,
+    missingInformation,
+    lineItemValidation
+  });
 
   return {
     isFair,
@@ -315,57 +472,177 @@ async function analyzeQuoteDocument({ quoteAmount, marketRates, parsedDoc, prope
   };
 }
 
-function buildDecision({ isFair, quoteAmount, marketRates, parsedDoc, redFlags, recommendations }: any) {
-  let riskLevel: "low" | "medium" | "high" = "medium";
-  let recommendation = "Proceed only after clarification";
-
-  const severeIssues = [
-    parsedDoc.paymentTerms.length === 0,
-    parsedDoc.warrantyTerms.length === 0,
-    parsedDoc.lineItems.length < MIN_LINE_ITEMS_FOR_SCOPE,
-    quoteAmount > marketRates.high * PRICE_BAND_PREMIUM,
-    quoteAmount < marketRates.low * PRICE_BAND_VERY_LOW,
-  ].filter(Boolean).length;
-
-  if (severeIssues >= SEVERE_ISSUES_HIGH_RISK) {
-    riskLevel = "high";
-    recommendation = "Do not proceed yet";
-  } else if (severeIssues === 0 && isFair && parsedDoc.exclusions.length <= MAX_EXCLUSIONS_FOR_LOW_RISK) {
-    riskLevel = "low";
-    recommendation = "Proceed";
-  } else if (isFair) {
-    riskLevel = "medium";
-    recommendation = "Proceed, but negotiate";
+function buildDecision({ isFair, quoteAmount, marketRates, parsedDoc, redFlags, recommendations, missingInformation, lineItemValidation }: any) {
+  // Calculate risk score based on multiple factors (0-100, lower is better)
+  let riskScore = 50; // Neutral starting point
+  
+  // Price risk: deviation from market average
+  const priceDeviation = Math.abs(quoteAmount - marketRates.average) / marketRates.average;
+  if (priceDeviation > 0.3) riskScore += 20; // High deviation
+  else if (priceDeviation > 0.15) riskScore += 10; // Moderate deviation
+  else riskScore -= 5; // Close to market average
+  
+  // Document completeness risk
+  if (parsedDoc.paymentTerms.length === 0) riskScore += 15;
+  if (parsedDoc.warrantyTerms.length === 0) riskScore += 15;
+  if (parsedDoc.lineItems.length < MIN_LINE_ITEMS_FOR_SCOPE) riskScore += 20;
+  if (parsedDoc.contractorName) riskScore -= 5; // Positive factor
+  if (parsedDoc.documentQuality.hasItemization) riskScore -= 5;
+  
+  // Exclusion risk
+  riskScore += Math.min(parsedDoc.exclusions.length * 5, 25); // Max 25 points for exclusions
+  
+  // Missing information risk
+  riskScore += Math.min((missingInformation?.length || 0) * 3, 15);
+  
+  // Line-item validation risk
+  if (lineItemValidation) {
+    const validationRisk = lineItemValidation.overpricedItems * 3 + lineItemValidation.unknownItems * 2;
+    riskScore += Math.min(validationRisk, 20);
   }
-
-  const reasons: string[] = [];
-  if (isFair) reasons.push("Quoted price is within or near the expected market range.");
-  else reasons.push("Quoted price sits outside the expected market range.");
-  if (parsedDoc.lineItems.length >= MIN_LINE_ITEMS_FOR_SCOPE) reasons.push("The quote is itemized enough to review scope at a practical level.");
-  if (parsedDoc.exclusions.length > 0) reasons.push(`There are ${parsedDoc.exclusions.length} exclusions that could turn into hidden costs.`);
-  if (parsedDoc.paymentTerms.length === 0) reasons.push("Payment terms are not clearly stated.");
-  if (parsedDoc.warrantyTerms.length === 0) reasons.push("Warranty terms are not clearly stated.");
-
+  
+  // Determine risk level based on score
+  let riskLevel: "low" | "medium" | "high" = "medium";
+  if (riskScore < 40) riskLevel = "low";
+  else if (riskScore > 70) riskLevel = "high";
+  
+  // Generate recommendation based on risk level and specific issues
+  let recommendation = "";
+  let nextSteps: string[] = [];
+  
+  if (riskLevel === "low") {
+    recommendation = "This quote appears reasonable with good documentation. You can proceed with contract signing after final verification.";
+    nextSteps = [
+      "Review contract terms carefully before signing",
+      "Confirm start date and project timeline",
+      "Document any verbal agreements in writing",
+    ];
+  } else if (riskLevel === "medium") {
+    recommendation = "This quote has some areas requiring clarification before proceeding. Negotiate key points and document agreements.";
+    nextSteps = [
+      "Address the must-clarify items below before signing",
+      "Obtain 1-2 additional quotes for comparison",
+      "Request revised quote with clarified scope",
+    ];
+  } else {
+    recommendation = "This quote has significant risk factors. Do not proceed until major issues are resolved.";
+    nextSteps = [
+      "Address all high-risk items before considering this quote",
+      "Obtain 2-3 additional quotes for competitive benchmarking",
+      "Consider engaging a different contractor if issues persist",
+    ];
+  }
+  
+  // Generate must-clarify items based on specific issues
   const mustClarify: string[] = [];
-  if (parsedDoc.exclusions.length > 0) mustClarify.push("Ask the contractor to confirm every exclusion in writing and price any likely add-ons now.");
-  if (parsedDoc.paymentTerms.length === 0) mustClarify.push("Request a milestone-based payment schedule instead of vague or front-loaded payments.");
-  if (parsedDoc.warrantyTerms.length === 0) mustClarify.push("Request explicit workmanship and material warranty coverage in writing.");
-  if (parsedDoc.materialsMentions.length === 0) mustClarify.push("Ask for the exact material brands, models, and finish specifications.");
-  if (parsedDoc.lineItems.length < MIN_LINE_ITEMS_FOR_SCOPE) mustClarify.push("Ask for a more detailed line-item breakdown before making a decision.");
-
+  
+  if (parsedDoc.exclusions.length > 0) {
+    mustClarify.push(`Clarify ${parsedDoc.exclusions.length} exclusion(s): request fixed pricing for likely add-ons.`);
+  }
+  
+  if (parsedDoc.paymentTerms.length === 0) {
+    mustClarify.push("Establish milestone-based payment schedule (recommended: 10-30-40-20% structure).");
+  } else {
+    // Check for unreasonable payment terms
+    const paymentText = parsedDoc.paymentTerms.join(" ").toLowerCase();
+    if (paymentText.includes("50%") || paymentText.includes("60%") || paymentText.includes("70%")) {
+      mustClarify.push("Negotiate front-heavy payment schedule to more balanced milestones.");
+    }
+  }
+  
+  if (parsedDoc.warrantyTerms.length === 0) {
+    mustClarify.push("Specify warranty terms: minimum 12-month workmanship, material warranties.");
+  }
+  
+  if (parsedDoc.materialsMentions.length === 0) {
+    mustClarify.push("Request detailed material specifications including brands, models, finishes.");
+  }
+  
+  if (parsedDoc.lineItems.length < MIN_LINE_ITEMS_FOR_SCOPE) {
+    mustClarify.push(`Request more detailed breakdown (current: ${parsedDoc.lineItems.length} items, recommended: 10+).`);
+  }
+  
+  if (!parsedDoc.contractorName) {
+    mustClarify.push("Verify contractor business registration, address, and references.");
+  }
+  
+  if (missingInformation && missingInformation.length > 0) {
+    mustClarify.push(`Address missing scope details: ${Math.min(missingInformation.length, 3)} critical items not specified.`);
+  }
+  
+  if (lineItemValidation?.overpricedItems > 0) {
+    mustClarify.push(`Review ${lineItemValidation.overpricedItems} potentially overpriced line items for negotiation.`);
+  }
+  
+  // Generate negotiation points
   const negotiationPoints: string[] = [];
-  if (quoteAmount > marketRates.average) negotiationPoints.push("Use market comparison to negotiate the total closer to the average range.");
-  if (parsedDoc.exclusions.length > 0) negotiationPoints.push("Negotiate to include high-probability exclusions now instead of treating them as later variation orders.");
-  if (parsedDoc.paymentTerms.length > 0) negotiationPoints.push("Tie payment releases to completed milestones, not just dates.");
+  
+  if (quoteAmount > marketRates.average * 1.1) {
+    negotiationPoints.push(`Use market comparison (${formatSGD(marketRates.average)} average) to negotiate toward midpoint.`);
+  }
+  
+  if (parsedDoc.exclusions.length > 0) {
+    negotiationPoints.push("Negotiate to include high-probability exclusions now at fixed prices.");
+  }
+  
+  if (lineItemValidation?.overpricedItems > 0) {
+    negotiationPoints.push(`Focus negotiation on ${lineItemValidation.overpricedItems} specific overpriced items.`);
+  }
+  
+  if (parsedDoc.materialsMentions.length === 0) {
+    negotiationPoints.push("Use material specification as leverage: either specify and maintain price, or adjust price for basic materials.");
+  }
+  
+  // Generate reasons for the recommendation
+  const reasons: string[] = [];
+  
+  if (isFair) {
+    reasons.push("Price is within acceptable market range.");
+  } else if (quoteAmount > marketRates.high) {
+    reasons.push("Price exceeds typical market range.");
+  } else {
+    reasons.push("Price is below typical market range - verify quality.");
+  }
+  
+  if (parsedDoc.lineItems.length >= 10) {
+    reasons.push("Detailed itemization provides good scope transparency.");
+  } else if (parsedDoc.lineItems.length >= MIN_LINE_ITEMS_FOR_SCOPE) {
+    reasons.push("Moderate itemization allows basic scope review.");
+  } else {
+    reasons.push("Limited itemization increases scope ambiguity risk.");
+  }
+  
+  if (parsedDoc.paymentTerms.length > 0 && parsedDoc.warrantyTerms.length > 0) {
+    reasons.push("Payment and warranty terms are specified.");
+  } else if (parsedDoc.paymentTerms.length > 0 || parsedDoc.warrantyTerms.length > 0) {
+    reasons.push("Some professional terms are included but not comprehensive.");
+  } else {
+    reasons.push("Missing key professional terms (payment schedule, warranty).");
+  }
+  
+  if (parsedDoc.contractorName) {
+    reasons.push("Contractor identity is clear.");
+  }
+  
+  if (missingInformation && missingInformation.length > 0) {
+    reasons.push(`${missingInformation.length} critical scope details are missing.`);
+  }
 
   return {
     recommendation,
     riskLevel,
+    riskScore: Math.round(riskScore),
     reasons,
     mustClarify,
     negotiationPoints,
+    nextSteps,
     exclusionGuide: buildExclusionGuide(parsedDoc.exclusions),
   };
+}
+
+// Helper function to format SGD
+function formatSGD(amount: number): string {
+  return `SGD ${amount.toLocaleString("en-SG", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
 }
 
 function buildExclusionGuide(exclusions: string[]) {

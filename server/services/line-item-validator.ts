@@ -57,59 +57,84 @@ export interface LineItemValidationSummary {
 /**
  * Keywords mapping for category inference.
  * Matched from description (case‑insensitive).
+ * Order matters: more specific categories first to avoid misclassification.
  */
 const CATEGORY_KEYWORDS: Record<string, string[]> = {
-  "Kitchen Countertop": ["countertop", "counter top", "table top", "kitchen top", "island top", "quartz top", "granite top"],
-  "Kitchen Cabinetry": ["cabinet", "cupboard", "kitchen cabinet", "base cabinet", "wall cabinet", "pantry"],
-  "Kitchen Sink & Tap": ["sink", "tap", "faucet", "kitchen sink", "mixer"],
-  "Kitchen Hob & Hood": ["hob", "hood", "cooktop", "hood system", "extractor"],
-  "Bathroom Vanity": ["vanity", "bathroom cabinet", "basin cabinet", "vanity top"],
-  "Bathroom Tiling": ["tile", "tiling", "wall tile", "floor tile", "bathroom tile"],
-  "Bathroom Fixtures": ["toilet", "basin", "shower", "bidet", "water closet", "WC"],
-  "Bathroom Shower Screen": ["shower screen", "glass panel", "shower door"],
-  "Flooring": ["flooring", "vinyl", "laminate floor", "parquet", "tile floor", "floor tile"],
-  "Carpentry": ["carpentry", "built‑in", "wardrobe", "shoe cabinet", "tv console", "study table"],
-  "Electrical Points": ["point", "socket", "power point", "light point", "fan point", "switch", "outlet"],
-  "Painting": ["paint", "painting", "wall paint", "ceiling paint", "emulsion"],
-  "Plumbing": ["plumbing", "pipe", "drain", "water point", "sanitary", "sewer"],
-  "Windows & Doors": ["window", "door", "grille", "casement", "sliding door", "gate"],
-  "HVAC": ["aircon", "air‑con", "air conditioning", "condenser", "fan coil"],
-  "Wall Finishes": ["feature wall", "wall panel", "cladding", "wallpaper", "wood panel"],
-  "Built‑In Furniture": ["built‑in", "custom furniture", "wardrobe", "storage", "shelving"],
-  "Smart Home": ["smart", "home automation", "smart switch", "smart lock", "sensor"],
+  "Kitchen Countertop": ["countertop", "counter top", "table top", "kitchen top", "island top", "quartz top", "granite top", "stone top", "sintered top", "solid surface", "worktop", "bench top"],
+  "Kitchen Cabinetry": ["cabinet", "cupboard", "kitchen cabinet", "base cabinet", "wall cabinet", "pantry", "top hung", "bottom cabinet", "tall cabinet", "casement", "fridge cabinet", "oven cabinet"],
+  "Kitchen Sink & Tap": ["sink", "tap", "faucet", "kitchen sink", "mixer", "water tap", "basin tap", "sink mixer"],
+  "Kitchen Hob & Hood": ["hob", "hood", "cooktop", "hood system", "extractor", "chimney hood", "cooker hood", "induction hob", "gas hob"],
+  "Bathroom Vanity": ["vanity", "bathroom cabinet", "basin cabinet", "vanity top", "vanity cabinet", "bathroom vanity", "mirror cabinet"],
+  "Bathroom Tiling": ["tile", "tiling", "wall tile", "floor tile", "bathroom tile", "homogeneous tile", "ceramic tile", "porcelain tile", "mosaic", "wall tiling", "floor tiling"],
+  "Bathroom Fixtures": ["toilet", "basin", "shower", "bidet", "water closet", "WC", "wash basin", "shower set", "shower mixer", "basin mixer", "sanitary", "sanitary ware"],
+  "Bathroom Shower Screen": ["shower screen", "glass panel", "shower door", "shower enclosure", "glass door", "shower partition", "shower glass"],
+  "Flooring": ["flooring", "vinyl", "laminate floor", "parquet", "tile floor", "floor tile", "floor vinyl", "vinyl flooring", "laminate flooring", "timber floor", "engineered wood floor"],
+  "Carpentry": ["carpentry", "built‑in", "wardrobe", "shoe cabinet", "tv console", "study table", "study desk", "entertainment unit", "display cabinet", "bookshelf", "storage cabinet", "bedroom wardrobe", "walk-in wardrobe", "fitted wardrobe"],
+  "Electrical Points": ["point", "socket", "power point", "light point", "fan point", "switch", "outlet", "13a", "15a", "20a", "power socket", "light switch", "dimmer", "DB board", "distribution board"],
+  "Painting": ["paint", "painting", "wall paint", "ceiling paint", "emulsion", "sealer", "sealant", "undercoat", "primer", "painting work", "painting works"],
+  "Plumbing": ["plumbing", "pipe", "drain", "water point", "sanitary", "sewer", "water piping", "sanitary piping", "cold water", "hot water", "drainage", "waste pipe", "soil pipe"],
+  "Windows & Doors": ["window", "door", "grille", "casement", "sliding door", "gate", "window grille", "casement window", "sliding window", "bay window", "aluminum window", "timber door", "main door", "bedroom door"],
+  "HVAC": ["aircon", "air‑con", "air conditioning", "condenser", "fan coil", "air conditioner", "split unit", "system", "compressor", "refrigerant", "aircon piping", "aircon installation"],
+  "Wall Finishes": ["feature wall", "wall panel", "cladding", "wallpaper", "wood panel", "wall cladding", "wall feature", "accent wall", "wall finish", "wall treatment"],
+  "Built‑In Furniture": ["built‑in", "custom furniture", "wardrobe", "storage", "shelving", "built-in cabinet", "built-in wardrobe", "built-in shelving", "fitted furniture", "custom cabinet"],
+  "Smart Home": ["smart", "home automation", "smart switch", "smart lock", "sensor", "smart home", "home automation system", "smart lighting", "smart thermostat", "video doorbell"],
+  "Demolition": ["demolition", "hacking", "dismantle", "remove existing", "strip out", "clear debris", "haulage", "demolish"],
+  "Masonry": ["masonry", "plaster", "screed", "cement", "concrete", "render", "wall plaster", "cement screed", "concrete work", "brickwork"],
+  "Ceiling": ["ceiling", "false ceiling", "suspended ceiling", "ceiling work", "light box", "ceiling box", "ceiling panel", "ceiling cornice"],
+  "Glass Work": ["glass", "glass work", "glass panel", "tempered glass", "glass door", "glass partition", "glass screen"],
 };
 
 /**
  * Material keywords for inference.
+ * More specific materials should be listed before general ones.
  */
 const MATERIAL_KEYWORDS: Record<string, string[]> = {
-  "Laminate": ["laminate", "laminated", "melamine"],
-  "Quartz": ["quartz"],
-  "Marble": ["marble"],
-  "Granite": ["granite"],
-  "Solid Wood": ["solid wood", "teak", "oak", "meranti", "nyatoh"],
-  "Plywood": ["plywood", "ply"],
-  "Engineered Wood": ["engineered wood", "veneer", "laminated wood"],
-  "Stainless Steel": ["stainless", "stainless steel", "SS"],
-  "Ceramic": ["ceramic", "porcelain"],
-  "Glass": ["glass", "toughened", "tempered"],
-  "Acrylic": ["acrylic", "solid surface"],
-  "Sintered Stone": ["sintered", "sintered stone", "neolith", "dekton"],
-  "Vinyl": ["vinyl", "PVC", "LVT"],
-  "Composite": ["composite", "quartz composite"],
-  "Tile": ["tile", "ceramic tile", "porcelain tile"],
+  "Quartz": ["quartz", "caesarstone", "silestone", "compac", "quartz stone"],
+  "Marble": ["marble", "carrara", "calacatta", "statuario", "marble stone"],
+  "Granite": ["granite", "granite stone", "black galaxy", "absolute black"],
+  "Sintered Stone": ["sintered", "sintered stone", "neolith", "dekton", "lapitec", "sintered slab"],
+  "Solid Surface": ["solid surface", "corian", "hi-macs", "acrylic solid surface", "avonite"],
+  "Laminate": ["laminate", "laminated", "melamine", "formica", "laminate sheet", "postform"],
+  "Solid Wood": ["solid wood", "teak", "oak", "meranti", "nyatoh", "cherry", "walnut", "maple", "beech", "solid timber"],
+  "Plywood": ["plywood", "ply", "marine ply", "bwp", "boiling water proof"],
+  "MDF": ["mdf", "medium density fibreboard", "hdf", "high density"],
+  "Engineered Wood": ["engineered wood", "veneer", "laminated wood", "wood veneer", "laminate wood"],
+  "Stainless Steel": ["stainless", "stainless steel", "SS", "304 stainless", "316 stainless", "stainless sink"],
+  "Ceramic": ["ceramic", "porcelain", "ceramic tile", "porcelain tile", "glazed ceramic"],
+  "Glass": ["glass", "toughened", "tempered", "clear glass", "frosted glass", "mirror", "glass panel"],
+  "Acrylic": ["acrylic", "perspex", "plexiglass", "acrylic sheet"],
+  "Vinyl": ["vinyl", "PVC", "LVT", "luxury vinyl tile", "vinyl plank", "vinyl flooring"],
+  "Composite": ["composite", "quartz composite", "composite material", "composite stone"],
+  "Concrete": ["concrete", "microcement", "polished concrete", "cement screed"],
+  "Aluminum": ["aluminum", "aluminium", "aluminum frame", "aluminum profile"],
+  "UPVC": ["upvc", "pvc", "plastic", "vinyl window", "pvc window"],
+  "Wood Plastic Composite": ["wpc", "wood plastic composite", "composite decking"],
+  "Tile": ["tile", "ceramic tile", "porcelain tile", "homogeneous", "mosaic", "subway tile"],
+  "Paint": ["paint", "emulsion", "sealer", "primer", "undercoat", "nippon", "dulux", "ici"],
+  "Sanitary Ware": ["sanitary", "sanitary ware", "toilet", "basin", "shower", "bidet", "water closet"],
+  "Electrical": ["wire", "cable", "conduit", "DB", "distribution board", "circuit breaker", "mc", "rcd"],
+  "Plumbing": ["pipe", "copper", "PVC pipe", "GI pipe", "PEX", "water pipe", "drain pipe"],
+  "Hardware": ["handle", "hinge", "knob", "drawer runner", "blum", "hettich", "soft close"],
+  "Lighting": ["led", "light", "lighting", "downlight", "spotlight", "track light", "pendant"],
 };
 
 /**
  * Unit keywords for inference.
  */
 const UNIT_KEYWORDS: Record<string, string[]> = {
-  "ft": ["ft", "foot", "feet", "linear ft", "linear foot"],
-  "m": ["m", "meter", "metre", "linear m", "linear meter"],
-  "sq ft": ["sq ft", "sqft", "square foot", "square feet"],
-  "m²": ["m²", "sqm", "square meter", "square metre"],
-  "piece": ["piece", "pc", "each", "unit", "set"],
-  "day": ["day", "man‑day", "MD", "labour day"],
+  "ft": ["ft", "foot", "feet", "linear ft", "linear foot", "lf", "run", "foot run", "running foot", "running feet", "l.f."],
+  "m": ["m", "meter", "metre", "linear m", "linear meter", "lm", "running meter", "running metre", "l.m."],
+  "sq ft": ["sq ft", "sqft", "square foot", "square feet", "sf", "sft", "sq.ft.", "sq. ft.", "ft²", "square ft"],
+  "m²": ["m²", "sqm", "square meter", "square metre", "m2", "sq.m.", "sq. m.", "square m"],
+  "piece": ["piece", "pc", "each", "unit", "set", "nos", "no.", "item", "lot"],
+  "day": ["day", "man‑day", "MD", "labour day", "man day", "worker day", "labor day", "day work", "daily"],
+  "hour": ["hour", "hr", "man‑hour", "labour hour", "hourly"],
+  "lot": ["lot", "lump sum", "ls", "l.s.", "package", "project"],
+  "roll": ["roll", "rl", "roller"],
+  "sheet": ["sheet", "sh", "panel", "board"],
+  "length": ["length", "lg", "long"],
+  "kg": ["kg", "kilogram", "kilo"],
+  "l": ["l", "liter", "litre"],
 };
 
 /**
@@ -209,8 +234,12 @@ function inferMaterial(description: string, category: string): { material: strin
   const defaultMaterials: Record<string, string> = {
     "Kitchen Countertop": "Laminate",
     "Kitchen Cabinetry": "Laminate",
+    "Kitchen Sink & Tap": "Stainless Steel",
+    "Kitchen Hob & Hood": "Induction",
     "Bathroom Vanity": "Laminate",
     "Bathroom Tiling": "Ceramic",
+    "Bathroom Fixtures": "Ceramic",
+    "Bathroom Shower Screen": "Glass",
     "Flooring": "Vinyl",
     "Carpentry": "Plywood",
     "Electrical Points": "Power Point",
@@ -221,6 +250,10 @@ function inferMaterial(description: string, category: string): { material: strin
     "Wall Finishes": "Wall Panel",
     "Built‑In Furniture": "Plywood",
     "Smart Home": "Smart Switch",
+    "Demolition": "Demolition Work",
+    "Masonry": "Cement",
+    "Ceiling": "Gypsum Board",
+    "Glass Work": "Glass",
   };
   
   const defaultMaterial = defaultMaterials[category] || "Standard";
@@ -384,6 +417,10 @@ function inferDefaultUnit(category: string): string {
     "Wall Finishes": "sq ft",
     "Built‑In Furniture": "piece",
     "Smart Home": "piece",
+    "Demolition": "sq ft",
+    "Masonry": "sq ft",
+    "Ceiling": "sq ft",
+    "Glass Work": "piece",
     "Other": "piece",
   };
   
