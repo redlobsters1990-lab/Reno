@@ -42,19 +42,39 @@ interface QuoteData {
         expectedAmount?: number;
         priceDifference?: number;
         priceRatio?: number;
-        assessment: "fair" | "overpriced" | "underpriced" | "unknown" | "invalid";
+        assessment: "fair" | "overpriced" | "underpriced" | "unknown" | "invalid" | "header" | "per-job";
         confidence: number;
         explanation: string;
         matchedKeywords: string[];
       }>;
+      
+      // Totals for all priced items
       totalQuoted?: number;
       totalExpected?: number;
       overallDifference?: number;
-      averagePriceRatio?: number;
+      
+      // Apples-to-apples comparison (only items we could validate)
+      comparableQuoted?: number;
+      comparableExpected?: number;
+      comparableDifference?: number;
+      comparableRatio?: number;
+      comparableItemCount?: number;
+      
+      // Item counts
+      totalItems?: number;
+      headerItems?: number;
+      pricedItemCount?: number;
       overpricedItems?: number;
       underpricedItems?: number;
       fairItems?: number;
+      perJobItems?: number;
       unknownItems?: number;
+      invalidItems?: number;
+      
+      // Metrics
+      averagePriceRatio?: number;
+      validationCoverage?: number;
+      
       recommendations?: string[];
       redFlags?: string[];
     };
@@ -613,22 +633,72 @@ export function QuoteUpload({ projectId, onUploadComplete }: QuoteUploadProps) {
                       </div>
                       
                       {/* Overall summary */}
-                      {quote.analysis.lineItemValidation.totalQuoted && quote.analysis.lineItemValidation.totalExpected && (
+                      {quote.analysis.lineItemValidation.totalQuoted && (
                         <div style={{ marginBottom: "12px", padding: "10px", borderRadius: "8px", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}>
+                          {/* Total quoted (all priced items) */}
                           <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
                             <span style={{ fontSize: "13px", color: "#cbd5e1" }}>Total quoted:</span>
                             <span style={{ fontSize: "13px", fontWeight: 600, color: "white" }}>SGD {quote.analysis.lineItemValidation.totalQuoted.toLocaleString("en-SG")}</span>
                           </div>
-                          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
-                            <span style={{ fontSize: "13px", color: "#cbd5e1" }}>Expected market total:</span>
-                            <span style={{ fontSize: "13px", fontWeight: 600, color: "white" }}>SGD {quote.analysis.lineItemValidation.totalExpected.toLocaleString("en-SG")}</span>
-                          </div>
-                          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
-                            <span style={{ fontSize: "13px", color: "#cbd5e1" }}>Difference:</span>
-                            <span style={{ fontSize: "13px", fontWeight: 600, color: quote.analysis.lineItemValidation.overallDifference && quote.analysis.lineItemValidation.overallDifference > 0 ? "#f87171" : "#4ade80" }}>
-                              {quote.analysis.lineItemValidation.overallDifference && quote.analysis.lineItemValidation.overallDifference > 0 ? "+" : ""}
-                              SGD {quote.analysis.lineItemValidation.overallDifference ? Math.abs(quote.analysis.lineItemValidation.overallDifference).toLocaleString("en-SG") : "0"}
-                            </span>
+                          
+                          {/* Apples-to-apples comparison (only validated items) */}
+                          {quote.analysis.lineItemValidation.comparableQuoted !== undefined && quote.analysis.lineItemValidation.comparableExpected !== undefined && (
+                            <>
+                              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px", paddingTop: "8px", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+                                <div>
+                                  <span style={{ fontSize: "13px", color: "#cbd5e1" }}>Validated portion:</span>
+                                  <span style={{ fontSize: "11px", color: "#94a3b8", marginLeft: "6px" }}>
+                                    ({quote.analysis.lineItemValidation.comparableItemCount || 0} items)
+                                  </span>
+                                </div>
+                                <span style={{ fontSize: "13px", fontWeight: 600, color: "white" }}>
+                                  SGD {quote.analysis.lineItemValidation.comparableQuoted.toLocaleString("en-SG")}
+                                </span>
+                              </div>
+                              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
+                                <span style={{ fontSize: "13px", color: "#cbd5e1" }}>Expected market value:</span>
+                                <span style={{ fontSize: "13px", fontWeight: 600, color: "white" }}>
+                                  SGD {quote.analysis.lineItemValidation.comparableExpected.toLocaleString("en-SG")}
+                                </span>
+                              </div>
+                              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
+                                <span style={{ fontSize: "13px", color: "#cbd5e1" }}>Difference:</span>
+                                <span style={{ fontSize: "13px", fontWeight: 600, color: quote.analysis.lineItemValidation.comparableDifference && quote.analysis.lineItemValidation.comparableDifference > 0 ? "#f87171" : "#4ade80" }}>
+                                  {quote.analysis.lineItemValidation.comparableDifference && quote.analysis.lineItemValidation.comparableDifference > 0 ? "+" : ""}
+                                  SGD {quote.analysis.lineItemValidation.comparableDifference ? Math.abs(quote.analysis.lineItemValidation.comparableDifference).toLocaleString("en-SG") : "0"}
+                                </span>
+                              </div>
+                              {quote.analysis.lineItemValidation.comparableRatio !== undefined && (
+                                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
+                                  <span style={{ fontSize: "13px", color: "#cbd5e1" }}>Price ratio:</span>
+                                  <span style={{ fontSize: "13px", fontWeight: 600, color: 
+                                    quote.analysis.lineItemValidation.comparableRatio > 1.15 ? "#f87171" : 
+                                    quote.analysis.lineItemValidation.comparableRatio < 0.85 ? "#fbbf24" : "#4ade80"
+                                  }}>
+                                    {quote.analysis.lineItemValidation.comparableRatio.toFixed(2)}x
+                                  </span>
+                                </div>
+                              )}
+                            </>
+                          )}
+                          
+                          {/* Validation coverage */}
+                          {quote.analysis.lineItemValidation.validationCoverage !== undefined && (
+                            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px", paddingTop: "8px", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+                              <span style={{ fontSize: "13px", color: "#cbd5e1" }}>Validation coverage:</span>
+                              <span style={{ fontSize: "13px", fontWeight: 600, color: 
+                                quote.analysis.lineItemValidation.validationCoverage > 0.7 ? "#4ade80" : 
+                                quote.analysis.lineItemValidation.validationCoverage > 0.4 ? "#fbbf24" : "#f87171"
+                              }}>
+                                {Math.round(quote.analysis.lineItemValidation.validationCoverage * 100)}%
+                              </span>
+                            </div>
+                          )}
+                          
+                          {/* Note about comparison */}
+                          <div style={{ fontSize: "11px", color: "#94a3b8", marginTop: "8px", paddingTop: "8px", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+                            <div style={{ marginBottom: "2px" }}>• <strong>Total quoted</strong>: Sum of all priced line items</div>
+                            <div>• <strong>Validated portion</strong>: Only items with sufficient detail for market comparison</div>
                           </div>
                         </div>
                       )}
@@ -648,10 +718,14 @@ export function QuoteUpload({ projectId, onUploadComplete }: QuoteUploadProps) {
                                     background: item.assessment === "fair" ? "rgba(34,197,94,0.15)" : 
                                     item.assessment === "overpriced" ? "rgba(239,68,68,0.15)" : 
                                     item.assessment === "underpriced" ? "rgba(245,158,11,0.15)" : 
+                                    item.assessment === "header" ? "rgba(96,165,250,0.15)" : 
+                                    item.assessment === "per-job" ? "rgba(139,92,246,0.15)" : 
                                     "rgba(148,163,184,0.15)",
                                     color: item.assessment === "fair" ? "#4ade80" : 
                                     item.assessment === "overpriced" ? "#f87171" : 
                                     item.assessment === "underpriced" ? "#fbbf24" : 
+                                    item.assessment === "header" ? "#60a5fa" : 
+                                    item.assessment === "per-job" ? "#8b5cf6" : 
                                     "#94a3b8"
                                   }}>
                                     {item.assessment.toUpperCase()}

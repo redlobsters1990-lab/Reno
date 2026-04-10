@@ -30,7 +30,7 @@ export interface ValidatedLineItem {
   priceRatio?: number; // quoted / expected (null if either missing)
   
   // Assessment
-  assessment: "fair" | "overpriced" | "underpriced" | "unknown" | "invalid";
+  assessment: "fair" | "overpriced" | "underpriced" | "unknown" | "invalid" | "header" | "per-job";
   confidence: number; // 0-1 confidence in inference
   explanation: string;
   
@@ -40,14 +40,33 @@ export interface ValidatedLineItem {
 
 export interface LineItemValidationSummary {
   validatedItems: ValidatedLineItem[];
+  
+  // Totals for all priced items
   totalQuoted: number;
   totalExpected: number;
   overallDifference: number;
-  averagePriceRatio: number; // average of valid ratios
+  
+  // Apples-to-apples comparison (only items we could validate)
+  comparableQuoted: number;
+  comparableExpected: number;
+  comparableDifference: number;
+  comparableRatio: number;
+  comparableItemCount: number;
+  
+  // Item counts
+  totalItems: number;
+  headerItems: number;
+  pricedItemCount: number;
   overpricedItems: number;
   underpricedItems: number;
   fairItems: number;
+  perJobItems: number;
   unknownItems: number;
+  invalidItems: number;
+  
+  // Metrics
+  averagePriceRatio: number; // average of valid ratios
+  validationCoverage: number; // comparableItems.length / pricedItems.length
   
   // Recommendations
   recommendations: string[];
@@ -141,11 +160,24 @@ const UNIT_KEYWORDS: Record<string, string[]> = {
  * Extract quantity from description (e.g., "10 ft" → 10).
  */
 function extractQuantity(description: string): number | null {
-  // Look for patterns like "10 ft", "3.5 m", "2 pieces"
-  const quantityMatch = description.match(/(\d+(?:\.\d+)?)\s*(?:ft|m|sq|piece|pc|set|day|unit)/i);
+  // First, try to detect if this is a header/title (not a priced item)
+  if (isLikelyHeader(description)) {
+    return null; // Headers don't have quantities
+  }
+  
+  // Look for patterns like "10 ft", "3.5 m", "2 pieces", "10x10", "10 nos", "10pcs"
+  // Expanded regex to include more unit patterns and formats
+  const quantityMatch = description.match(/(\d+(?:\.\d+)?)\s*(?:x\s*\d+(?:\.\d+)?\s*)?(?:ft|m|sq|piece|pc|pcs|nos|no\.|set|day|unit|hour|hr|lot|ls|roll|sheet|length|kg|l|lf|lm|sf|sft|sqm|m2)/i);
   if (quantityMatch) {
     return parseFloat(quantityMatch[1]);
   }
+  
+  // Look for patterns like "10 nos.", "10 pcs" (with punctuation)
+  const nosMatch = description.match(/(\d+(?:\.\d+)?)\s*nos?\.?/i);
+  if (nosMatch) return parseFloat(nosMatch[1]);
+  
+  const pcsMatch = description.match(/(\d+(?:\.\d+)?)\s*pcs?\.?/i);
+  if (pcsMatch) return parseFloat(pcsMatch[1]);
   
   // Look for standalone numbers before unit keywords
   const words = description.toLowerCase().split(/\s+/);
@@ -164,7 +196,162 @@ function extractQuantity(description: string): number | null {
     }
   }
   
+  // Check for per-job/lump sum items (might not have explicit quantity)
+  const lowerDesc = description.toLowerCase();
+  if (lowerDesc.includes('lump sum') || lowerDesc.includes('package') || lowerDesc.includes('project') || 
+      lowerDesc.includes('job') || lowerDesc.includes('contract') || lowerDesc.includes('scope')) {
+    return 1; // Treat as quantity 1 for per-job items
+  }
+  
   return null;
+}
+
+/**
+ * Detect if a line item is likely a header/title rather than a priced item.
+ */
+function isLikelyHeader(description: string): boolean {
+  const lowerDesc = description.toLowerCase().trim();
+  
+  // Headers often:
+  // 1. Are in ALL CAPS (at least 70% uppercase)
+  const upperCaseRatio = (description.replace(/[^A-Z]/g, '').length / Math.max(1, description.replace(/[^A-Za-z]/g, '').length));
+  if (upperCaseRatio > 0.7 && description.length > 5) {
+    return true;
+  }
+  
+  // 2. End with colon
+  if (description.trim().endsWith(':')) {
+    return true;
+  }
+  
+  // 3. Contain header keywords
+  const headerKeywords = [
+    'scope', 'includes', 'excludes', 'work', 'items', 'description', 'particulars',
+    'details', 'summary', 'breakdown', 'schedule', 'phase', 'stage', 'section',
+    'category', 'type', 'heading', 'header', 'title', 'subtotal', 'total', 'gst',
+    'grand total', 'amount', 'summary of works', 'list of items'
+  ];
+  
+  if (headerKeywords.some(keyword => lowerDesc.includes(keyword))) {
+    return true;
+  }
+  
+  // 4. Very short (1-3 words) and doesn't contain numbers or common material/unit words
+  const wordCount = lowerDesc.split(/\s+/).filter(w => w.length > 0).length;
+  if (wordCount <= 3) {
+    const hasNumber = /\d/.test(description);
+    const hasMaterial = Object.keys(MATERIAL_KEYWORDS).some(mat => 
+      MATERIAL_KEYWORDS[mat].some(keyword => lowerDesc.includes(keyword.toLowerCase()))
+    );
+    const hasUnit = Object.keys(UNIT_KEYWORDS).some(unit =>
+      UNIT_KEYWORDS[unit].some(keyword => lowerDesc.includes(keyword.toLowerCase()))
+    );
+    
+    if (!hasNumber && !hasMaterial && !hasUnit) {
+      return true;
+    }
+  }
+  
+  return false;
+}
+
+/**
+ * Detect if a line item is labor/installation work.
+ */
+function isLaborItem(description: string): boolean {
+  const lowerDesc = description.toLowerCase();
+  const laborKeywords = [
+    'labour', 'labor', 'installation', 'install', 'fixing', 'fix', 'erection',
+    'erect', 'assembly', 'assemble', 'set up', 'setup', 'mounting', 'mount',
+    'hanging', 'hang', 'fitting', 'fit', 'application', 'apply', 'laying', 'lay',
+    'painting', 'paint', 'plastering', 'plaster', 'tiling', 'tile', 'carpentry',
+    'carpenter', 'electrical', 'electrician', 'plumbing', 'plumber', 'masonry',
+    'mason', 'demolition', 'demo', 'removal', 'remove', 'disposal', 'dispose',
+    'cleaning', 'clean', 'polishing', 'polish', 'sealing', 'seal', 'waterproofing',
+    'waterproof', 'man-day', 'man day', 'worker day', 'labour day', 'man-hour',
+    'man hour', 'labour hour', 'hourly', 'daily', 'day rate', 'hour rate'
+  ];
+  
+  return laborKeywords.some(keyword => lowerDesc.includes(keyword));
+}
+
+/**
+ * Detect if a line item is a per-job/lump sum item.
+ */
+function isPerJobItem(description: string): boolean {
+  const lowerDesc = description.toLowerCase();
+  const perJobKeywords = [
+    'lump sum', 'ls', 'l.s.', 'package', 'project', 'job', 'contract', 'scope',
+    'overall', 'complete', 'full', 'entire', 'whole', 'total', 'comprehensive',
+    'turnkey', 'turn-key', 'all-in', 'all in', 'all-inclusive', 'inclusive',
+    'flat rate', 'flat fee', 'fixed price', 'fixed cost'
+  ];
+  
+  return perJobKeywords.some(keyword => lowerDesc.includes(keyword));
+}
+
+/**
+ * Estimate labor cost based on description and category.
+ */
+function estimateLaborCost(description: string, category: string | null, quotedAmount: number | null): {
+  estimatedPerDay: number;
+  estimatedDays: number;
+  estimatedTotal: number;
+  confidence: number;
+} {
+  const lowerDesc = description.toLowerCase();
+  
+  // Default labor rates for Singapore (2025-2026)
+  const laborRates: Record<string, number> = {
+    'carpentry': 250,      // SGD per day for carpenter
+    'electrical': 300,     // SGD per day for electrician  
+    'plumbing': 280,       // SGD per day for plumber
+    'painting': 200,       // SGD per day for painter
+    'tiling': 220,         // SGD per day for tiler
+    'masonry': 240,        // SGD per day for mason
+    'demolition': 180,     // SGD per day for demolition worker
+    'general': 150,        // SGD per day for general worker
+  };
+  
+  // Try to extract days/quantity from description
+  let estimatedDays = 1;
+  const dayMatch = lowerDesc.match(/(\d+(?:\.\d+)?)\s*(?:day|man-day|md)/i);
+  if (dayMatch) {
+    estimatedDays = parseFloat(dayMatch[1]);
+  }
+  
+  // Determine labor type
+  let laborType = 'general';
+  if (category && laborRates[category.toLowerCase()]) {
+    laborType = category.toLowerCase();
+  } else {
+    // Guess from description
+    if (lowerDesc.includes('carpent')) laborType = 'carpentry';
+    else if (lowerDesc.includes('electr')) laborType = 'electrical';
+    else if (lowerDesc.includes('plumb')) laborType = 'plumbing';
+    else if (lowerDesc.includes('paint')) laborType = 'painting';
+    else if (lowerDesc.includes('tile')) laborType = 'tiling';
+    else if (lowerDesc.includes('mason')) laborType = 'masonry';
+    else if (lowerDesc.includes('demo')) laborType = 'demolition';
+  }
+  
+  const estimatedPerDay = laborRates[laborType] || 150;
+  const estimatedTotal = estimatedPerDay * estimatedDays;
+  
+  // Confidence based on how clear the description is
+  let confidence = 0.5;
+  if (dayMatch) confidence = 0.7;
+  if (category) confidence += 0.1;
+  if (quotedAmount && Math.abs(quotedAmount - estimatedTotal) / estimatedTotal < 0.5) {
+    confidence += 0.1;
+  }
+  
+  return {
+    estimatedPerDay,
+    estimatedDays,
+    estimatedTotal,
+    confidence: Math.min(confidence, 0.9)
+  };
 }
 
 /**
@@ -267,6 +454,27 @@ export async function validateLineItem(
   description: string,
   quotedAmount: number | null
 ): Promise<ValidatedLineItem> {
+  // Step 0: Check if this is a header/title (not a priced item)
+  // Headers are short descriptions without amounts
+  if (isLikelyHeader(description) && quotedAmount === null) {
+    return {
+      originalDescription: description,
+      quotedAmount,
+      inferredCategory: null,
+      inferredMaterial: null,
+      inferredQuantity: null,
+      inferredUnit: null,
+      marketPricePerUnit: undefined,
+      expectedAmount: undefined,
+      priceDifference: undefined,
+      priceRatio: undefined,
+      assessment: "header",
+      confidence: 0.9,
+      explanation: "This appears to be a section header or title, not a priced line item",
+      matchedKeywords: [],
+    };
+  }
+  
   // Step 1: Infer details from description
   const { category: inferredCategory, confidence: catConfidence, keywords: catKeywords } = inferCategory(description);
   const { material: inferredMaterial, confidence: matConfidence, keywords: matKeywords } = inferMaterial(description, inferredCategory);
@@ -274,9 +482,13 @@ export async function validateLineItem(
   const inferredUnit = extractUnit(description) || inferDefaultUnit(inferredCategory);
   
   const matchedKeywords = [...catKeywords, ...matKeywords];
-  const inferenceConfidence = (catConfidence * 0.6 + matConfidence * 0.4) * 0.8; // Max 0.8 for inference
+  let inferenceConfidence = (catConfidence * 0.6 + matConfidence * 0.4) * 0.8; // Max 0.8 for inference
   
-  // Step 2: If we have enough info, look up market price
+  // Step 2: Handle special cases
+  const isLabor = isLaborItem(description);
+  const isPerJob = isPerJobItem(description);
+  
+  // Step 3: If we have enough info, look up market price
   let marketPricePerUnit: number | undefined;
   let expectedAmount: number | undefined;
   let priceDifference: number | undefined;
@@ -284,7 +496,39 @@ export async function validateLineItem(
   let assessment: ValidatedLineItem["assessment"] = "unknown";
   let explanation = "";
   
-  if (inferredCategory && inferredMaterial && inferredUnit && inferredQuantity && quotedAmount) {
+  // Handle labor items specially
+  if (isLabor && quotedAmount) {
+    const laborEstimate = estimateLaborCost(description, inferredCategory, quotedAmount);
+    expectedAmount = laborEstimate.estimatedTotal;
+    priceDifference = quotedAmount - expectedAmount;
+    priceRatio = quotedAmount / expectedAmount;
+    
+    if (priceRatio > 1.3) {
+      assessment = "overpriced";
+      explanation = `Labor cost ${formatSGD(quotedAmount)} appears high. Expected ~${formatSGD(expectedAmount)} based on ${laborEstimate.estimatedDays} day(s) at SGD ${laborEstimate.estimatedPerDay}/day for ${inferredCategory || 'general'} work`;
+    } else if (priceRatio < 0.7) {
+      assessment = "underpriced";
+      explanation = `Labor cost ${formatSGD(quotedAmount)} appears low. Expected ~${formatSGD(expectedAmount)} based on ${laborEstimate.estimatedDays} day(s) at SGD ${laborEstimate.estimatedPerDay}/day`;
+    } else {
+      assessment = "fair";
+      explanation = `Labor cost ${formatSGD(quotedAmount)} is reasonable for ${laborEstimate.estimatedDays} day(s) of ${inferredCategory || 'general'} work`;
+    }
+    
+    // Adjust confidence based on labor estimate confidence
+    inferenceConfidence = Math.min(inferenceConfidence * (0.5 + laborEstimate.confidence), 0.9);
+  }
+  // Handle per-job/lump sum items
+  else if (isPerJob && quotedAmount) {
+    assessment = "per-job";
+    explanation = "This is a lump sum/per-job item. Validation requires detailed scope breakdown.";
+    
+    // For per-job items, we can't calculate expected amount without scope details
+    // But we can still note it for the summary
+    expectedAmount = undefined;
+    priceRatio = undefined;
+  }
+  // Standard validation for items with sufficient details
+  else if (inferredCategory && inferredMaterial && inferredUnit && inferredQuantity && quotedAmount) {
     try {
       marketPricePerUnit = await MarketPriceService.lookup(inferredCategory, inferredMaterial, inferredUnit);
       expectedAmount = marketPricePerUnit * inferredQuantity;
@@ -343,17 +587,41 @@ export async function validateAllLineItems(
   );
   
   // Calculate summary statistics
-  const itemsWithAmounts = validatedItems.filter(item => item.quotedAmount !== null);
-  const itemsWithRatio = validatedItems.filter(item => item.priceRatio !== undefined);
+  // Filter out headers (not priced items)
+  const pricedItems = validatedItems.filter(item => item.assessment !== "header");
   
-  const totalQuoted = itemsWithAmounts.reduce((sum, item) => sum + (item.quotedAmount || 0), 0);
-  const totalExpected = itemsWithRatio.reduce((sum, item) => sum + (item.expectedAmount || 0), 0);
+  // Items with quoted amounts (excluding headers)
+  const itemsWithAmounts = pricedItems.filter(item => item.quotedAmount !== null);
   
-  const overpricedItems = validatedItems.filter(item => item.assessment === "overpriced").length;
-  const underpricedItems = validatedItems.filter(item => item.assessment === "underpriced").length;
-  const fairItems = validatedItems.filter(item => item.assessment === "fair").length;
-  const unknownItems = validatedItems.filter(item => item.assessment === "unknown").length;
+  // Items where we can calculate expected amount (standard + labor items)
+  const itemsWithExpected = pricedItems.filter(item => item.expectedAmount !== undefined);
   
+  // Items for apples-to-apples comparison (have both quoted and expected)
+  const comparableItems = pricedItems.filter(item => 
+    item.quotedAmount !== null && item.expectedAmount !== undefined
+  );
+  
+  // Calculate totals
+  const totalQuotedAll = itemsWithAmounts.reduce((sum, item) => sum + (item.quotedAmount || 0), 0);
+  const totalExpectedAll = itemsWithExpected.reduce((sum, item) => sum + (item.expectedAmount || 0), 0);
+  
+  // Apples-to-apples comparison (only items we could validate)
+  const totalQuotedComparable = comparableItems.reduce((sum, item) => sum + (item.quotedAmount || 0), 0);
+  const totalExpectedComparable = comparableItems.reduce((sum, item) => sum + (item.expectedAmount || 0), 0);
+  const comparableDifference = totalQuotedComparable - totalExpectedComparable;
+  const comparableRatio = totalExpectedComparable > 0 ? totalQuotedComparable / totalExpectedComparable : 1;
+  
+  // Count items by assessment type
+  const headerItems = validatedItems.filter(item => item.assessment === "header").length;
+  const overpricedItems = pricedItems.filter(item => item.assessment === "overpriced").length;
+  const underpricedItems = pricedItems.filter(item => item.assessment === "underpriced").length;
+  const fairItems = pricedItems.filter(item => item.assessment === "fair").length;
+  const perJobItems = pricedItems.filter(item => item.assessment === "per-job").length;
+  const unknownItems = pricedItems.filter(item => item.assessment === "unknown").length;
+  const invalidItems = pricedItems.filter(item => item.assessment === "invalid").length;
+  
+  // Calculate average price ratio for comparable items
+  const itemsWithRatio = pricedItems.filter(item => item.priceRatio !== undefined);
   const averagePriceRatio = itemsWithRatio.length > 0
     ? itemsWithRatio.reduce((sum, item) => sum + (item.priceRatio || 1), 0) / itemsWithRatio.length
     : 1;
@@ -361,6 +629,10 @@ export async function validateAllLineItems(
   // Generate recommendations
   const recommendations: string[] = [];
   const redFlags: string[] = [];
+  
+  if (headerItems > 0) {
+    recommendations.push(`${headerItems} header/title item(s) detected and excluded from validation`);
+  }
   
   if (overpricedItems > 0) {
     redFlags.push(`${overpricedItems} line item(s) appear significantly overpriced (>20% above market)`);
@@ -371,24 +643,51 @@ export async function validateAllLineItems(
     recommendations.push(`${underpricedItems} item(s) are underpriced; verify that scope and materials match expectations`);
   }
   
+  if (perJobItems > 0) {
+    redFlags.push(`${perJobItems} lump sum/per-job item(s) identified`);
+    recommendations.push("Request detailed breakdown for lump sum items to validate pricing");
+  }
+  
   if (unknownItems > 0) {
     recommendations.push(`${unknownItems} item(s) could not be validated due to insufficient detail`);
   }
   
-  if (averagePriceRatio > 1.1) {
-    redFlags.push(`Overall quote appears ${Math.round((averagePriceRatio - 1) * 100)}% above market average`);
+  if (comparableRatio > 1.15 && comparableItems.length > 0) {
+    redFlags.push(`Validated portion of quote appears ${Math.round((comparableRatio - 1) * 100)}% above market average`);
+  } else if (comparableRatio < 0.85 && comparableItems.length > 0) {
+    recommendations.push(`Validated portion of quote appears ${Math.round((1 - comparableRatio) * 100)}% below market average - verify scope completeness`);
   }
   
   return {
     validatedItems,
-    totalQuoted,
-    totalExpected,
-    overallDifference: totalQuoted - totalExpected,
-    averagePriceRatio,
+    
+    // Totals for all priced items
+    totalQuoted: totalQuotedAll,
+    totalExpected: totalExpectedAll,
+    overallDifference: totalQuotedAll - totalExpectedAll,
+    
+    // Apples-to-apples comparison (only items we could validate)
+    comparableQuoted: totalQuotedComparable,
+    comparableExpected: totalExpectedComparable,
+    comparableDifference,
+    comparableRatio,
+    comparableItemCount: comparableItems.length,
+    
+    // Item counts
+    totalItems: validatedItems.length,
+    headerItems,
+    pricedItemCount: pricedItems.length,
     overpricedItems,
     underpricedItems,
     fairItems,
+    perJobItems,
     unknownItems,
+    invalidItems,
+    
+    // Metrics
+    averagePriceRatio,
+    validationCoverage: pricedItems.length > 0 ? comparableItems.length / pricedItems.length : 0,
+    
     recommendations,
     redFlags,
   };
