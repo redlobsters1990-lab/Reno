@@ -58,16 +58,50 @@ export async function extractQuoteDocument(filePath: string, fileType: string): 
   let text = "";
 
   if (fileType === "application/pdf") {
-    text = await extractPdfTextViaPython(filePath);
+    try {
+      text = await extractPdfTextViaPython(filePath);
+    } catch (error: any) {
+      throw new Error(
+        `Failed to extract text from PDF. ` +
+        `This may be due to: (1) PDF is scanned/image-based (not searchable text), ` +
+        `(2) PDF is password-protected, (3) PDF is corrupted, or (4) handwriting. ` +
+        `\n\n**ADVICE**: Please provide a searchable PDF or clear photo. ` +
+        `For scanned PDFs, use OCR software first or upload as clear JPG/PNG.`
+      );
+    }
   } else if (["image/jpeg", "image/jpg", "image/png"].includes(fileType)) {
-    const result = await Tesseract.recognize(filePath, "eng", { logger: () => {} });
-    text = result.data.text || "";
+    try {
+      const result = await Tesseract.recognize(filePath, "eng", { logger: () => {} });
+      text = result.data.text || "";
+    } catch (error: any) {
+      throw new Error(
+        `Failed to read text from image. ` +
+        `This may be due to: (1) Poor image quality, (2) Handwriting, (3) Complex layout, ` +
+        `(4) Low contrast text. ` +
+        `\n\n**ADVICE**: Upload a clearer photo with good lighting, flat surface, ` +
+        `and readable text. Avoid handwritten quotes.`
+      );
+    }
   } else {
-    throw new Error("Unsupported quote file type for parsing.");
+    throw new Error(
+      `Unsupported file type: ${fileType}. ` +
+      `\n\n**ADVICE**: Supported formats: PDF, JPG, PNG. ` +
+      `For Word/Excel files, save as PDF first.`
+    );
   }
 
   if (!text.trim()) {
-    throw new Error("Could not extract readable text from the uploaded quote.");
+    throw new Error(
+      `Extracted text is empty or unreadable. ` +
+      `\n\n**ADVICE**: This usually means the document is: ` +
+      `(1) Scanned PDF without OCR, (2) Image with poor OCR results, ` +
+      `(3) Password-protected PDF, (4) Corrupted file. ` +
+      `\n\n**NEXT STEPS**: ` +
+      `1. Convert scanned PDF to searchable PDF using Adobe Acrobat or online OCR. ` +
+      `2. Upload a clearer photo of the quote. ` +
+      `3. If PDF is password-protected, remove password before uploading. ` +
+      `4. Ask contractor for a digital copy (not scanned).`
+    );
   }
 
   const normalized = normalizeText(text);
