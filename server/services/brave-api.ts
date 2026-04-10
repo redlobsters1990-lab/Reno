@@ -43,7 +43,7 @@ async function braveSearch(query: string, count: number = 10): Promise<BraveSear
   const url = new URL("https://api.search.brave.com/res/v1/web/search");
   url.searchParams.set("q", query);
   url.searchParams.set("count", count.toString());
-  url.searchParams.set("country", "sg");
+  url.searchParams.set("country", "ALL");
   url.searchParams.set("search_lang", "en");
 
   const response = await fetch(url.toString(), {
