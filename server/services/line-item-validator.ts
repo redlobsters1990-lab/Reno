@@ -148,7 +148,7 @@ const UNIT_KEYWORDS: Record<string, string[]> = {
   "piece": ["piece", "pc", "each", "unit", "set", "nos", "no.", "item", "lot"],
   "day": ["day", "man‑day", "MD", "labour day", "man day", "worker day", "labor day", "day work", "daily"],
   "hour": ["hour", "hr", "man‑hour", "labour hour", "hourly"],
-  "lot": ["lot", "lump sum", "ls", "l.s.", "package", "project"],
+  "lot": ["lot", "lump sum", "ls", "l.s.", "package", "project", "l$", "lot $", "lump $"],
   "roll": ["roll", "rl", "roller"],
   "sheet": ["sheet", "sh", "panel", "board"],
   "length": ["length", "lg", "long"],
@@ -165,9 +165,9 @@ function extractQuantity(description: string): number | null {
     return null; // Headers don't have quantities
   }
   
-  // Look for patterns like "10 ft", "3.5 m", "2 pieces", "10x10", "10 nos", "10pcs"
+  // Look for patterns like "10 ft", "3.5 m", "2 pieces", "10x10", "10 nos", "10pcs", "1 L$"
   // Expanded regex to include more unit patterns and formats
-  const quantityMatch = description.match(/(\d+(?:\.\d+)?)\s*(?:x\s*\d+(?:\.\d+)?\s*)?(?:ft|m|sq|piece|pc|pcs|nos|no\.|set|day|unit|hour|hr|lot|ls|roll|sheet|length|kg|l|lf|lm|sf|sft|sqm|m2)/i);
+  const quantityMatch = description.match(/(\d+(?:\.\d+)?)\s*(?:x\s*\d+(?:\.\d+)?\s*)?(?:ft|m|sq|piece|pc|pcs|nos|no\.|set|day|unit|hour|hr|lot|ls|l\$|roll|sheet|length|kg|l|lf|lm|sf|sft|sqm|m2)/i);
   if (quantityMatch) {
     return parseFloat(quantityMatch[1]);
   }
@@ -284,7 +284,7 @@ function isPerJobItem(description: string): boolean {
     'lump sum', 'ls', 'l.s.', 'package', 'project', 'job', 'contract', 'scope',
     'overall', 'complete', 'full', 'entire', 'whole', 'total', 'comprehensive',
     'turnkey', 'turn-key', 'all-in', 'all in', 'all-inclusive', 'inclusive',
-    'flat rate', 'flat fee', 'fixed price', 'fixed cost'
+    'flat rate', 'flat fee', 'fixed price', 'fixed cost', 'l$', 'lot $'
   ];
   
   return perJobKeywords.some(keyword => lowerDesc.includes(keyword));
@@ -517,8 +517,8 @@ export async function validateLineItem(
     // Adjust confidence based on labor estimate confidence
     inferenceConfidence = Math.min(inferenceConfidence * (0.5 + laborEstimate.confidence), 0.9);
   }
-  // Handle per-job/lump sum items
-  else if (isPerJob && quotedAmount) {
+  // Handle per-job/lump sum items (detected by keywords OR unit="lot")
+  else if ((isPerJob || inferredUnit === "lot") && quotedAmount) {
     assessment = "per-job";
     explanation = "This is a lump sum/per-job item. Validation requires detailed scope breakdown.";
     
@@ -529,26 +529,37 @@ export async function validateLineItem(
   }
   // Standard validation for items with sufficient details
   else if (inferredCategory && inferredMaterial && inferredUnit && inferredQuantity && quotedAmount) {
-    try {
-      marketPricePerUnit = await MarketPriceService.lookup(inferredCategory, inferredMaterial, inferredUnit);
-      expectedAmount = marketPricePerUnit * inferredQuantity;
-      priceDifference = quotedAmount - expectedAmount;
-      priceRatio = quotedAmount / expectedAmount;
-      
-      // Determine assessment
-      if (priceRatio > 1.2) {
-        assessment = "overpriced";
-        explanation = `Quoted ${formatSGD(quotedAmount)} is ${Math.round((priceRatio - 1) * 100)}% above market range (expected ~${formatSGD(expectedAmount)})`;
-      } else if (priceRatio < 0.8) {
-        assessment = "underpriced";
-        explanation = `Quoted ${formatSGD(quotedAmount)} is ${Math.round((1 - priceRatio) * 100)}% below market range (expected ~${formatSGD(expectedAmount)})`;
-      } else {
-        assessment = "fair";
-        explanation = `Quoted ${formatSGD(quotedAmount)} is within ±20% of market range (expected ~${formatSGD(expectedAmount)})`;
-      }
-    } catch (error) {
+    // Check if unit makes sense for this category (e.g., flooring shouldn't be priced per liter)
+    if (!isUnitCompatibleWithCategory(inferredCategory, inferredUnit)) {
       assessment = "unknown";
-      explanation = `Cannot validate: market price not found for ${inferredMaterial} ${inferredCategory} (${inferredUnit})`;
+      explanation = `Cannot validate: unit "${inferredUnit}" doesn't make sense for ${inferredCategory}. This may be a per‑job/lump‑sum item.`;
+    } else {
+      try {
+        marketPricePerUnit = await MarketPriceService.lookup(inferredCategory, inferredMaterial, inferredUnit);
+        expectedAmount = marketPricePerUnit * inferredQuantity;
+        priceDifference = quotedAmount - expectedAmount;
+        priceRatio = quotedAmount / expectedAmount;
+        
+        // Sanity check: extreme ratios indicate likely inference errors
+        if (priceRatio > 10 || priceRatio < 0.1) {
+          assessment = "unknown";
+          explanation = `Extreme price difference (${priceRatio.toFixed(2)}×) suggests unit or quantity inference error. "${inferredQuantity} ${inferredUnit}" may be incorrect.`;
+        }
+        // Determine assessment (if not marked unknown by sanity check)
+        else if (priceRatio > 1.2) {
+          assessment = "overpriced";
+          explanation = `Quoted ${formatSGD(quotedAmount)} is ${Math.round((priceRatio - 1) * 100)}% above market range (expected ~${formatSGD(expectedAmount)})`;
+        } else if (priceRatio < 0.8) {
+          assessment = "underpriced";
+          explanation = `Quoted ${formatSGD(quotedAmount)} is ${Math.round((1 - priceRatio) * 100)}% below market range (expected ~${formatSGD(expectedAmount)})`;
+        } else {
+          assessment = "fair";
+          explanation = `Quoted ${formatSGD(quotedAmount)} is within ±20% of market range (expected ~${formatSGD(expectedAmount)})`;
+        }
+      } catch (error) {
+        assessment = "unknown";
+        explanation = `Cannot validate: market price not found for ${inferredMaterial} ${inferredCategory} (${inferredUnit})`;
+      }
     }
   } else if (!quotedAmount) {
     assessment = "invalid";
@@ -691,6 +702,54 @@ export async function validateAllLineItems(
     recommendations,
     redFlags,
   };
+}
+
+/**
+ * Check if a unit is compatible with a category.
+ * Prevents nonsensical comparisons like flooring priced per liter.
+ */
+function isUnitCompatibleWithCategory(category: string, unit: string): boolean {
+  // Define compatible units for each category
+  const compatibleUnits: Record<string, string[]> = {
+    // Area-based categories
+    "Flooring": ["sq ft", "m²", "roll", "sheet", "piece", "lot"],
+    "Painting": ["sq ft", "m²", "roll", "lot"],
+    "Wall Finishes": ["sq ft", "m²", "roll", "sheet", "piece", "lot"],
+    "Bathroom Tiling": ["sq ft", "m²", "piece", "lot"],
+    "Ceiling": ["sq ft", "m²", "piece", "lot"],
+    "Demolition": ["sq ft", "m²", "lot"],
+    "Masonry": ["sq ft", "m²", "lot"],
+    
+    // Linear/length-based categories
+    "Kitchen Countertop": ["ft", "m", "piece", "lot"],
+    "Kitchen Cabinetry": ["ft", "m", "piece", "lot"],
+    "Carpentry": ["ft", "m", "piece", "lot"],
+    
+    // Piece/unit-based categories
+    "Kitchen Sink & Tap": ["piece", "lot"],
+    "Kitchen Hob & Hood": ["piece", "lot"],
+    "Bathroom Vanity": ["piece", "lot"],
+    "Bathroom Fixtures": ["piece", "lot"],
+    "Bathroom Shower Screen": ["piece", "lot"],
+    "Electrical Points": ["piece", "lot"],
+    "Plumbing": ["piece", "length", "lot"],
+    "Windows & Doors": ["piece", "lot"],
+    "HVAC": ["piece", "lot"],
+    "Built‑In Furniture": ["piece", "lot"],
+    "Smart Home": ["piece", "lot"],
+    "Glass Work": ["piece", "lot"],
+    
+    // Time-based categories (labor)
+    "Other": ["piece", "lot", "day", "hour", "sq ft", "ft", "m"],
+  };
+  
+  // If category not in map, allow any unit (default)
+  if (!compatibleUnits[category]) {
+    return true;
+  }
+  
+  // Check if unit is compatible
+  return compatibleUnits[category].includes(unit);
 }
 
 /**
